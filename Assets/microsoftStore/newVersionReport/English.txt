@@ -1,0 +1,4 @@
+🚀 Update Notes:
+
+- Fixed a bug that prevented KoBar from automatically opening on system startup.
+- Added a new interface option in Settings to toggle features from accordion menus to a box layout.

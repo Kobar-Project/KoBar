@@ -1,0 +1,4 @@
+🚀 Güncelleme Notları:
+
+- Bilgisayar açıldığında KoBar'ın otomatik açılmasını engelleyen hata giderildi.
+- Ayarlar da özellikleri akordion menüden kutu formuna çevirebileceğiniz bir arayüz eklendi.

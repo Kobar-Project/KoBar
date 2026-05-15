@@ -1,0 +1,50 @@
+KO-BAR TEKNİK MEKANİK REHBERİ (Geliştirici Notları)
+
+Bu döküman, KoBar'ın her zaman en üstte kalma, şeffaflık, sürükleme ve kenar algılama gibi temel masaüstü mekaniklerinin nasıl çalıştığını açıklar. Kendi mini oyununuzu veya uygulamanızı geliştirirken bu teknikleri temel alabilirsiniz.
+
+1. HAYALET PENCERE (GHOST WINDOW) STRATEJİSİ
+-------------------------------------------
+Windows işletim sisteminde, pencerenin boyutunu sürekli değiştirmek (resize) performans kaybına ve titremelere (flickering) neden olur. KoBar bunu şu şekilde çözer:
+- Uygulama başladığında, ekran boyutundan çok daha büyük (örneğin 6000x4000 piksel) ve tamamen şeffaf bir pencere oluşturulur.
+- Ayarlar: `transparent: true`, `frame: false`, `resizable: false`.
+- Bu strateji sayesinde, uygulamanın görsel öğeleri (Sidebar, Göz vb.) bu devasa şeffaf alan içinde hiçbir kısıtlama olmadan ve pencere boyutuyla oynamadan hareket ettirilebilir.
+
+2. HER ZAMAN ÜSTTE KALMA (ALWAYS-ON-TOP)
+---------------------------------------
+KoBar'ın diğer tüm pencerelerin, hatta görev yöneticisinin bile üzerinde kalabilmesi için özel bir seviye kullanılır:
+- Windows: `mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);`
+- macOS: `mainWindow.setAlwaysOnTop(true, 'floating', 1);`
+- 'screen-saver' seviyesi, standart 'always-on-top'tan daha yüksek bir önceliğe sahiptir.
+
+3. DİNAMİK TIKLANABİLİRLİK (CLICK-THROUGH)
+-----------------------------------------
+Devasa bir pencere kullanıldığında, pencerenin şeffaf alanlarının arkasındaki uygulamalara (örneğin bir klasöre veya tarayıcıya) tıklanabilmesi hayati önem taşır:
+- Varsayılan Durum: `mainWindow.setIgnoreMouseEvents(true, { forward: true })` ile pencere "geçirgen" yapılır. Fare tıklamaları arkadaki öğelere gider.
+- Etkileşim Yönetimi: React tarafında (`App.tsx`) global bir `mousemove` listener çalışır.
+- Mantık: Fare, `.pointer-events-auto` CSS sınıfına sahip "katı" bir görsel öğenin üzerine geldiğinde `setIgnoreMouseEvents(false)` yapılır ve öğe tıklanabilir olur. Fare boş (şeffaf) alana çıktığında tekrar `true` yapılır.
+
+4. MANUEL SÜRÜKLEME VE PERFORMANS
+---------------------------------
+Çerçevesiz pencerede standart sürükleme yapılamadığı için özel bir mekanizma kullanılır:
+- Sürükleme işlemi `onMouseDown`, `mousemove` ve `mouseup` olayları ile manuel olarak kodlanmıştır.
+- Akıcılık: Sürükleme sırasında her piksel değişiminde React'i "re-render" etmek yerine, doğrudan DOM manipülasyonu (`ref.current.style.left = ...`) kullanılır. Bu, "zero-lag" (sıfır gecikme) deneyimi sağlar.
+- Sürükleme bittiğinde (`mouseup`), son koordinatlar Zustand global state'ine yazılır.
+
+5. EKRAN VE KENAR ALGILAMA (EDGE DETECTION)
+-------------------------------------------
+Pencerenin hangi monitörde veya ekranın hangi tarafında olduğu Ana Süreç (Main Process) tarafından takip edilir:
+- `mainWindow.on('move', ...)` olayı dinlenir.
+- `screen.getDisplayNearestPoint(cursorPos)` kullanılarak farenin/pencerenin o anki ekran bilgileri ve koordinatları alınır.
+- Eğer pencere ekranın sağ yarısındaysa ön yüze `edge-changed: right` sinyali gönderilir; böylece Sidebar'ın tasarımı (örneğin not panelinin açılma yönü) dinamik olarak değişir.
+
+6. MİNİ MOD VE GENİŞLEME (TRANSITION)
+-------------------------------------
+Mini mod (Göz ikonu) ve normal mod (Sidebar) arasındaki geçiş, aslında bir pencere boyutlandırma işlemi değildir:
+- Sadece bir "Görünürlük" (Visibility) değişimidir.
+- `isMiniMode` state'i true olduğunda Sidebar `opacity: 0` ve `pointer-events: none` olur, FloatingEye (Göz) ise görünür hale gelir.
+- Kullanıcı Göz'e tıkladığında, Göz'ün o anki konumu kaydedilir ve Sidebar o konumda açılır.
+
+BU YAPIYI OYUN İÇİN KULLANIRKEN:
+- Oyununuzu bu devasa Ghost Window içindeki bir `div` olarak düşünün.
+- Oyun içi sürükleme işlemlerinde mutlaka `setIgnoreMouseEvents(false)` durumunda olduğunuzdan emin olun.
+- Ekran geçişlerini ve çözünürlük değişikliklerini `screen` API'si ile takip ederek oyun panelinizin ekran dışına taşmasını engelleyin.

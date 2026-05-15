@@ -1,0 +1,4 @@
+🚀 Notas de actualización:
+
+- Se corrigió un error que impedía que KoBar se abriera automáticamente al iniciar la computadora.
+- Se agregó una nueva interfaz en la Configuración para cambiar las funciones de menús de acordeón a un diseño de caja.

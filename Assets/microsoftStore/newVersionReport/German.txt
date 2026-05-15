@@ -1,0 +1,4 @@
+🚀 Update-Notizen:
+
+- Ein Fehler wurde behoben, der verhinderte, dass KoBar beim Computerstart automatisch geöffnet wurde.
+- In den Einstellungen wurde eine neue Oberfläche hinzugefügt, mit der Funktionen von Akkordeon-Menüs in eine Box-Form umgewandelt werden können.

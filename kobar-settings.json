@@ -1,0 +1,7 @@
+{
+  "version": "1.0.20",
+  "buildStandard": true,
+  "buildAppx": true,
+  "enableAutoUpdate": false,
+  "enableLicensing": false
+}

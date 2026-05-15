@@ -1,0 +1,360 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: var(--theme-primary);
+  --color-background-dark: var(--theme-bg-dark);
+  --color-background-light: var(--theme-bg-light);
+  --font-display: "Space Grotesk", sans-serif;
+  --radius: 1rem;
+  --radius-lg: 2rem;
+  --radius-xl: 3rem;
+  --radius-full: 9999px;
+}
+
+/* ===== THEME DEFINITIONS ===== */
+
+/* Ember (Default — warm amber) */
+:root,
+[data-theme="ember"] {
+  --theme-primary: #f4a125;
+  --theme-bg-dark: #1a1612;
+  --theme-bg-base: #1e1b17;
+  --theme-bg-light: #f8f7f5;
+  --theme-border: #3f362b;
+  --theme-surface: #14110e;
+  --theme-accent-glow: rgba(244, 161, 37, 0.15);
+  --theme-scrollbar: #3f362b;
+  --theme-marker: #f4a125;
+}
+
+/* Ocean (cool deep blue) */
+[data-theme="ocean"] {
+  --theme-primary: #38bdf8;
+  --theme-bg-dark: #0c1524;
+  --theme-bg-base: #111b2e;
+  --theme-bg-light: #f0f4f8;
+  --theme-border: #1e3a5f;
+  --theme-surface: #080f1c;
+  --theme-accent-glow: rgba(56, 189, 248, 0.15);
+  --theme-scrollbar: #1e3a5f;
+  --theme-marker: #38bdf8;
+}
+
+/* Sakura (soft cherry-blossom pink) */
+[data-theme="sakura"] {
+  --theme-primary: #f472b6;
+  --theme-bg-dark: #1c1018;
+  --theme-bg-base: #22141c;
+  --theme-bg-light: #fdf2f8;
+  --theme-border: #4a2040;
+  --theme-surface: #150c12;
+  --theme-accent-glow: rgba(244, 114, 182, 0.15);
+  --theme-scrollbar: #4a2040;
+  --theme-marker: #f472b6;
+}
+
+/* Emerald (deep forest green) */
+[data-theme="emerald"] {
+  --theme-primary: #34d399;
+  --theme-bg-dark: #0c1a14;
+  --theme-bg-base: #111f19;
+  --theme-bg-light: #ecfdf5;
+  --theme-border: #1a4d3a;
+  --theme-surface: #08110d;
+  --theme-accent-glow: rgba(52, 211, 153, 0.15);
+  --theme-scrollbar: #1a4d3a;
+  --theme-marker: #34d399;
+}
+
+/* Midnight (deep indigo) */
+[data-theme="midnight"] {
+  --theme-primary: #6366f1;
+  --theme-bg-dark: #0f172a;
+  --theme-bg-base: #1e293b;
+  --theme-bg-light: #f8fafc;
+  --theme-border: #334155;
+  --theme-surface: #020617;
+  --theme-accent-glow: rgba(99, 102, 241, 0.15);
+  --theme-scrollbar: #334155;
+  --theme-marker: #6366f1;
+}
+
+/* Amethyst (rich purple) */
+[data-theme="amethyst"] {
+  --theme-primary: #a855f7;
+  --theme-bg-dark: #1a1024;
+  --theme-bg-base: #21152d;
+  --theme-bg-light: #faf5ff;
+  --theme-border: #432b57;
+  --theme-surface: #120a1a;
+  --theme-accent-glow: rgba(168, 85, 247, 0.15);
+  --theme-scrollbar: #432b57;
+  --theme-marker: #a855f7;
+}
+
+/* Crimson (vibrant red) */
+[data-theme="crimson"] {
+  --theme-primary: #f43f5e;
+  --theme-bg-dark: #1a0a0c;
+  --theme-bg-base: #210e11;
+  --theme-bg-light: #fff1f2;
+  --theme-border: #4c1d24;
+  --theme-surface: #120608;
+  --theme-accent-glow: rgba(244, 63, 94, 0.15);
+  --theme-scrollbar: #4c1d24;
+  --theme-marker: #f43f5e;
+}
+
+/* Nord (arctic blue-grey) */
+[data-theme="nord"] {
+  --theme-primary: #81a1c1;
+  --theme-bg-dark: #2e3440;
+  --theme-bg-base: #3b4252;
+  --theme-bg-light: #eceff4;
+  --theme-border: #4c566a;
+  --theme-surface: #242933;
+  --theme-accent-glow: rgba(129, 161, 193, 0.15);
+  --theme-scrollbar: #4c566a;
+  --theme-marker: #81a1c1;
+}
+
+/* Coffee (warm brown-gold) */
+[data-theme="coffee"] {
+  --theme-primary: #d97706;
+  --theme-bg-dark: #1c1511;
+  --theme-bg-base: #241b16;
+  --theme-bg-light: #fffbeb;
+  --theme-border: #4a3728;
+  --theme-surface: #140f0c;
+  --theme-accent-glow: rgba(217, 119, 6, 0.15);
+  --theme-scrollbar: #4a3728;
+  --theme-marker: #d97706;
+}
+
+/* Lavender (soothing pastel purple) */
+[data-theme="lavender"] {
+  --theme-primary: #a78bfa;
+  --theme-bg-dark: #17151c;
+  --theme-bg-base: #1d1b26;
+  --theme-bg-light: #f5f3ff;
+  --theme-border: #3e384d;
+  --theme-surface: #111015;
+  --theme-accent-glow: rgba(167, 139, 250, 0.15);
+  --theme-scrollbar: #3e384d;
+  --theme-marker: #a78bfa;
+}
+
+/* Custom (user-defined — CSS vars applied via JavaScript inline styles) */
+/* Values are set dynamically via applyCustomThemeCSS() in useAppStore.ts */
+
+@layer utilities {
+  .drag-region {
+  }
+
+  .no-drag-region {
+  }
+
+  .custom-radio {
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--theme-border);
+    outline: none;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .custom-radio:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: currentColor;
+  }
+
+  .radio-green {
+    border-color: #22c55e;
+    color: #22c55e;
+  }
+
+  .radio-blue {
+    border-color: #3b82f6;
+    color: #3b82f6;
+  }
+
+  .radio-grey {
+    border-color: #4b5563;
+  }
+
+  .custom-radio.radio-green:checked {
+    border-color: #22c55e;
+  }
+
+  .custom-radio.radio-blue:checked {
+    border-color: #3b82f6;
+  }
+
+  .material-symbols-outlined {
+    user-select: none;
+  }
+
+  ::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--theme-scrollbar);
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--theme-scrollbar);
+    border-radius: 4px;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+html,
+body,
+#root {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+body {
+  background-color: transparent !important;
+  overflow: visible !important;
+  font-family: var(--font-display);
+}
+
+/* Tiptap Editor Dark Theme Overrides */
+.tiptap {
+  outline: none;
+  min-height: 200px;
+  color: #cbd5e1;
+  /* slate-300 */
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+.tiptap p {
+  margin-bottom: 1rem;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #334155;
+  /* slate-700 */
+  pointer-events: none;
+  height: 0;
+  font-style: italic;
+}
+
+.tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tiptap li {
+  margin-bottom: 0.5rem;
+}
+
+.tiptap ul>li::marker {
+  color: var(--theme-marker);
+}
+
+.tiptap strong {
+  color: #e2e8f0;
+  /* slate-200 */
+  font-weight: 700;
+}
+
+.tiptap em {
+  font-style: italic;
+}
+
+.tiptap u {
+  text-decoration: underline;
+}
+
+.tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+/* Prevent accidental text/element selection globally */
+* {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* Allow text selection ONLY inside the note editor and inputs */
+input, textarea, [contenteditable="true"], .ProseMirror {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -webkit-user-drag: auto !important;
+}
+
+/* Restore drag functionality ONLY for explicitly draggable elements (Settings reordering) */
+[draggable="true"], [draggable="true"] * {
+    -webkit-user-drag: element !important;
+}
+
+/* Remove default focus outlines from buttons to prevent shortcut highlighting */
+button, [role="button"] {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:focus, [role="button"]:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}

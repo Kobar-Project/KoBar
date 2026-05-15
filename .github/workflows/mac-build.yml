@@ -1,0 +1,41 @@
+name: Mac Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Compile and Build App
+      run: npm run build
+
+    - name: Package for macOS
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: npx electron-builder build --mac
+
+    - name: Upload macOS Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: KoBar-macOS-Build
+        path: |
+          release/*.dmg
+          release/*.zip
+        retention-days: 7

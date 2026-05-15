@@ -1,0 +1,115 @@
+{
+  "name": "kobar",
+  "productName": "KoBar",
+  "version": "1.0.20",
+  "description": "Modular utility sidebar for desktop. Your multi-threaded creative assistant.",
+  "author": "Ekrem Edali",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main.cjs",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"tsc -w -p electron/tsconfig.json\" \"wait-on tcp:5173 && wait-on dist-electron/main.cjs && wait-on dist-electron/preload.cjs && wait-on dist-electron/smtc-worker.cjs && electron .\"",
+    "build": "tsc -b && vite build && tsc -p electron/tsconfig.json",
+    "kobar-build": "node kobar-build.js",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.eedali.kobar",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "Assets/**/*",
+      "build/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "appx"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSScreenCaptureUsageDescription": "KoBar needs access to your screen to let you capture and edit screenshots."
+      }
+    },
+    "appx": {
+      "applicationId": "KoBar",
+      "identityName": "KO-48.KoBar",
+      "publisher": "CN=YOUR_PUBLISHER_ID_HERE",
+      "publisherDisplayName": "KO-48",
+      "displayName": "KoBar",
+      "backgroundColor": "#1a1612",
+      "capabilities": [
+        "runFullTrust"
+      ],
+      "addAutoLaunchExtension": true
+    }
+  },
+  "dependencies": {
+    "@floating-ui/dom": "^1.7.6",
+    "@tiptap/extension-image": "^3.20.1",
+    "@tiptap/extension-placeholder": "^3.20.1",
+    "@tiptap/extension-underline": "^3.20.1",
+    "@tiptap/pm": "^3.20.1",
+    "@tiptap/react": "^3.20.1",
+    "@tiptap/starter-kit": "^3.20.1",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "crypto-js": "^4.2.0",
+    "date-fns": "^4.1.0",
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.3",
+    "emoji-picker-react": "^4.18.0",
+    "express": "^5.2.1",
+    "googleapis": "^171.4.0",
+    "konva": "^10.2.3",
+    "node-machine-id": "^1.1.12",
+    "pdf-parse": "^2.4.5",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-konva": "^19.2.3",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^16.1.1",
+    "remark-gfm": "^4.0.1",
+    "zustand": "^5.0.11"
+  },
+  "optionalDependencies": {
+    "@coooookies/windows-smtc-monitor": "^1.0.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/crypto-js": "^4.2.2",
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.48.0",
+    "vite": "^7.3.1",
+    "wait-on": "^9.0.4"
+  }
+}

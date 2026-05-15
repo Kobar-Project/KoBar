@@ -1,0 +1,4 @@
+🚀 Notes de mise à jour :
+
+- Correction d'un bug qui empêchait KoBar de s'ouvrir automatiquement au démarrage de l'ordinateur.
+- Ajout d'une nouvelle interface dans les Paramètres pour transformer les menus en accordéon en format boîte.
