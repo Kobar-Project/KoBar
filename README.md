@@ -26,6 +26,11 @@
 
 Think of it as a Swiss Army knife that floats on your desktop: clipboard manager, notes, AI assistant, screenshot studio, media controller, and more, all in one sleek, customizable sidebar.
 
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=KfZmoITxg2E">
+    <img src="Assets/GitHub_images/screen.png" alt="KoBar Feature Video" width="100%" />
+  </a>
+</p>
 ---
 
 ## ✨ Features
@@ -98,6 +103,10 @@ Think of it as a Swiss Army knife that floats on your desktop: clipboard manager
 
 ## 🎨 Theming & Design
 
+<p align="center">
+  <img src="Assets/GitHub_images/AI-hub.png" alt="Theming and AI Hub" width="100%" />
+</p>
+
 KoBar ships with **11 built-in themes**, a **custom theme generator**, and a built-in **Color Picker** that lets you choose any color to create your own personalized theme on the fly:
 
 | Theme | Color |
@@ -123,6 +132,10 @@ KoBar ships with **11 built-in themes**, a **custom theme generator**, and a bui
 ## 🌍 Internationalization
 
 Fully translated into **10 languages:**
+
+<p align="center">
+  <img src="Assets/GitHub_images/Color.png" alt="Localization and Colors" width="100%" />
+</p>
 
 🇺🇸 English · 🇹🇷 Turkish · 🇩🇪 German · 🇫🇷 French · 🇪🇸 Spanish · 🇷🇺 Russian · 🇯🇵 Japanese · 🇨🇳 Chinese · 🇸🇦 Arabic · 🇮🇳 Hindi
 
