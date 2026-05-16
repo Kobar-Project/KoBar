@@ -99,13 +99,13 @@ Think of it as a Swiss Army knife that floats on your desktop: clipboard manager
 | **📋 Snippet Vault** | Save and organize text templates, code snippets, and AI prompts |
 | **🚀 App Launcher** | Drag-and-drop shortcuts to pin your favorite apps |
 
----
-
-## 🎨 Theming & Design
-
 <p align="center">
   <img src="Assets/GitHub_images/AI-hub.png" alt="Theming and AI Hub" width="100%" />
 </p>
+
+---
+
+## 🎨 Theming & Design
 
 KoBar ships with **11 built-in themes**, a **custom theme generator**, and a built-in **Color Picker** that lets you choose any color to create your own personalized theme on the fly:
 
@@ -127,15 +127,15 @@ KoBar ships with **11 built-in themes**, a **custom theme generator**, and a bui
 - **Style 1 (Solid)** - opaque dark background
 - **Style 2 (Glass)** - frosted glassmorphism with adjustable opacity
 
+<p align="center">
+  <img src="Assets/GitHub_images/Color.png" alt="Localization and Colors" width="100%" />
+</p>
+
 ---
 
 ## 🌍 Internationalization
 
 Fully translated into **10 languages:**
-
-<p align="center">
-  <img src="Assets/GitHub_images/Color.png" alt="Localization and Colors" width="100%" />
-</p>
 
 🇺🇸 English · 🇹🇷 Turkish · 🇩🇪 German · 🇫🇷 French · 🇪🇸 Spanish · 🇷🇺 Russian · 🇯🇵 Japanese · 🇨🇳 Chinese · 🇸🇦 Arabic · 🇮🇳 Hindi
 
