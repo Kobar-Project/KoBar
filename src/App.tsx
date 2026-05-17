@@ -266,9 +266,9 @@ const App: React.FC = () => {
             zIndex: 30,
             ...(sidebarPosition ? { position: 'absolute' as const, left: sidebarPosition.x, top: sidebarPosition.y } : {})
           }}>
+          <Sidebar />
           {!isMiniMode && (
             <>
-              <Sidebar />
               {isLicensed && isNotePanelOpen && edgePosition === 'left' && (
                 <div className="absolute top-0 pointer-events-none" style={{ left: '100%', zIndex: 20 }}>
                   <NotePanel />

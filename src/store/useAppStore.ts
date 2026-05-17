@@ -506,11 +506,11 @@ export const useAppStore = create<AppState>()(
             // Settings
             showTooltips: true,
             setShowTooltips: (val) => set({ showTooltips: val }),
-            sidebarWidth: 80,
+            sidebarWidth: 46,
             setSidebarWidth: (val) => set({ sidebarWidth: val }),
             lastSidebarHeight: 800,
             setLastSidebarHeight: (val) => set({ lastSidebarHeight: val }),
-            iconScale: 1.0,
+            iconScale: 0.8,
             setIconScale: (val) => set({ iconScale: val }),
 
             teleportShortcut: 'CommandOrControl+Shift+K',
@@ -683,9 +683,9 @@ export const useAppStore = create<AppState>()(
             setSettingsWorkspaceViewMode: (mode) => set({ settingsWorkspaceViewMode: mode }),
 
             // UI Spacing & Sizing (defaults)
-            toggleWidth: 16, // Sleek notch width
+            toggleWidth: 22, // Note Notch Protrusion
             setToggleWidth: (val) => set({ toggleWidth: val }),
-            featureSpacing: 4, // Sleek spacing between features
+            featureSpacing: 8, // Feature Spacing
             setFeatureSpacing: (val) => set({ featureSpacing: val }),
 
             // Clipboard Settings
