@@ -469,7 +469,7 @@ export const useAppStore = create<AppState>()(
             })),
 
             // Theme
-            theme: 'ember',
+            theme: 'midnight',
             customThemeColor: '#f4a125',
             setTheme: (theme) => {
                 if (theme === 'custom') {
@@ -525,7 +525,7 @@ export const useAppStore = create<AppState>()(
             setSidebarAnchorRect: (rect) => set({ sidebarAnchorRect: rect }),
 
             // Feature Toggles (Initial State)
-            isShortcutsEnabled: true,
+            isShortcutsEnabled: false,
             setIsShortcutsEnabled: (val) => set({ isShortcutsEnabled: val }),
             maxShortcuts: 6,
             setMaxShortcuts: (val) => set({ maxShortcuts: val }),
@@ -533,18 +533,18 @@ export const useAppStore = create<AppState>()(
             isCopyPasteEnabled: true,
             setIsCopyPasteEnabled: (val) => set({ isCopyPasteEnabled: val }),
 
-            isScreenshotEnabled: true,
+            isScreenshotEnabled: false,
             setIsScreenshotEnabled: (val) => set({ isScreenshotEnabled: val }),
             hideOnScreenshot: true,
             setHideOnScreenshot: (val) => set({ hideOnScreenshot: val }),
 
-            isFocusModeEnabled: true,
+            isFocusModeEnabled: false,
             setIsFocusModeEnabled: (val: boolean) => set({ isFocusModeEnabled: val }),
 
-            isCalculatorEnabled: true,
+            isCalculatorEnabled: false,
             setIsCalculatorEnabled: (val: boolean) => set({ isCalculatorEnabled: val }),
 
-            isColorPickerEnabled: true,
+            isColorPickerEnabled: false,
             setIsColorPickerEnabled: (val: boolean) => set({ isColorPickerEnabled: val }),
 
             isColorPickerOpen: false,
@@ -555,14 +555,14 @@ export const useAppStore = create<AppState>()(
             colorPickerAnchorRect: null,
             setColorPickerAnchorRect: (rect) => set({ colorPickerAnchorRect: rect }),
 
-            isPinInjectorEnabled: true,
+            isPinInjectorEnabled: false,
             setIsPinInjectorEnabled: (val: boolean) => set({ isPinInjectorEnabled: val }),
             isTargetingMode: false,
             setIsTargetingMode: (val: boolean) => set({ isTargetingMode: val }),
             pinnedWindowHwnd: null,
             setPinnedWindowHwnd: (hwnd: number | null) => set({ pinnedWindowHwnd: hwnd }),
 
-            isKoBoxEnabled: true,
+            isKoBoxEnabled: false,
             setIsKoBoxEnabled: (val: boolean) => set({ isKoBoxEnabled: val }),
             koBoxCleanupMode: '24h',
             setKoBoxCleanupMode: (val: '24h' | 'quit') => set({ koBoxCleanupMode: val }),
@@ -585,7 +585,7 @@ export const useAppStore = create<AppState>()(
 
             isAiHubOpen: false,
             setIsAiHubOpen: (val: boolean) => set({ isAiHubOpen: val }),
-            isAiHubEnabled: true,
+            isAiHubEnabled: false,
             setIsAiHubEnabled: (val: boolean) => set({ isAiHubEnabled: val }),
             aiHubAnchorRect: null,
             setAiHubAnchorRect: (rect) => set({ aiHubAnchorRect: rect }),
@@ -677,15 +677,15 @@ export const useAppStore = create<AppState>()(
             featureOrder: ['shortcuts', 'aihub', 'copypaste', 'kocalendar', 'todolist', 'snippetvault', 'pininjector', 'screenshot', 'kobox', 'focusmode', 'colorpicker', 'calculator', 'koplayer'],
             setFeatureOrder: (order) => set({ featureOrder: order }),
 
-            settingsFeatureViewMode: 'list',
+            settingsFeatureViewMode: 'cards',
             setSettingsFeatureViewMode: (mode) => set({ settingsFeatureViewMode: mode }),
-            settingsWorkspaceViewMode: 'list',
+            settingsWorkspaceViewMode: 'cards',
             setSettingsWorkspaceViewMode: (mode) => set({ settingsWorkspaceViewMode: mode }),
 
             // UI Spacing & Sizing (defaults)
-            toggleWidth: 24, // Matches w-6 (24px)
+            toggleWidth: 16, // Sleek notch width
             setToggleWidth: (val) => set({ toggleWidth: val }),
-            featureSpacing: 8, // Matches my-2 (8px margin top/bottom)
+            featureSpacing: 4, // Sleek spacing between features
             setFeatureSpacing: (val) => set({ featureSpacing: val }),
 
             // Clipboard Settings
