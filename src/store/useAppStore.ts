@@ -400,34 +400,36 @@ const defaultNotes: Note[] = [
         icon: 'waving_hand',
         emoji: '👋',
         content: `
-<p>Welcome to your new multi-threaded desktop assistant! KoBar is designed to keep your focus intact and your essential tools just a single click away.</p>
+<p><strong>Your modular, always-on-top desktop utility sidebar.</strong></p>
+<p>A multi-threaded creative assistant that lives on the edge of your screen.</p>
 <br>
-<p>Here is a quick guide to getting started:</p>
-<p><strong>Getting Around</strong></p>
+<p><strong>🌟 Open Source & Support</strong></p>
+<p>KoBar is a completely open-source project! We welcome your feedback and contributions.</p>
+<p>For bug reports, software support, feature requests, and financial support, please visit our GitHub repository: <a href="https://github.com/eedali/KoBar" target="_blank" rel="noopener noreferrer">https://github.com/eedali/KoBar</a></p>
+<br>
+<p><strong>🚀 KoBar Features</strong></p>
 <ul>
-    <li>👁️ <strong>Moving KoBar:</strong> Just click and hold the <strong>"Eye"</strong> icon with your left mouse button to drag KoBar wherever you like on your screen.</li>
-    <li>👁️ <strong>Mini Mode:</strong> Want it out of the way? A single left-click on the <strong>"Eye"</strong> will instantly shrink the bar.</li>
-    <li>📐 <strong>Resizing this Panel:</strong> You can freely resize this note panel by dragging its edges or corners. Double-click any edge to instantly reset its size to default!</li>
+    <li>⚡ <strong>App Launcher (Shortcuts):</strong> Pin and launch your favorite applications instantly from the sidebar. Drag and drop any file or app to create a quick shortcut.</li>
+    <li>📋 <strong>Clipboard Manager (Copy & Paste):</strong> A multi-slot clipboard that automatically saves your copied text history. Access and paste your past clips with a single click.</li>
+    <li>📅 <strong>KoCalendar:</strong> A quick-access calendar to easily view your schedule and important dates. Stay organized without leaving your current workflow.</li>
+    <li>✅ <strong>To-Do List:</strong> Keep track of your daily tasks with a simple and effective checkable list. Manage your goals efficiently directly from the edge of your screen.</li>
+    <li>📝 <strong>Snippet Vault:</strong> Store and manage your frequently used code blocks or text snippets. Copy them to your clipboard instantly whenever you need them.</li>
+    <li>🎵 <strong>KoPlayer:</strong> A lightweight, floating media player to control your music and videos. Enjoy seamless media playback integration while working.</li>
+    <li>📸 <strong>Screenshot Studio:</strong> Capture your screen instantly with built-in annotation and editing tools. Save or share your screen captures without opening external software.</li>
+    <li>🎯 <strong>Focus Mode:</strong> Minimize distractions with an integrated Pomodoro timer. Track your work and break sessions to maintain high productivity.</li>
+    <li>🧮 <strong>Calculator:</strong> A sleek, pop-up calculator for quick mathematical operations on the fly.</li>
+    <li>🎨 <strong>Color Picker:</strong> Effortlessly pick any color from your screen to get its HEX or RGB values. Perfect for quick design and development tasks.</li>
+    <li>🤖 <strong>AI Hub:</strong> Your integrated artificial intelligence assistant for quick queries and brainstorming. Harness the power of AI directly from your desktop.</li>
 </ul>
 <br>
-<p><strong>Your Essential Tools</strong></p>
+<p><strong>⚙️ Settings & Customization</strong></p>
+<p>To configure KoBar to your exact needs, simply click the <strong>Settings icon ⚙️</strong> located at the top right of this note panel.</p>
 <ul>
-    <li>🤖 <strong>AI Hub:</strong> Your floating OS-level AI companion. Connect to your favorite cloud models (OpenAI, Claude, Gemini) or local LLMs. Chat, analyze documents, or drop images right in.</li>
-    <li>📝 <strong>Snippet Vault:</strong> Store your frequently used text, code blocks, or templates. Access and copy them instantly whenever you need them.</li>
-    <li>📌 <strong>Pin to Top:</strong> Keep any window on your screen always on top! Click the pin icon, then click any application window to lock it above everything else.</li>
-    <li>🎨 <strong>Color Picker:</strong> Grab any color from your screen instantly and build your own palettes. A must-have for designers and developers.</li>
-    <li>🕳️ <strong>KoBox (Blackhole):</strong> A temporary drop zone for your files. Drag and drop clutter here to move it out of the way; it automatically cleans up based on your settings.</li>
-    <li>📋 <strong>Sequential Clipboard:</strong> Hit the copy button to copy as many items as you want, one after the other into your slots. Paste all those separate snippets sequentially exactly where you need them.</li>
-    <li>⚡ <strong>Quick Shortcuts:</strong> Drag and drop your favorite apps, folders, or games right onto the bar for instant access. Long-press a shortcut to remove it.</li>
-    <li>🧮 <strong>Floating Calculator:</strong> Need a quick calculation? Open the calculator—it stays on top of all your windows and can be moved anywhere.</li>
-    <li>📸 <strong>Smart Screenshots:</strong> Hit the camera button to grab your screenshots instantly. KoBar will even auto-hide itself during the capture.</li>
-    <li>🎯 <strong>Focus Mode:</strong> Ready for some uninterrupted deep work? Click the hourglass, set your timer, and stay in the zone.</li>
+    <li>📂 <strong>Workspaces:</strong> Save and load different sidebar feature layouts tailored for specific tasks (e.g., Coding, Designing, Casual). Switch between completely different KoBar setups with a single click.</li>
+    <li>🎨 <strong>Personalization:</strong> Make KoBar truly yours! You can freely change the application's interface language and customize the theme colors to match your personal style.</li>
 </ul>
 <br>
-<p><strong>Make It Yours</strong></p>
-<p>To tweak your language, switch between <strong>Solid</strong> and <strong>Glass</strong> designs, change theme colors, or completely reorder these tools, click the <strong>Settings ⚙️</strong> icon in this panel or right-click the KoBar tray icon in the bottom-right corner of your screen.</p>
-<br>
-<p>Enjoy your new seamless workflow! 🚀</p>`
+<p>Enjoy using KoBar! 🚀</p>`
     }
 ];
 
