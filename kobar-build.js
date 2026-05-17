@@ -38,6 +38,19 @@ async function runBuildSequence(isStore) {
     const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
     pkg.version = settings.version;
     pkg.build.win.target = isStore ? ["appx"] : ["nsis"];
+    
+    // Inject Microsoft Store Secrets if available and building for Store
+    const secretsPath = './kobar-secrets.json';
+    let injectedSecrets = false;
+    if (isStore && fs.existsSync(secretsPath)) {
+        const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+        pkg.build.appx.identityName = secrets.identityName;
+        pkg.build.appx.publisher = secrets.publisher;
+        pkg.build.appx.publisherDisplayName = secrets.publisherDisplayName;
+        log('Injected secure Microsoft Store credentials from kobar-secrets.json');
+        injectedSecrets = true;
+    }
+    
     fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2), 'utf8');
 
     // 2. Update main.cts
@@ -66,6 +79,16 @@ async function runBuildSequence(isStore) {
     log(`Packaging ${mode} binary...`);
     const platformFlag = process.platform === 'darwin' ? '--mac' : '--win';
     execSync(`npx electron-builder ${platformFlag}`, { stdio: 'inherit' });
+    
+    // Cleanup secure credentials from package.json after build
+    if (injectedSecrets) {
+        const cleanupPkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+        cleanupPkg.build.appx.identityName = "YOUR_IDENTITY_NAME_HERE";
+        cleanupPkg.build.appx.publisher = "CN=YOUR_PUBLISHER_ID_HERE";
+        cleanupPkg.build.appx.publisherDisplayName = "YOUR_PUBLISHER_NAME_HERE";
+        fs.writeFileSync(packagePath, JSON.stringify(cleanupPkg, null, 2), 'utf8');
+        log('Sanitized package.json for GitHub release.');
+    }
     
     log(`${mode} build complete!`);
 }

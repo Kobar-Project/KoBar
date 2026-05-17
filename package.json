@@ -54,9 +54,9 @@
     },
     "appx": {
       "applicationId": "KoBar",
-      "identityName": "KO-48.KoBar",
+      "identityName": "YOUR_IDENTITY_NAME_HERE",
       "publisher": "CN=YOUR_PUBLISHER_ID_HERE",
-      "publisherDisplayName": "KO-48",
+      "publisherDisplayName": "YOUR_PUBLISHER_NAME_HERE",
       "displayName": "KoBar",
       "backgroundColor": "#1a1612",
       "capabilities": [

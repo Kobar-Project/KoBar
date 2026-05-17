@@ -40,3 +40,4 @@ test_dims.js
 electron/test.cts
 electron/test.cjs
 code.html
+kobar-secrets.json
