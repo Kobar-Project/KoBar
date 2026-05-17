@@ -1,7 +1,7 @@
 {
   "name": "kobar",
   "productName": "KoBar",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "description": "Modular utility sidebar for desktop. Your multi-threaded creative assistant.",
   "author": "Ekrem Edali",
   "private": true,

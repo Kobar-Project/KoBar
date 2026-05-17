@@ -41,7 +41,7 @@ const TooltipButton: React.FC<TooltipButtonProps> = ({
     onDrop,
     buttonRef,
 }) => {
-    const { edgePosition, showTooltips, isDraggingGlobal } = useAppStore();
+    const { edgePosition, showTooltips, isDraggingGlobal, isMiniMode } = useAppStore();
     const internalRef = useRef<HTMLElement>(null);
     const ref = (buttonRef as React.RefObject<HTMLElement>) ?? internalRef;
 
@@ -61,15 +61,15 @@ const TooltipButton: React.FC<TooltipButtonProps> = ({
 
     // Recalculate coordinates reactively when dragging state changes or hover starts
     useEffect(() => {
-        if (visible && !isDraggingGlobal && ref.current) {
+        if (visible && !isDraggingGlobal && !isMiniMode && ref.current) {
             const rect = ref.current.getBoundingClientRect();
             const x = side === 'left' ? rect.left - 8 : rect.right + 8;
             const y = rect.top + rect.height / 2;
             setPos({ x, y });
         }
-    }, [visible, isDraggingGlobal, side, ref]);
+    }, [visible, isDraggingGlobal, isMiniMode, side, ref]);
 
-    const tooltip = showTooltips && !isDraggingGlobal && visible && label ? createPortal(
+    const tooltip = showTooltips && !isDraggingGlobal && !isMiniMode && visible && label ? createPortal(
         <div
             className="fixed pointer-events-none whitespace-nowrap border rounded-lg py-1.5 px-3 shadow-lg text-xs font-semibold text-primary"
             style={{

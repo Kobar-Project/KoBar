@@ -12,6 +12,7 @@ const Sidebar: React.FC = () => {
     const edgePosition = useAppStore(state => state.edgePosition);
     const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
     const setMiniMode = useAppStore(state => state.setMiniMode);
+    const isMiniMode = useAppStore(state => state.isMiniMode);
     const pinnedApps = useAppStore(state => state.pinnedApps);
     const pinApp = useAppStore(state => state.pinApp);
     const unpinApp = useAppStore(state => state.unpinApp);
@@ -382,10 +383,9 @@ const Sidebar: React.FC = () => {
 
     return (
         <div className="relative z-50 h-fit pointer-events-none" style={{ width: `${sidebarWidth}px` }}>
-            {/* 1. Main Floating Sidebar (Fixed Size, inner scrollable) */}
             <div 
                 ref={sidebarContainerRef}
-                className={`flex flex-col items-center pt-4 pb-2 w-full h-fit overflow-hidden pointer-events-auto transition-all duration-500
+                className={`flex flex-col items-center pt-4 pb-2 w-full h-fit overflow-hidden ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'} transition-all duration-500
                     ${isMac && edgePosition === 'left' ? 'pt-8' : ''}
                     ${design === 'style2' 
                         ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/10') 
@@ -726,10 +726,9 @@ const Sidebar: React.FC = () => {
                 </div>
             </div>
 
-            {/* 2. Toggle Notch (Outside scroll container to prevent clipping) */}
             <TooltipButton
                 label={t('toggleNotes')}
-                className="absolute top-1/2 -translate-y-1/2 h-12 border flex items-center justify-center text-slate-400 hover:text-primary hover:bg-white/5 transition-all shadow-2xl z-[60] pointer-events-auto"
+                className={`absolute top-1/2 -translate-y-1/2 h-12 border flex items-center justify-center text-slate-400 hover:text-primary hover:bg-white/5 transition-all shadow-2xl z-[60] ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}`}
                 style={{ 
                     backgroundColor: design === 'style2' 
                         ? (isMac ? 'transparent' : `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)`) 
