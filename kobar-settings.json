@@ -2,6 +2,6 @@
   "version": "1.0.21",
   "buildStandard": true,
   "buildAppx": true,
-  "enableAutoUpdate": false,
+  "enableAutoUpdate": true,
   "enableLicensing": false
 }

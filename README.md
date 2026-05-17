@@ -11,8 +11,8 @@
 
 <p align="center">
   <a href="https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS"><img src="https://img.shields.io/badge/Microsoft%20Store-Download-blue?logo=microsoft&logoColor=white" alt="Microsoft Store" /></a>
-  <img src="https://img.shields.io/badge/version-1.0.20-f4a125?style=flat" alt="Version" />
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey" alt="Platform" />
+  <img src="https://img.shields.io/badge/version-1.0.21-f4a125?style=flat" alt="Version" />
+  <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
 
@@ -200,7 +200,7 @@ KoBar/
 | **Canvas** | [Konva.js](https://konvajs.org/) + [react-konva](https://konvajs.org/docs/react/) |
 | **AI Markdown** | [react-markdown](https://github.com/remarkjs/react-markdown) + [remark-gfm](https://github.com/remarkjs/remark-gfm) |
 | **Persistence** | [electron-store](https://github.com/sindresorhus/electron-store) |
-| **Distribution** | [electron-builder](https://www.electron.build/) (AppX, DMG) |
+| **Distribution** | [electron-builder](https://www.electron.build/) (AppX, EXE) |
 
 ---
 
@@ -210,7 +210,7 @@ KoBar/
 
 - **Node.js** ≥ 18
 - **npm** ≥ 9
-- **Windows 10/11** or **macOS 12+**
+- **Windows 10/11**
 
 ### Installation
 
@@ -241,7 +241,7 @@ This will:
 # Compile TypeScript & bundle for production
 npm run build
 
-# Package distributable (AppX for Windows, DMG for macOS)
+# Package distributable (AppX for Microsoft Store, EXE for Standalone)
 npm run kobar-build
 ```
 
@@ -264,10 +264,10 @@ KoBar follows strict Electron security practices:
 
 ## 📦 Distribution
 
-| Platform | Format | Store |
-|----------|--------|-------|
+| Platform | Format | Link / Store |
+|----------|--------|--------------|
 | Windows | AppX | [Microsoft Store](https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS) |
-| macOS | DMG / ZIP | Direct Download |
+| Windows (Standalone) | EXE | [GitHub Release (v1.0.21)](https://github.com/eedali/KoBar/releases/tag/v1.0.21) |
 
 ---
 
