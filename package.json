@@ -16,6 +16,13 @@
   },
   "build": {
     "appId": "com.eedali.kobar",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "eedali",
+        "repo": "KoBar"
+      }
+    ],
     "asar": true,
     "directories": {
       "output": "release",

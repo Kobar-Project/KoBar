@@ -93,6 +93,11 @@ declare global {
             onLlmStreamChunk: (callback: (data: { chatId: string, messageId: string, chunk: string }) => void) => () => void;
             onLlmStreamEnd: (callback: (data: { chatId: string, messageId: string }) => void) => () => void;
             onLlmStreamError: (callback: (data: { chatId: string, messageId: string, error: string }) => void) => () => void;
+            // Auto Updater
+            onUpdateAvailable: (callback: (version: string) => void) => (() => void);
+            askForUpdate: (title: string, message: string, yesLabel: string, noLabel: string) => Promise<boolean>;
+            downloadAndInstallUpdate: () => void;
+
             openExternal: (url: string) => void;
             getAppVersion: () => Promise<string>;
         };

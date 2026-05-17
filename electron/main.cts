@@ -535,23 +535,20 @@ app.whenReady().then(() => {
 
     // Auto Updater Setup
     if (ENABLE_AUTO_UPDATE) {
+        autoUpdater.autoDownload = false;
+        autoUpdater.autoInstallOnAppQuit = true;
+
         autoUpdater.checkForUpdatesAndNotify();
 
-        autoUpdater.on('update-available', () => {
-            console.log('Update available.');
+        autoUpdater.on('update-available', (info) => {
+            if (mainWindow) {
+                mainWindow.webContents.send('update-available', info.version);
+            }
         });
 
         autoUpdater.on('update-downloaded', () => {
-            dialog.showMessageBox({
-                type: 'info',
-                title: 'Update Ready',
-                message: 'A new version has been downloaded. Restart the application to apply the updates?',
-                buttons: ['Yes', 'Later']
-            }).then((result) => {
-                if (result.response === 0) {
-                    autoUpdater.quitAndInstall();
-                }
-            });
+            // Once the user explicitly clicked "Download and Install", and it finishes downloading, we quit and install immediately.
+            autoUpdater.quitAndInstall();
         });
 
         autoUpdater.on('error', (err) => {
@@ -575,6 +572,22 @@ ipcMain.on('hide-app', () => {
 
 ipcMain.on('quit-app', () => {
     app.quit();
+});
+
+ipcMain.handle('ask-for-update', async (event, { title, message, yesLabel, noLabel }) => {
+    if (!mainWindow) return false;
+    const result = await dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: title,
+        message: message,
+        buttons: [yesLabel, noLabel]
+    });
+    // 0 is the index of the first button (yesLabel)
+    return result.response === 0;
+});
+
+ipcMain.on('download-and-install-update', () => {
+    autoUpdater.downloadUpdate();
 });
 
 ipcMain.on('enter-pin-targeting', () => {

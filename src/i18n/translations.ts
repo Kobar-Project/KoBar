@@ -27,6 +27,10 @@ export function getLanguageOptions(activeLang: LanguageCode): { code: LanguageCo
 
 export const translations = {
     en: {
+        updateAvailableTitle: "Update Available",
+        updateAvailableMessage: "A new version of KoBar ({version}) is available. Would you like to download and install it?",
+        updateYes: "Yes, Install",
+        updateNo: "Later",
         settings: "Settings",
         appearance: "Appearance",
         themeColor: "Theme Color",
@@ -231,6 +235,10 @@ export const translations = {
         smartPopupPositioningDesc: "Popups dynamically follow their launch icons and stay within screen bounds. If disabled, popups stay rigidly centered to the Bar.",
     },
     tr: {
+        updateAvailableTitle: "Güncelleme Mevcut",
+        updateAvailableMessage: "KoBar'ın yeni bir sürümü ({version}) mevcut. İndirip kurmak ister misiniz?",
+        updateYes: "Evet, Yükle",
+        updateNo: "Daha Sonra",
         settings: "Ayarlar",
         appearance: "Görünüm",
         themeColor: "Tema Rengi",
@@ -435,6 +443,10 @@ export const translations = {
         smartPopupPositioningDesc: "Pencereler, açıldıkları ikonları takip eder ve ekran sınırları içinde kalır. Devre dışı bırakılırsa pencereler Bar'ın ortasına sabitlenir.",
     },
     de: {
+        updateAvailableTitle: "Update verfügbar",
+        updateAvailableMessage: "Eine neue Version von KoBar ({version}) ist verfügbar. Möchten Sie sie herunterladen und installieren?",
+        updateYes: "Ja, installieren",
+        updateNo: "Später",
         settings: "Einstellungen",
         appearance: "Erscheinungsbild",
         themeColor: "Themenfarbe",
@@ -627,6 +639,10 @@ export const translations = {
         colorOrange: "Orange",
     },
     fr: {
+        updateAvailableTitle: "Mise à jour disponible",
+        updateAvailableMessage: "Une nouvelle version de KoBar ({version}) est disponible. Voulez-vous la télécharger et l'installer ?",
+        updateYes: "Oui, installer",
+        updateNo: "Plus tard",
         settings: "Paramètres",
         appearance: "Apparence",
         themeColor: "Couleur du thème",
@@ -819,6 +835,10 @@ export const translations = {
         colorOrange: "Orange",
     },
     es: {
+        updateAvailableTitle: "Actualización disponible",
+        updateAvailableMessage: "Hay una nueva versión de KoBar ({version}) disponible. ¿Desea descargarla e instalarla?",
+        updateYes: "Sí, instalar",
+        updateNo: "Más tarde",
         settings: "Ajustes",
         appearance: "Apariencia",
         themeColor: "Color del tema",
@@ -1011,6 +1031,10 @@ export const translations = {
         colorOrange: "Naranja",
     },
     ru: {
+        updateAvailableTitle: "Доступно обновление",
+        updateAvailableMessage: "Доступна новая версия KoBar ({version}). Хотите скачать и установить её?",
+        updateYes: "Да, установить",
+        updateNo: "Позже",
         settings: "Настройки",
         appearance: "Внешний вид",
         themeColor: "Цвет темы",
@@ -1203,6 +1227,10 @@ export const translations = {
         colorOrange: "Оранжевый",
     },
     ar: {
+        updateAvailableTitle: "تحديث متاح",
+        updateAvailableMessage: "يتوفر إصدار جديد من KoBar ({version}). هل ترغب في تنزيله وتثبيته؟",
+        updateYes: "نعم، تثبيت",
+        updateNo: "لاحقاً",
         settings: "الإعدادات",
         appearance: "المظهر",
         themeColor: "لون السمة",
@@ -1395,6 +1423,10 @@ export const translations = {
         colorOrange: "برتقalı",
     },
     zh: {
+        updateAvailableTitle: "有可用更新",
+        updateAvailableMessage: "KoBar 的新版本 ({version}) 已可用。您要下载并安装吗？",
+        updateYes: "是，安装",
+        updateNo: "稍后",
         settings: "设置",
         appearance: "外观",
         themeColor: "主题颜色",
@@ -1574,6 +1606,10 @@ export const translations = {
         colorOrange: "橙色",
     },
     ja: {
+        updateAvailableTitle: "利用可能なアップデート",
+        updateAvailableMessage: "KoBar の新しいバージョン ({version}) が利用可能です。ダウンロードしてインストールしますか？",
+        updateYes: "はい、インストールします",
+        updateNo: "後で",
         settings: "設定",
         appearance: "外観",
         themeColor: "テーマカラー",
@@ -1766,6 +1802,10 @@ export const translations = {
         colorOrange: "オレンジ",
     },
     hi: {
+        updateAvailableTitle: "अपडेट उपलब्ध है",
+        updateAvailableMessage: "KoBar का एक नया संस्करण ({version}) उपलब्ध है। क्या आप इसे डाउनलोड और इंस्टॉल करना चाहेंगे?",
+        updateYes: "हां, इंस्टॉल करें",
+        updateNo: "बाद में",
         settings: "सेटिंग्स",
         appearance: "दिखावट",
         themeColor: "थीम का रंग",

@@ -149,6 +149,16 @@ contextBridge.exposeInMainWorld('api', {
 
     // KoCalendar
 
+    // Auto Updater
+    onUpdateAvailable: (callback: (version: string) => void) => {
+        const handler = (_event: any, version: string) => callback(version);
+        ipcRenderer.on('update-available', handler);
+        return () => ipcRenderer.removeListener('update-available', handler);
+    },
+    askForUpdate: (title: string, message: string, yesLabel: string, noLabel: string) => 
+        ipcRenderer.invoke('ask-for-update', { title, message, yesLabel, noLabel }) as Promise<boolean>,
+    downloadAndInstallUpdate: () => ipcRenderer.send('download-and-install-update'),
+
     // About section support
     openExternal: (url: string) => ipcRenderer.send('open-external', url),
     getAppVersion: () => ipcRenderer.invoke('get-app-version') as Promise<string>,
