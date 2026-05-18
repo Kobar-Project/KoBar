@@ -95,8 +95,13 @@ declare global {
             onLlmStreamError: (callback: (data: { chatId: string, messageId: string, error: string }) => void) => () => void;
             // Auto Updater
             onUpdateAvailable: (callback: (version: string) => void) => (() => void);
+            onUpdateDownloadProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => (() => void);
+            onUpdateDownloadComplete: (callback: (version: string) => void) => (() => void);
+            onUpdateError: (callback: (error: string) => void) => (() => void);
             askForUpdate: (title: string, message: string, yesLabel: string, noLabel: string) => Promise<boolean>;
             downloadAndInstallUpdate: () => void;
+            quitAndInstallUpdate: () => void;
+            checkForUpdatesManual: () => Promise<{ status: 'success' | 'error' | 'disabled'; updateAvailable?: boolean; version?: string; message?: string }>;
 
             openExternal: (url: string) => void;
             getAppVersion: () => Promise<string>;

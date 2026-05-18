@@ -1,7 +1,7 @@
 {
   "name": "kobar",
   "productName": "KoBar",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "Modular utility sidebar for desktop. Your multi-threaded creative assistant.",
   "author": "Ekrem Edali",
   "private": true,
@@ -39,6 +39,11 @@
       "target": [
         "appx"
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "KoBar.Setup.${version}.${ext}"
     },
     "mac": {
       "target": [

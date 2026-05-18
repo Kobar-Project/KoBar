@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore, applyCustomThemeCSS } from '../../store/useAppStore';
 import { getLanguageOptions } from '../../i18n/translations';
 import { hexToHsv, hsvToHex } from '../layout/ColorPickerPopup';
+import { IS_STORE_BUILD } from '../../App';
 
 const Accordion: React.FC<{
     title: string;
@@ -223,6 +224,107 @@ const SettingsPanel: React.FC = () => {
     const [renameValue, setRenameValue] = useState('');
     const [newPresetName, setNewPresetName] = useState('');
     const [appVersion, setAppVersion] = useState('');
+    const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'upToDate' | 'available' | 'downloading' | 'downloaded' | 'error'>('idle');
+    const [latestVersion, setLatestVersion] = useState('');
+    const [downloadPercent, setDownloadPercent] = useState(0);
+    const [downloadSpeed, setDownloadSpeed] = useState('');
+    const [downloadedSize, setDownloadedSize] = useState('');
+    const [totalSize, setTotalSize] = useState('');
+    const [updateErrorMessage, setUpdateErrorMessage] = useState('');
+
+    useEffect(() => {
+        if (IS_STORE_BUILD) return;
+
+        // Subscriptions to Electron auto-updater progress/complete/error IPCs
+        let unsubscribeProgress = () => {};
+        let unsubscribeComplete = () => {};
+        let unsubscribeError = () => {};
+
+        if (window.api?.onUpdateDownloadProgress) {
+            unsubscribeProgress = window.api.onUpdateDownloadProgress((progress) => {
+                setUpdateStatus('downloading');
+                setDownloadPercent(Math.round(progress.percent));
+                
+                // Bytes per second converted to readable MB/s
+                const speedMB = (progress.bytesPerSecond / (1024 * 1024)).toFixed(1);
+                setDownloadSpeed(`${speedMB} MB/s`);
+                
+                // Downloaded & Total sizes in MB
+                const transMB = (progress.transferred / (1024 * 1024)).toFixed(1);
+                const totalMB = (progress.total / (1024 * 1024)).toFixed(1);
+                setDownloadedSize(`${transMB} MB`);
+                setTotalSize(`${totalMB} MB`);
+            });
+        }
+
+        if (window.api?.onUpdateDownloadComplete) {
+            unsubscribeComplete = window.api.onUpdateDownloadComplete((version) => {
+                setUpdateStatus('downloaded');
+                setDownloadPercent(100);
+                if (version) setLatestVersion(version);
+            });
+        }
+
+        if (window.api?.onUpdateError) {
+            unsubscribeError = window.api.onUpdateError((err) => {
+                setUpdateStatus('error');
+                setUpdateErrorMessage(err || 'Update failed to download');
+            });
+        }
+
+        return () => {
+            unsubscribeProgress();
+            unsubscribeComplete();
+            unsubscribeError();
+        };
+    }, []);
+
+    const handleCheckUpdatesInline = async () => {
+        if (updateStatus === 'checking' || updateStatus === 'downloading') return;
+        setUpdateStatus('checking');
+        setUpdateErrorMessage('');
+        
+        try {
+            const result = await window.api.checkForUpdatesManual();
+            
+            if (result.status === 'disabled') {
+                setUpdateStatus('idle');
+                return;
+            }
+
+            if (result.status === 'error') {
+                setUpdateStatus('error');
+                setUpdateErrorMessage(result.message || 'Unknown update check error');
+                return;
+            }
+
+            if (result.status === 'success') {
+                if (result.updateAvailable && result.version) {
+                    setUpdateStatus('available');
+                    setLatestVersion(result.version);
+                } else {
+                    setUpdateStatus('upToDate');
+                }
+            }
+        } catch (err: any) {
+            setUpdateStatus('error');
+            setUpdateErrorMessage(err?.message || 'Failed to check for updates');
+        }
+    };
+
+    const handleStartDownloadInline = () => {
+        if (window.api?.downloadAndInstallUpdate) {
+            setUpdateStatus('downloading');
+            setDownloadPercent(0);
+            window.api.downloadAndInstallUpdate();
+        }
+    };
+
+    const handleQuitAndInstallInline = () => {
+        if (window.api?.quitAndInstallUpdate) {
+            window.api.quitAndInstallUpdate();
+        }
+    };
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const scrollDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -1503,7 +1605,173 @@ const SettingsPanel: React.FC = () => {
                         
                     </div>
                   </Accordion>
-                
+
+                {/* Update Center Section */}
+                {!IS_STORE_BUILD && (
+                    <Accordion title={(t as any)('updateCenter') || 'Update Center'} icon="update" defaultOpen={false}>
+                        <div className="flex flex-col gap-4 no-drag-region">
+                            <div className="flex flex-col gap-4">
+                                {/* Current version label */}
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[11px] uppercase tracking-widest text-slate-500 font-bold">{t('version') || 'Version'}</span>
+                                    <span className="text-xs font-mono font-semibold text-slate-300 bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
+                                        v{appVersion || '...'}
+                                    </span>
+                                </div>
+
+                                <div className="w-full h-px opacity-30" style={{ backgroundColor: 'var(--theme-border)' }}></div>
+
+                                {/* Custom Inline UI based on updateStatus */}
+                                {updateStatus === 'idle' && (
+                                    <div className="flex flex-col gap-3">
+                                        <button
+                                            onClick={handleCheckUpdatesInline}
+                                            className="w-full py-2.5 px-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 text-primary text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">update</span>
+                                            <span>{t('checkForUpdates') as string || 'Check for Updates'}</span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {updateStatus === 'checking' && (
+                                    <div className="p-3 bg-white/5 border border-white/5 rounded-xl flex flex-col items-center justify-center gap-3">
+                                        <span className="material-symbols-outlined text-primary text-[24px] animate-spin">sync</span>
+                                        <span className="text-xs text-slate-300 font-medium">
+                                            {t('checkingForUpdates') as string || 'Checking for updates...'}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {updateStatus === 'upToDate' && (
+                                    <div className="flex flex-col gap-4">
+                                        <div className="p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl flex items-start gap-3">
+                                            <span className="material-symbols-outlined text-green-500 text-[20px] shrink-0 mt-0.5">check_circle</span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs text-green-400 font-bold">{t('appUpToDate') as string || 'App Up to Date'}</span>
+                                                <span className="text-[11px] text-slate-400 leading-relaxed font-medium">
+                                                    {t('alreadyLatest') as string || 'You are already using the latest version of KoBar.'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleCheckUpdatesInline}
+                                            className="w-full py-2 px-3 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-800/40 text-slate-300 text-xs font-medium flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px]">sync</span>
+                                            <span>{t('checkForUpdates') as string || 'Check Again'}</span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {updateStatus === 'available' && (
+                                    <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col gap-3.5">
+                                        <div className="flex items-start gap-3">
+                                            <span className="material-symbols-outlined text-amber-500 text-[22px] shrink-0 mt-0.5">arrow_circle_down</span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs text-amber-400 font-bold">
+                                                    {((t as any)('newVersionAvailable') || 'New Version Available: v{version}').replace('{version}', latestVersion)}
+                                                </span>
+                                                <span className="text-[11px] text-slate-400 leading-relaxed font-medium">
+                                                    An update is ready for download. Click below to begin the installation process.
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleStartDownloadInline}
+                                            className="w-full py-2.5 px-4 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all duration-300 active:scale-[0.98] border border-primary/30 cursor-pointer"
+                                            style={{
+                                                background: 'linear-gradient(135deg, var(--theme-primary) 0%, rgba(var(--theme-primary-rgb), 0.8) 100%)'
+                                            }}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">download</span>
+                                            <span>{(t as any)('downloadAndInstall') || 'Download & Install Update'}</span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {updateStatus === 'downloading' && (
+                                    <div className="p-3.5 bg-white/5 border border-white/5 rounded-xl flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-slate-300 font-bold flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-[16px] text-primary animate-pulse">downloading</span>
+                                                {((t as any)('downloadingUpdate') || 'Downloading Update...')}
+                                            </span>
+                                            <span className="text-xs font-mono font-bold text-primary">{downloadPercent}%</span>
+                                        </div>
+
+                                        {/* Premium Progress Bar */}
+                                        <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-white/5 relative">
+                                            <div 
+                                                className="h-full rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(var(--theme-primary-rgb),0.5)] relative overflow-hidden"
+                                                style={{ 
+                                                    width: `${downloadPercent}%`,
+                                                    backgroundColor: 'var(--theme-primary)'
+                                                }}
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shine_2s_infinite]"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Download Metadata */}
+                                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 font-bold px-0.5">
+                                            <span>{downloadedSize} of {totalSize}</span>
+                                            <span>{downloadSpeed}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {updateStatus === 'downloaded' && (
+                                    <div className="p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl flex flex-col gap-3.5">
+                                        <div className="flex items-start gap-3">
+                                            <span className="material-symbols-outlined text-green-500 text-[22px] shrink-0 mt-0.5">task_alt</span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs text-green-400 font-bold">
+                                                    {((t as any)('downloadComplete') || 'Download Complete!')}
+                                                </span>
+                                                <span className="text-[11px] text-slate-400 leading-relaxed font-medium">
+                                                    {((t as any)('restartInstallDesc') || 'The update has been downloaded. Restart the application to apply the update.')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleQuitAndInstallInline}
+                                            className="w-full py-2.5 px-4 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 transition-all duration-300 active:scale-[0.98] border border-green-500/30 cursor-pointer"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                                            }}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+                                            <span>{((t as any)('restartAndInstall') || 'Restart & Install Now')}</span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {updateStatus === 'error' && (
+                                    <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl flex flex-col gap-3.5">
+                                        <div className="flex items-start gap-3">
+                                            <span className="material-symbols-outlined text-red-500 text-[22px] shrink-0 mt-0.5">error</span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs text-red-400 font-bold">{t('updateError') as string || 'Update Failed'}</span>
+                                                <span className="text-[11px] text-slate-400 leading-relaxed font-medium break-all font-mono">
+                                                    {updateErrorMessage}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleCheckUpdatesInline}
+                                            className="w-full py-2 px-3 rounded-lg border border-red-500/20 hover:border-red-500/40 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-xs font-medium flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px]">sync</span>
+                                            <span>{t('checkForUpdates') as string || 'Try Checking Again'}</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </Accordion>
+                )}
+
                 {/* About Section */}
                 <Accordion title={t('about')} icon="help_outline" defaultOpen={false}>
                     <div className="flex flex-col gap-5 px-1">
@@ -1519,7 +1787,7 @@ const SettingsPanel: React.FC = () => {
                                 {t('aboutContact')}
                                 <button 
                                     onClick={() => window.api?.openExternal('mailto:contact@ko48.com')}
-                                    className="text-primary hover:underline ml-1 font-semibold transition-all"
+                                    className="text-primary hover:underline ml-1 font-semibold transition-all cursor-pointer"
                                 >
                                     contact@ko48.com
                                 </button>

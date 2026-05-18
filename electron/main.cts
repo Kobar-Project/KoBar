@@ -534,26 +534,40 @@ app.whenReady().then(() => {
     });
 
     // Auto Updater Setup
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('update-available', (info) => {
+        if (mainWindow) {
+            mainWindow.webContents.send('update-available', info.version);
+        }
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+        if (mainWindow) {
+            mainWindow.webContents.send('update-download-progress', {
+                percent: progressObj.percent,
+                bytesPerSecond: progressObj.bytesPerSecond,
+                transferred: progressObj.transferred,
+                total: progressObj.total
+            });
+        }
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+        if (mainWindow) {
+            mainWindow.webContents.send('update-download-complete', info.version);
+        }
+    });
+
+    autoUpdater.on('error', (err) => {
+        if (mainWindow) {
+            mainWindow.webContents.send('update-error', err?.message || 'Unknown update error');
+        }
+    });
+
     if (ENABLE_AUTO_UPDATE) {
-        autoUpdater.autoDownload = false;
-        autoUpdater.autoInstallOnAppQuit = true;
-
-        autoUpdater.checkForUpdatesAndNotify();
-
-        autoUpdater.on('update-available', (info) => {
-            if (mainWindow) {
-                mainWindow.webContents.send('update-available', info.version);
-            }
-        });
-
-        autoUpdater.on('update-downloaded', () => {
-            // Once the user explicitly clicked "Download and Install", and it finishes downloading, we quit and install immediately.
-            autoUpdater.quitAndInstall();
-        });
-
-        autoUpdater.on('error', (err) => {
-            console.error('Auto Updater Error:', err);
-        });
+        autoUpdater.checkForUpdates();
     }
 });
 
@@ -588,6 +602,34 @@ ipcMain.handle('ask-for-update', async (event, { title, message, yesLabel, noLab
 
 ipcMain.on('download-and-install-update', () => {
     autoUpdater.downloadUpdate();
+});
+
+ipcMain.on('quit-and-install-update', () => {
+    autoUpdater.quitAndInstall();
+});
+
+ipcMain.handle('check-for-updates-manual', async () => {
+    if (!ENABLE_AUTO_UPDATE) return { status: 'disabled' };
+    try {
+        const result = await autoUpdater.checkForUpdates();
+        if (!result) {
+            throw new Error('No update information retrieved');
+        }
+        const currentVersion = app.getVersion();
+        const latestVersion = result.updateInfo.version;
+        const updateAvailable = latestVersion !== currentVersion;
+        
+        return {
+            status: 'success',
+            updateAvailable,
+            version: latestVersion
+        };
+    } catch (error: any) {
+        return {
+            status: 'error',
+            message: error?.message || 'Unknown error'
+        };
+    }
 });
 
 ipcMain.on('enter-pin-targeting', () => {

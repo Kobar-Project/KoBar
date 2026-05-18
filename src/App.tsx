@@ -192,21 +192,7 @@ const App: React.FC = () => {
         setIsTargetingMode(false);
       }));
     }
-    if (window.api?.onUpdateAvailable) {
-      unsubs.push(window.api.onUpdateAvailable(async (version) => {
-        const state = useAppStore.getState();
-        const t = state.t;
-        const wantsUpdate = await window.api.askForUpdate(
-          t('updateAvailableTitle') || 'Update Available',
-          (t('updateAvailableMessage') || 'A new version of KoBar ({version}) is available. Would you like to download and install it?').replace('{version}', version),
-          t('updateYes') || 'Yes, Install',
-          t('updateNo') || 'Later'
-        );
-        if (wantsUpdate) {
-          window.api.downloadAndInstallUpdate();
-        }
-      }));
-    }
+
 
     // KoPlayer: Subscribe to media updates from the main process
     if (window.api?.onMediaUpdate) {

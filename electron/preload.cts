@@ -155,9 +155,32 @@ contextBridge.exposeInMainWorld('api', {
         ipcRenderer.on('update-available', handler);
         return () => ipcRenderer.removeListener('update-available', handler);
     },
+    onUpdateDownloadProgress: (callback: (progress: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void) => {
+        const handler = (_event: any, progress: any) => callback(progress);
+        ipcRenderer.on('update-download-progress', handler);
+        return () => {
+            ipcRenderer.removeListener('update-download-progress', handler);
+        };
+    },
+    onUpdateDownloadComplete: (callback: (version: string) => void) => {
+        const handler = (_event: any, version: string) => callback(version);
+        ipcRenderer.on('update-download-complete', handler);
+        return () => {
+            ipcRenderer.removeListener('update-download-complete', handler);
+        };
+    },
+    onUpdateError: (callback: (error: string) => void) => {
+        const handler = (_event: any, error: string) => callback(error);
+        ipcRenderer.on('update-error', handler);
+        return () => {
+            ipcRenderer.removeListener('update-error', handler);
+        };
+    },
     askForUpdate: (title: string, message: string, yesLabel: string, noLabel: string) => 
         ipcRenderer.invoke('ask-for-update', { title, message, yesLabel, noLabel }) as Promise<boolean>,
     downloadAndInstallUpdate: () => ipcRenderer.send('download-and-install-update'),
+    quitAndInstallUpdate: () => ipcRenderer.send('quit-and-install-update'),
+    checkForUpdatesManual: () => ipcRenderer.invoke('check-for-updates-manual') as Promise<{ status: 'success' | 'error' | 'disabled'; updateAvailable?: boolean; version?: string; message?: string }>,
 
     // About section support
     openExternal: (url: string) => ipcRenderer.send('open-external', url),
