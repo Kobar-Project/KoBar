@@ -46,6 +46,8 @@ const App: React.FC = () => {
   const sidebarWidth = useAppStore(state => state.sidebarWidth);
   const setPinnedWindowHwnd = useAppStore(state => state.setPinnedWindowHwnd);
   const isMac = useAppStore(state => state.isMac);
+  const orientation = useAppStore(state => state.orientation);
+  const screenBounds = useAppStore(state => state.screenBounds);
 
   const customThemeColor = useAppStore(state => state.customThemeColor);
 
@@ -156,6 +158,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let unsubs: (() => void)[] = [];
+    if (window.api?.getScreenBounds) {
+      window.api.getScreenBounds().then(bounds => {
+        if (bounds) useAppStore.getState().setScreenBounds(bounds);
+      }).catch(err => console.error('Failed to get screen bounds:', err));
+    }
     if (window.api?.onEdgeChanged) {
       window.api.onEdgeChanged((edge, bounds) => {
         setEdgePosition(edge);
@@ -252,20 +259,33 @@ const App: React.FC = () => {
 
   return (
     <>
-      <div className={`relative w-full h-full pointer-events-none flex items-start pt-[20px] ${
+      <div className={`relative w-full h-full pointer-events-none flex ${
         sidebarPosition 
-          ? '' /* Free floating: no flex alignment needed */
-          : (isMac 
-              ? (edgePosition === 'left' ? 'justify-start' : 'justify-end')
-              : 'justify-center')
+          ? 'items-start pt-[20px]' /* Free floating: default placement */
+          : (orientation === 'horizontal'
+              ? (edgePosition === 'top' ? 'items-start justify-center pt-0' : 'items-end justify-center pb-0')
+              : (isMac 
+                  ? (edgePosition === 'left' ? 'items-start justify-start pt-[20px]' : 'items-start justify-end pt-[20px]')
+                  : 'items-start justify-center pt-[20px]'))
       }`}>
         <div 
           id="kobar-sidebar-wrapper"
-          className={`relative h-fit pointer-events-auto shrink-0 transition-opacity duration-300 ${isMiniMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          className={`relative pointer-events-auto shrink-0 transition-opacity duration-300 ${isMiniMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           style={{ 
-            width: `${sidebarWidth}px`, 
+            width: orientation === 'horizontal' ? 'fit-content' : `${sidebarWidth}px`, 
+            height: orientation === 'horizontal' ? `${sidebarWidth}px` : 'fit-content',
             zIndex: 30,
-            ...(sidebarPosition ? { position: 'absolute' as const, left: sidebarPosition.x, top: sidebarPosition.y } : {})
+            ...(sidebarPosition 
+              ? { position: 'absolute' as const, left: sidebarPosition.x, top: sidebarPosition.y } 
+              : (orientation === 'horizontal'
+                  ? { 
+                      position: 'absolute' as const, 
+                      left: '50%', 
+                      transform: 'translateX(-50%)', 
+                      top: edgePosition === 'top' ? 0 : `${(screenBounds?.height ?? window.innerHeight) - sidebarWidth}px` 
+                    }
+                  : {})
+            )
           }}>
           <Sidebar />
           {!isMiniMode && (
@@ -277,6 +297,16 @@ const App: React.FC = () => {
               )}
               {isLicensed && isNotePanelOpen && edgePosition === 'right' && (
                 <div className="absolute top-0 pointer-events-none" style={{ right: '100%', zIndex: 20 }}>
+                  <NotePanel />
+                </div>
+              )}
+              {isLicensed && isNotePanelOpen && edgePosition === 'top' && (
+                <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none pt-2" style={{ top: '100%', zIndex: 20 }}>
+                  <NotePanel />
+                </div>
+              )}
+              {isLicensed && isNotePanelOpen && edgePosition === 'bottom' && (
+                <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none pb-2" style={{ bottom: '100%', zIndex: 20 }}>
                   <NotePanel />
                 </div>
               )}
