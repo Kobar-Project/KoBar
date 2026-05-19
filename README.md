@@ -31,6 +31,11 @@ Think of it as a Swiss Army knife that floats on your desktop: clipboard manager
     <img src="Assets/GitHub_images/screen.png" alt="KoBar Feature Video" width="100%" />
   </a>
 </p>
+
+<p align="center">
+  <sub>💡 Click or tap the image above to watch the KoBar trailer on YouTube!</sub>
+</p>
+
 ---
 
 ## ✨ Features
@@ -268,6 +273,7 @@ KoBar follows strict Electron security practices:
 |----------|--------|--------------|
 | Windows | AppX | [Microsoft Store](https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS) |
 | Windows (Standalone) | EXE | [GitHub Release (v1.0.21)](https://github.com/eedali/KoBar/releases/tag/v1.0.21) |
+| macOS | DMG / ZIP | [GitHub Release (v1.0.21)](https://github.com/eedali/KoBar/releases/tag/v1.0.21) |
 
 ---
 
