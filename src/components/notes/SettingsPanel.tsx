@@ -85,6 +85,8 @@ const SettingsPanel: React.FC = () => {
     const showTooltips = useAppStore(state => state.showTooltips);
     const setShowTooltips = useAppStore(state => state.setShowTooltips);
     const launchAtStartup = useAppStore(state => state.launchAtStartup);
+    const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
+    const setEnableEyeAnimation = useAppStore(state => state.setEnableEyeAnimation);
     const setLaunchAtStartup = useAppStore(state => state.setLaunchAtStartup);
     const isShortcutsEnabled = useAppStore(state => state.isShortcutsEnabled);
     const setIsShortcutsEnabled = useAppStore(state => state.setIsShortcutsEnabled);
@@ -1599,6 +1601,23 @@ const SettingsPanel: React.FC = () => {
                             >
                                 <span
                                     className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${showTooltips ? 'translate-x-5' : 'translate-x-0'}`}
+                                />
+                            </button>
+                        </div>
+
+                        <div className="w-full h-px opacity-50" style={{ backgroundColor: 'var(--theme-border)' }}></div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-slate-400 text-[20px]">visibility</span>
+                                <span className="text-sm text-slate-300">{t('enableEyeAnimation')}</span>
+                            </div>
+                            <button
+                                onClick={() => setEnableEyeAnimation(!enableEyeAnimation)}
+                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region ${enableEyeAnimation ? 'bg-primary' : 'bg-slate-600'}`}
+                            >
+                                <span
+                                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${enableEyeAnimation ? 'translate-x-5' : 'translate-x-0'}`}
                                 />
                             </button>
                         </div>

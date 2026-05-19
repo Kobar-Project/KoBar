@@ -139,6 +139,7 @@ export interface WorkspaceConfig {
     featureOrder: string[];
     edgePosition: 'left' | 'right';
     isPopupSmartPositioning: boolean;
+    enableEyeAnimation: boolean;
 }
 
 interface AppState {
@@ -339,6 +340,8 @@ interface AppState {
     // Launch at Startup
     launchAtStartup: boolean;
     setLaunchAtStartup: (val: boolean) => void;
+    enableEyeAnimation: boolean;
+    setEnableEyeAnimation: (val: boolean) => void;
     // Language
     language: LanguageCode;
     setLanguage: (lang: LanguageCode) => void;
@@ -706,6 +709,8 @@ export const useAppStore = create<AppState>()(
                 set({ launchAtStartup: val });
                 window.api?.setAutoLaunch?.(val);
             },
+            enableEyeAnimation: true,
+            setEnableEyeAnimation: (val) => set({ enableEyeAnimation: val }),
 
             // Language
             language: 'en',
@@ -902,7 +907,8 @@ export const useAppStore = create<AppState>()(
                     glassOpacity: state.glassOpacity,
                     featureOrder: [...state.featureOrder],
                     edgePosition: state.edgePosition,
-                    isPopupSmartPositioning: state.isPopupSmartPositioning
+                    isPopupSmartPositioning: state.isPopupSmartPositioning,
+                    enableEyeAnimation: state.enableEyeAnimation
                 };
                 return { workspaces: [...state.workspaces, newWorkspace] };
             }),
@@ -946,7 +952,8 @@ export const useAppStore = create<AppState>()(
                     glassOpacity: ws.glassOpacity,
                     featureOrder: [...ws.featureOrder],
                     edgePosition: ws.edgePosition,
-                    isPopupSmartPositioning: ws.isPopupSmartPositioning || false
+                    isPopupSmartPositioning: ws.isPopupSmartPositioning || false,
+                    enableEyeAnimation: ws.enableEyeAnimation !== undefined ? ws.enableEyeAnimation : true
                 };
             }),
             deleteWorkspace: (id) => set((state) => ({
@@ -987,14 +994,21 @@ export const useAppStore = create<AppState>()(
                     design: state.design,
                     glassOpacity: state.glassOpacity,
                     featureOrder: [...state.featureOrder],
-                    edgePosition: state.edgePosition
+                    edgePosition: state.edgePosition,
+                    enableEyeAnimation: state.enableEyeAnimation
                 } : w)
             })),
         }),
         {
             name: 'kobar-storage',
-            version: 16,
+            version: 17,
             migrate: (persistedState: any, version: number) => {
+                // version 17 migration for enableEyeAnimation
+                if (version <= 16) {
+                    if (persistedState.enableEyeAnimation === undefined) {
+                        persistedState.enableEyeAnimation = true;
+                    }
+                }
                 if (version <= 12) {
                     if (persistedState.workspaces === undefined) {
                         persistedState.workspaces = [];
@@ -1168,6 +1182,7 @@ export const useAppStore = create<AppState>()(
                 iconScale: state.iconScale,
                 teleportShortcut: state.teleportShortcut,
                 launchAtStartup: state.launchAtStartup,
+                enableEyeAnimation: state.enableEyeAnimation,
                 isShortcutsEnabled: state.isShortcutsEnabled,
                 maxShortcuts: state.maxShortcuts,
                 isCopyPasteEnabled: state.isCopyPasteEnabled,

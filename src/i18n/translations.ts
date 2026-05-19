@@ -245,6 +245,7 @@ export const translations = {
         colorOrange: "Orange",
         smartPopupPositioning: "Smart Popup Positioning",
         smartPopupPositioningDesc: "Popups dynamically follow their launch icons and stay within screen bounds. If disabled, popups stay rigidly centered to the Bar.",
+        enableEyeAnimation: "Enable Eye Animation",
     },
     tr: {
         updateAvailableTitle: "Güncelleme Mevcut",
@@ -465,6 +466,7 @@ export const translations = {
         colorOrange: "Turuncu",
         smartPopupPositioning: "Akıllı Pencere Konumlandırma",
         smartPopupPositioningDesc: "Pencereler, açıldıkları ikonları takip eder ve ekran sınırları içinde kalır. Devre dışı bırakılırsa pencereler Bar'ın ortasına sabitlenir.",
+        enableEyeAnimation: "Göz Animasyonunu Etkinleştir",
     },
     de: {
         updateAvailableTitle: "Update verfügbar",

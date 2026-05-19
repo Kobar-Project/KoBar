@@ -9,6 +9,7 @@ const FloatingEye: React.FC = () => {
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const iconScale = useAppStore(state => state.iconScale);
     const screenBounds = useAppStore(state => state.screenBounds);
+    const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
 
     // Calculate safe fallback coordinates using actual monitor dimensions.
     // The ghost window is 6000×4000, but the visible area matches `screenBounds`.
@@ -39,6 +40,8 @@ const FloatingEye: React.FC = () => {
     const [pos, setPos] = useState({ x: defaultX, y: defaultY });
     const posRef = useRef({ x: defaultX, y: defaultY });
     const containerRef = useRef<HTMLDivElement>(null);
+    const innerEyeRef = useRef<HTMLSpanElement>(null);
+    const eyeButtonRef = useRef<HTMLButtonElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const dragInitRef = useRef({ dragged: false, offsetX: 0, offsetY: 0 });
 
@@ -110,6 +113,59 @@ const FloatingEye: React.FC = () => {
         };
     }, [isDragging]);
 
+    // Eye icon cursor tracking
+    useEffect(() => {
+        if (!enableEyeAnimation) {
+            if (innerEyeRef.current) {
+                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
+                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
+            }
+            return;
+        }
+
+        const handleGlobalMouseMove = (e: MouseEvent) => {
+            if (!innerEyeRef.current || !eyeButtonRef.current) return;
+            
+            const rect = eyeButtonRef.current.getBoundingClientRect();
+            const btnX = rect.left + rect.width / 2;
+            const btnY = rect.top + rect.height / 2;
+            
+            const dx = e.clientX - btnX;
+            const dy = e.clientY - btnY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            const maxTranslate = 6; // px
+            
+            if (distance > 0) {
+                const theta = Math.atan2(dy, dx);
+                const pull = Math.min(distance / 150, 1);
+                const tx = Math.cos(theta) * pull * maxTranslate;
+                const ty = Math.sin(theta) * pull * maxTranslate;
+                
+                innerEyeRef.current.style.transition = 'none';
+                innerEyeRef.current.style.transform = `translate(${tx}px, ${ty}px)`;
+            } else {
+                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
+            }
+        };
+
+        const handleMouseLeave = () => {
+            if (innerEyeRef.current) {
+                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
+            }
+        };
+
+        window.addEventListener('mousemove', handleGlobalMouseMove);
+        document.addEventListener('mouseleave', handleMouseLeave);
+        
+        return () => {
+            window.removeEventListener('mousemove', handleGlobalMouseMove);
+            document.removeEventListener('mouseleave', handleMouseLeave);
+        };
+    }, [enableEyeAnimation]);
+
     const handleClick = () => {
         if (!dragInitRef.current.dragged) {
             // Persist current Eye position so Sidebar opens at the same spot
@@ -126,6 +182,7 @@ const FloatingEye: React.FC = () => {
             onClick={handleClick}
         >
             <button 
+                ref={eyeButtonRef}
                 className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing group
                     ${design === 'style2' ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-xl') + ' shadow-[0_0_20px_rgba(255,255,255,0.05)]') : 'shadow-[0_0_20px_rgba(244,161,37,0.4)]'}`}
                 style={{
@@ -134,7 +191,9 @@ const FloatingEye: React.FC = () => {
                         : 'var(--theme-bg-dark)'
                 }}
             >
-                <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">visibility</span>
+                <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
+                    <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">visibility</span>
+                </span>
             </button>
         </div>
     );

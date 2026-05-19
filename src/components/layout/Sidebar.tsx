@@ -75,6 +75,7 @@ const Sidebar: React.FC = () => {
     const iconScale = useAppStore(state => state.iconScale);
     const toggleWidth = useAppStore(state => state.toggleWidth);
     const glassOpacity = useAppStore(state => state.glassOpacity);
+    const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
 
     // Sidebar drag state
     const setSidebarPosition = useAppStore(state => state.setSidebarPosition);
@@ -84,6 +85,7 @@ const Sidebar: React.FC = () => {
     
     const dragRef = React.useRef({ startX: 0, startY: 0, dragged: false });
     const eyeButtonRef = React.useRef<HTMLButtonElement>(null);
+    const innerEyeRef = React.useRef<HTMLSpanElement>(null);
     const sidebarContainerRef = React.useRef<HTMLDivElement>(null);
     
     // Drag to scroll logic
@@ -357,6 +359,59 @@ const Sidebar: React.FC = () => {
         document.addEventListener('mousedown', handleDocClick);
         return () => document.removeEventListener('mousedown', handleDocClick);
     }, []);
+
+    // Eye icon cursor tracking
+    React.useEffect(() => {
+        if (!enableEyeAnimation) {
+            if (innerEyeRef.current) {
+                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
+                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
+            }
+            return;
+        }
+
+        const handleGlobalMouseMove = (e: MouseEvent) => {
+            if (!innerEyeRef.current || !eyeButtonRef.current) return;
+            
+            const rect = eyeButtonRef.current.getBoundingClientRect();
+            const btnX = rect.left + rect.width / 2;
+            const btnY = rect.top + rect.height / 2;
+            
+            const dx = e.clientX - btnX;
+            const dy = e.clientY - btnY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            const maxTranslate = 5; // px
+            
+            if (distance > 0) {
+                const theta = Math.atan2(dy, dx);
+                const pull = Math.min(distance / 150, 1);
+                const tx = Math.cos(theta) * pull * maxTranslate;
+                const ty = Math.sin(theta) * pull * maxTranslate;
+                
+                innerEyeRef.current.style.transition = 'none';
+                innerEyeRef.current.style.transform = `translate(${tx}px, ${ty}px)`;
+            } else {
+                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
+            }
+        };
+
+        const handleMouseLeave = () => {
+            if (innerEyeRef.current) {
+                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
+            }
+        };
+
+        window.addEventListener('mousemove', handleGlobalMouseMove);
+        document.addEventListener('mouseleave', handleMouseLeave);
+        
+        return () => {
+            window.removeEventListener('mousemove', handleGlobalMouseMove);
+            document.removeEventListener('mouseleave', handleMouseLeave);
+        };
+    }, [enableEyeAnimation]);
 
     // Handle Eye Button: dual-purpose handle — drag moves the whole bar, click enters Mini Mode.
     const handleEyeMouseDown = (e: React.MouseEvent) => {
@@ -720,7 +775,9 @@ const Sidebar: React.FC = () => {
                             className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:bg-primary/40 cursor-grab active:cursor-grabbing group mt-2
                                 ${design === 'style2' ? 'bg-primary/5 backdrop-blur-md' : 'bg-primary/20 shadow-[0_0_20px_rgba(244,161,37,0.2)]'}`}
                         >
-                            <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">visibility</span>
+                            <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
+                                <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">visibility</span>
+                            </span>
                         </TooltipButton>
                     </div>
                 </div>
