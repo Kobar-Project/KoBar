@@ -1,11 +1,29 @@
-🚀 Güncelleme Notları:
+KoBar v1.0.23: Yatay Mod, Çoklu Monitör Büyüsü ve Göz Takibi 🚀 Son Sürüm
+Bu sürüm, KoBar'ı her masaüstü düzenine uyum sağlayan son derece çok yönlü bir "İsviçre Çakısı"na dönüştürüyor. Merakla beklenen Yatay Mod ve Çoklu Monitör desteği nihayet burada!
 
-- Bilgisayar açıldığında KoBar'ın otomatik açılmasını engelleyen hata giderildi.
-- Ayarlar da özellikleri akordion menüden kutu formuna çevirebileceğiniz bir arayüz eklendi.
-- Dil seçeneklerindeki "Hakkında" alanları güncellendi.
-- KoBar ilk kurulduğunda varsayılan olarak açılacak araçlar optimize edildi.
-- Arayüz yerleşimi ve aralıkların varsayılan değerleri güncellendi.
-- Mini mod ikonunun (göz simgesi) konumu en alta sabitlendi ve modlar arası geçişteki hizalama sorunları giderildi.
-- KoBar taşınırken araç ipuçlarının (tooltip) otomatik olarak gizlenmesi sağlandı ve taşınma sonrası konumları düzeltildi.
-- İlk açılıştaki "Welcome to KoBar!" karşılama notunun içeriği zenginleştirildi.
-- Standalone (.exe) sürümleri için çok dilli güncelleme onay mekanizmasına sahip otomatik güncelleme altyapısı kuruldu.
+✨ Yeni Özellikler
+
+Yatay Yerleşim: KoBar artık yatay yönelimi tamamen destekliyor. İş akışınıza göre yatay veya dikey olarak sabitleyin ve kullanın.
+
+Çoklu Monitör Desteği: Odağınızı kaybetmeden pencereyi farklı ekranlar arasında sorunsuz şekilde sürükleyin.
+
+Göz Takibi Animasyonu: Arayüzü canlandıran pürüzsüz, etkileşimli bir göz takibi animasyonu eklendi (ayarlardan kolayca açılıp kapatılabilir).
+
+Akıllı Yeniden Merkezleme: Widget'ın mevcut konumuna göre pencere yeniden merkezleme uygulandı.
+
+🐛 Hata Düzeltmeleri
+
+Çoklu Ekran Çözünürlüğü: Widget'ın ikincil monitörlere sürüklendiğinde kaybolma veya kesilme sorununu gideren önemli bir hata düzeltildi.
+
+Kenar Algılama: Sürükleme sırasında gerçek zamanlı kenar algılama iyileştirildi (yatay sürüklemeler sırasındaki dikey kenar algılama hataları çözüldü).
+
+Mini Mod Konumlandırma: Mini moddan çıkıldığında oluşan panel konumlandırma sorunları düzeltildi.
+
+📝 Altyapı ve Dokümantasyon
+
+Fonlama Yapılandırması: Open Source Collective aracılığıyla resmi proje sponsorluk yapılandırması eklendi (eski kişisel Ko-fi ve PayPal bağlantıları kaldırıldı).
+
+README Güncellemeleri: macOS indirme linkleri, iletişim bilgileri eklendi ve sponsor bölümü güncellendi.
+
+🤝 Özel Teşekkürler
+Yatay Yerleşim ve Çoklu Ekran işlevlerine yaptığı inanılmaz katkılar için @arindam-sahoo'ya (GitHub) kocaman bir teşekkür! 🎉

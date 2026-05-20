@@ -41,3 +41,6 @@ electron/test.cts
 electron/test.cjs
 code.html
 kobar-secrets.json
+
+# Microsoft Store assets (private)
+Assets/microsoftStore/

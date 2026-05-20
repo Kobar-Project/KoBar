@@ -272,8 +272,8 @@ KoBar follows strict Electron security practices:
 | Platform | Format | Link / Store |
 |----------|--------|--------------|
 | Windows | AppX | [Microsoft Store](https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS) |
-| Windows (Standalone) | EXE | [GitHub Release (v1.0.21)](https://github.com/eedali/KoBar/releases/tag/v1.0.21) |
-| macOS | DMG / ZIP | [GitHub Release (v1.0.21)](https://github.com/eedali/KoBar/releases/tag/v1.0.21) |
+| Windows (Standalone) | EXE | [GitHub Releases](https://github.com/Kobar-Project/KoBar/releases) |
+| macOS | DMG / ZIP | [GitHub Releases](https://github.com/Kobar-Project/KoBar/releases) |
 
 ---
 
