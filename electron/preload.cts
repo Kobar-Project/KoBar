@@ -149,6 +149,19 @@ contextBridge.exposeInMainWorld('api', {
     },
     sendMediaCommand: (command: 'play' | 'pause' | 'next' | 'prev') => ipcRenderer.send('media-command', command),
 
+    // PIP Video Player (webview-based mini browser)
+    // Detects video URLs currently open in Chrome/Edge/Brave/Firefox
+    getActiveVideoUrls: () => ipcRenderer.invoke('get-active-video-urls') as Promise<string[]>,
+    // Opens a PIP window that plays the given URL in an embedded browser
+    openPip: (url: string, title: string) => ipcRenderer.send('open-pip', { url, title }),
+    closePip: () => ipcRenderer.send('close-pip'),
+    onPipClosed: (callback: () => void) => {
+        const handler = () => callback();
+        ipcRenderer.on('pip-closed', handler);
+        return () => ipcRenderer.removeListener('pip-closed', handler);
+    },
+
+
     // KoCalendar
 
     // Auto Updater

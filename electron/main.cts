@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, clipboard, globalShortcut, shell, dialog, session, WebContents } from 'electron';
+import { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, clipboard, globalShortcut, shell, dialog, session, WebContents, desktopCapturer } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { exec, execFile, ChildProcess } from 'child_process';
@@ -40,6 +40,8 @@ let isAwaitingPinTarget = false;
 let sidebarRect = { width: 80, height: 600, offsetX: 1660, offsetY: 20 };
 let teleportShortcutKey = '';
 let borderWindow: BrowserWindow | null = null;
+let pipWindow: BrowserWindow | null = null;
+
 let trackingInterval: NodeJS.Timeout | null = null;
 let pinnedHwnd: number | null = null;
 let allPinnedHwnds: Set<number> = new Set();
@@ -1282,7 +1284,7 @@ ipcMain.on('take-screenshot', (event, hideApp) => {
 });
 
 // ─── NEW: Custom Screenshot Studio Capture ─────────────────────────
-const { desktopCapturer, systemPreferences } = require('electron');
+const { systemPreferences } = require('electron');
 let screenshotOverlayWindows: BrowserWindow[] = [];
 let preScreenshotBounds: { x: number; y: number; width: number; height: number; } | null = null;
 
@@ -1451,6 +1453,151 @@ ipcMain.on('screenshot-session-complete', () => {
         mainWindow.show();
         mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
     }
+});
+
+// ─── PIP Video Player (Webview-based mini browser) ───────────────────────────────
+
+function createPipWindow(videoUrl: string, title: string) {
+    if (pipWindow && !pipWindow.isDestroyed()) {
+        pipWindow.close();
+    }
+
+    const pipWidth = 480;
+    const pipHeight = 270;
+
+    // Position in the bottom-right corner of the primary display
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { x: dX, y: dY, width: dW, height: dH } = primaryDisplay.workArea;
+    const startX = dX + dW - pipWidth - 20;
+    const startY = dY + dH - pipHeight - 20;
+
+    const pipPreloadPath = path.join(__dirname, 'preload.cjs');
+
+    pipWindow = new BrowserWindow({
+        x: startX,
+        y: startY,
+        width: pipWidth,
+        height: pipHeight,
+        minWidth: 240,
+        minHeight: 135,
+        frame: false,
+        transparent: false,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        resizable: true,
+        hasShadow: true,
+        backgroundColor: '#000000',
+        icon: path.join(__dirname, '../build/icon.png'),
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: pipPreloadPath,
+        },
+    });
+
+    // Spoof user agent to bypass YouTube Error 153 (automation/webview block)
+    pipWindow.webContents.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+    pipWindow.setAspectRatio(16 / 9);
+    pipWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 2);
+
+    const encodedUrl = encodeURIComponent(videoUrl);
+    const encodedTitle = encodeURIComponent(title);
+
+    if (isDev) {
+        pipWindow.loadURL(`http://localhost:5173/?pip=true&url=${encodedUrl}&title=${encodedTitle}`);
+    } else {
+        pipWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
+            query: { pip: 'true', url: videoUrl, title },
+        });
+    }
+
+    pipWindow.on('closed', () => {
+        pipWindow = null;
+        mainWindow?.webContents.send('pip-closed');
+    });
+}
+
+// Detect video URLs playing in open browsers using PowerShell UIAutomation
+// Returns an array of video URLs found in Chrome/Edge/Brave/Firefox address bars
+ipcMain.handle('get-active-video-urls', () => {
+    return new Promise<string[]>((resolve) => {
+        if (!isWin) {
+            // macOS: not implemented yet, return empty
+            resolve([]);
+            return;
+        }
+
+        const psScript = `
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+
+$domains = @('youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com', 'twitch.tv', 'netflix.com', 'primevideo.com', 'hulu.com', 'disneyplus.com', 'crunchyroll.com', 'bilibili.com', 'bilibili.tv')
+$browsers = @('chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi')
+$urls = [System.Collections.Generic.List[string]]::new()
+
+foreach ($b in $browsers) {
+    $procs = Get-Process -Name $b -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }
+    foreach ($p in $procs) {
+        try {
+            $root = [System.Windows.Automation.AutomationElement]::FromHandle($p.MainWindowHandle)
+            if ($null -eq $root) { continue }
+            $cond = New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+                [System.Windows.Automation.ControlType]::Edit
+            )
+            $edits = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)
+            foreach ($e in $edits) {
+                try {
+                    $vp = $e.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+                    $v = $vp.Current.Value
+                    if ($v -match '^https?://') {
+                        foreach ($d in $domains) {
+                            if ($v -match [regex]::Escape($d)) {
+                                if (!$urls.Contains($v)) { $urls.Add($v) }
+                                break
+                            }
+                        }
+                    }
+                } catch {}
+            }
+        } catch {}
+    }
+}
+
+if ($urls.Count -gt 0) { $urls | ForEach-Object { Write-Output $_ } }
+`;
+
+        const child = exec('powershell -NoProfile -NonInteractive -Command -', { timeout: 6000 }, (err, stdout) => {
+            if (err || !stdout.trim()) {
+                resolve([]);
+                return;
+            }
+            const lines = stdout
+                .split('\n')
+                .map((l: string) => l.trim())
+                .filter((l: string) => l.startsWith('http'));
+            resolve(lines);
+        });
+
+        if (child.stdin) {
+            child.stdin.write(psScript);
+            child.stdin.end();
+        }
+    });
+});
+
+// Open PIP with a URL (mini browser approach — no capture needed)
+ipcMain.on('open-pip', (_event, { url, title }: { url: string; title: string }) => {
+    createPipWindow(url, title);
+});
+
+// Close PIP window
+ipcMain.on('close-pip', () => {
+    if (pipWindow && !pipWindow.isDestroyed()) {
+        pipWindow.close();
+    }
+    pipWindow = null;
 });
 
 ipcMain.on('move-window', (event, { dx, dy }) => {
