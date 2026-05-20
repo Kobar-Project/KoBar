@@ -141,6 +141,8 @@ const SettingsPanel: React.FC = () => {
 
     const isPopupSmartPositioning = useAppStore(state => state.isPopupSmartPositioning);
     const setIsPopupSmartPositioning = useAppStore(state => state.setIsPopupSmartPositioning);
+    const orientation = useAppStore(state => state.orientation);
+    const setOrientation = useAppStore(state => state.setOrientation);
 
     // Workspaces
     const workspaces = useAppStore(state => state.workspaces);
@@ -1620,6 +1622,25 @@ const SettingsPanel: React.FC = () => {
                                     className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${enableEyeAnimation ? 'translate-x-5' : 'translate-x-0'}`}
                                 />
                             </button>
+                        </div>
+
+                        <div className="w-full h-px opacity-50" style={{ backgroundColor: 'var(--theme-border)' }}></div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-slate-400 text-[20px]">view_agenda</span>
+                                <span className="text-sm text-slate-300">{t('orientation') || 'Orientation'}</span>
+                            </div>
+                            <div className="flex bg-black/20 p-0.5 rounded-lg border border-white/5 no-drag-region w-32 shrink-0">
+                                <button onClick={() => setOrientation('vertical')}
+                                    className={`flex-1 py-1 text-[11px] font-semibold rounded-md transition-all ${orientation === 'vertical' ? 'bg-primary text-slate-900 shadow-md font-bold' : 'text-slate-400 hover:text-slate-200'}`}>
+                                    {t('vertical') || 'Vertical'}
+                                </button>
+                                <button onClick={() => setOrientation('horizontal')}
+                                    className={`flex-1 py-1 text-[11px] font-semibold rounded-md transition-all ${orientation === 'horizontal' ? 'bg-primary text-slate-900 shadow-md font-bold' : 'text-slate-400 hover:text-slate-200'}`}>
+                                    {t('horizontal') || 'Horizontal'}
+                                </button>
+                            </div>
                         </div>
                         
                     </div>

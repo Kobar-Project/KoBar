@@ -76,6 +76,7 @@ const Sidebar: React.FC = () => {
     const toggleWidth = useAppStore(state => state.toggleWidth);
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
+    const orientation = useAppStore(state => state.orientation);
 
     // Sidebar drag state
     const setSidebarPosition = useAppStore(state => state.setSidebarPosition);
@@ -95,19 +96,29 @@ const Sidebar: React.FC = () => {
 
     const screenBounds = useAppStore(state => state.screenBounds);
     const calculatedMaxHeight = screenBounds ? Math.max(200, screenBounds.height - 40) : 800;
+    const calculatedMaxWidth = screenBounds ? Math.max(200, screenBounds.width - 40) : 1200;
 
     const handleScrollMouseDown = (e: React.MouseEvent) => {
         if (e.button !== 0 || e.defaultPrevented) return;
         setIsDragScrolling(true);
         setIsResizingGlobal(true);
-        scrollDragStart.current = { y: e.clientY, scrollTop: scrollRef.current?.scrollTop || 0 };
+        scrollDragStart.current = { 
+            y: orientation === 'horizontal' ? e.clientX : e.clientY, 
+            scrollTop: orientation === 'horizontal' 
+                ? (scrollRef.current?.scrollLeft || 0) 
+                : (scrollRef.current?.scrollTop || 0) 
+        };
     };
 
     React.useEffect(() => {
         const handleScrollMouseMove = (e: MouseEvent) => {
             if (!isDragScrolling || !scrollRef.current) return;
-            const dy = e.clientY - scrollDragStart.current.y;
-            scrollRef.current.scrollTop = scrollDragStart.current.scrollTop - dy;
+            const d = (orientation === 'horizontal' ? e.clientX : e.clientY) - scrollDragStart.current.y;
+            if (orientation === 'horizontal') {
+                scrollRef.current.scrollLeft = scrollDragStart.current.scrollTop - d;
+            } else {
+                scrollRef.current.scrollTop = scrollDragStart.current.scrollTop - d;
+            }
         };
         const handleScrollMouseUp = () => {
             if (isDragScrolling) {
@@ -124,7 +135,7 @@ const Sidebar: React.FC = () => {
             window.removeEventListener('mousemove', handleScrollMouseMove);
             window.removeEventListener('mouseup', handleScrollMouseUp);
         };
-    }, [isDragScrolling]);
+    }, [isDragScrolling, orientation]);
 
     // Sidebar drag-to-move logic (drag the top handle bar)
     const handleSidebarDragStart = (e: React.MouseEvent) => {
@@ -192,52 +203,79 @@ const Sidebar: React.FC = () => {
 
             // Real-time multi-monitor edge detection
             let activeScreenCenter = 0;
+            let activeScreenCenterY = 0;
 
             if (isMac) {
                 const visibleW = screenBounds?.width ?? window.innerWidth;
+                const visibleH = screenBounds?.height ?? window.innerHeight;
                 activeScreenCenter = visibleW / 2;
+                activeScreenCenterY = visibleH / 2;
             } else {
                 let primaryX = 0;
+                let primaryY = 0;
                 let primaryW = 1920;
+                let primaryH = 1080;
                 let allDisplays = [] as any[];
 
                 if (localDisplaysRef.current) {
                     primaryX = localDisplaysRef.current.primaryDisplay.workArea.x;
+                    primaryY = localDisplaysRef.current.primaryDisplay.workArea.y;
                     primaryW = localDisplaysRef.current.primaryDisplay.workArea.width;
+                    primaryH = localDisplaysRef.current.primaryDisplay.workArea.height;
                     allDisplays = localDisplaysRef.current.allDisplays;
                 } else {
                     primaryX = screenBounds?.x ?? 0;
+                    primaryY = screenBounds?.y ?? 0;
                     primaryW = screenBounds?.width ?? window.innerWidth;
+                    primaryH = screenBounds?.height ?? window.innerHeight;
                 }
 
                 // Compute exact absolute coordinates in OS space
                 // Windows ghost window origin (newX=0) maps precisely to this physical OS pixel:
                 const physicalOriginX = primaryX + (primaryW / 2) - 3000;
-                // Add the relative dragged sidebar center to get absolute physical pixel:
-                const physicalCurrentX = physicalOriginX + newX + (sidebarWidth / 2);
+                const physicalOriginY = primaryY + (primaryH / 2) - 2000;
+                
+                // Add relative dragged sidebar center to get absolute physical pixel
+                const physicalCurrentX = physicalOriginX + newX + (orientation === 'horizontal' ? 0 : sidebarWidth / 2);
+                const physicalCurrentY = physicalOriginY + newY + (orientation === 'horizontal' ? sidebarWidth / 2 : 0);
 
                 let activeScreenPhysicalCenter = physicalOriginX + 3000; // Fallback to primary
+                let activeScreenPhysicalCenterY = physicalOriginY + 2000;
 
                 const activeMonitor = allDisplays.find(d => 
+                    physicalCurrentX >= d.bounds.x && physicalCurrentX < (d.bounds.x + d.bounds.width) &&
+                    physicalCurrentY >= d.bounds.y && physicalCurrentY < (d.bounds.y + d.bounds.height)
+                ) || allDisplays.find(d => 
                     physicalCurrentX >= d.bounds.x && physicalCurrentX < (d.bounds.x + d.bounds.width)
                 );
 
                 if (activeMonitor) {
                     activeScreenPhysicalCenter = activeMonitor.bounds.x + (activeMonitor.bounds.width / 2);
+                    activeScreenPhysicalCenterY = activeMonitor.bounds.y + (activeMonitor.bounds.height / 2);
                 } else if (screenBounds) {
                     activeScreenPhysicalCenter = (screenBounds?.x ?? 0) + ((screenBounds?.width ?? window.innerWidth) / 2);
+                    activeScreenPhysicalCenterY = (screenBounds?.y ?? 0) + ((screenBounds?.height ?? window.innerHeight) / 2);
                 }
 
                 // Project center BACK to relative ghost window space for React math
                 activeScreenCenter = activeScreenPhysicalCenter - physicalOriginX;
+                activeScreenCenterY = activeScreenPhysicalCenterY - physicalOriginY;
             }
 
-            const currentCenter = newX + (sidebarWidth / 2);
-            const isLeftHalf = currentCenter < activeScreenCenter;
-            const newEdge = isLeftHalf ? 'left' : 'right';
-
-            if (useAppStore.getState().edgePosition !== newEdge) {
-                useAppStore.getState().setEdgePosition(newEdge);
+            if (orientation === 'horizontal') {
+                const currentCenterY = newY + (sidebarWidth / 2);
+                const isTopHalf = currentCenterY < activeScreenCenterY;
+                const newEdge = isTopHalf ? 'top' : 'bottom';
+                if (useAppStore.getState().edgePosition !== newEdge) {
+                    useAppStore.getState().setEdgePosition(newEdge);
+                }
+            } else {
+                const currentCenter = newX + (sidebarWidth / 2);
+                const isLeftHalf = currentCenter < activeScreenCenter;
+                const newEdge = isLeftHalf ? 'left' : 'right';
+                if (useAppStore.getState().edgePosition !== newEdge) {
+                    useAppStore.getState().setEdgePosition(newEdge);
+                }
             }
         };
         const handleSidebarDragEnd = () => {
@@ -251,66 +289,110 @@ const Sidebar: React.FC = () => {
                 setSidebarPosition(pos);
 
                 let activeScreenCenter = 0;
+                let activeScreenCenterY = 0;
                 let visibleLeft = 0;
                 let visibleRight = 0;
+                let visibleTop = 0;
+                let visibleBottom = 0;
 
                 if (isMac) {
                     const visibleW = screenBounds?.width ?? window.innerWidth;
+                    const visibleH = screenBounds?.height ?? window.innerHeight;
                     visibleLeft = 0;
                     visibleRight = visibleW;
+                    visibleTop = 0;
+                    visibleBottom = visibleH;
                     activeScreenCenter = visibleW / 2;
+                    activeScreenCenterY = visibleH / 2;
                 } else {
                     let primaryX = 0;
+                    let primaryY = 0;
                     let primaryW = 1920;
+                    let primaryH = 1080;
                     let allDisplays = [] as any[];
 
                     if (localDisplaysRef.current) {
                         primaryX = localDisplaysRef.current.primaryDisplay.workArea.x;
+                        primaryY = localDisplaysRef.current.primaryDisplay.workArea.y;
                         primaryW = localDisplaysRef.current.primaryDisplay.workArea.width;
+                        primaryH = localDisplaysRef.current.primaryDisplay.workArea.height;
                         allDisplays = localDisplaysRef.current.allDisplays;
                     } else {
                         primaryX = screenBounds?.x ?? 0;
+                        primaryY = screenBounds?.y ?? 0;
                         primaryW = screenBounds?.width ?? window.innerWidth;
+                        primaryH = screenBounds?.height ?? window.innerHeight;
                     }
 
                     const physicalOriginX = primaryX + (primaryW / 2) - 3000;
-                    const physicalCurrentX = physicalOriginX + pos.x + (sidebarWidth / 2);
+                    const physicalOriginY = primaryY + (primaryH / 2) - 2000;
+
+                    const physicalCurrentX = physicalOriginX + pos.x + (orientation === 'horizontal' ? 0 : sidebarWidth / 2);
+                    const physicalCurrentY = physicalOriginY + pos.y + (orientation === 'horizontal' ? sidebarWidth / 2 : 0);
 
                     const activeMonitor = allDisplays.find(d => 
+                        physicalCurrentX >= d.bounds.x && physicalCurrentX < (d.bounds.x + d.bounds.width) &&
+                        physicalCurrentY >= d.bounds.y && physicalCurrentY < (d.bounds.y + d.bounds.height)
+                    ) || allDisplays.find(d => 
                         physicalCurrentX >= d.bounds.x && physicalCurrentX < (d.bounds.x + d.bounds.width)
                     );
 
                     if (activeMonitor) {
                         visibleLeft = activeMonitor.bounds.x - physicalOriginX;
                         visibleRight = (activeMonitor.bounds.x + activeMonitor.bounds.width) - physicalOriginX;
+                        visibleTop = activeMonitor.bounds.y - physicalOriginY;
+                        visibleBottom = (activeMonitor.bounds.y + activeMonitor.bounds.height) - physicalOriginY;
                         activeScreenCenter = visibleLeft + (activeMonitor.bounds.width / 2);
+                        activeScreenCenterY = visibleTop + (activeMonitor.bounds.height / 2);
                     } else {
                         const fallBackW = screenBounds?.width ?? window.innerWidth;
+                        const fallBackH = screenBounds?.height ?? window.innerHeight;
                         visibleLeft = 3000 + (screenBounds?.x ?? 0) - (fallBackW / 2);
                         visibleRight = visibleLeft + fallBackW;
+                        visibleTop = 2000 + (screenBounds?.y ?? 0) - (fallBackH / 2);
+                        visibleBottom = visibleTop + fallBackH;
                         activeScreenCenter = visibleLeft + (fallBackW / 2);
+                        activeScreenCenterY = visibleTop + (fallBackH / 2);
                     }
                 }
 
-                const currentCenter = pos.x + (sidebarWidth / 2);
-                const isLeftHalf = currentCenter < activeScreenCenter;
-                
                 const SNAP_THRESHOLD = 100;
-                const distToLeft = Math.abs(pos.x - visibleLeft);
-                const distToRight = Math.abs(pos.x + sidebarWidth - visibleRight);
 
-                if (distToLeft <= SNAP_THRESHOLD) {
-                    // Snap to left edge of active monitor
-                    useAppStore.getState().setEdgePosition('left');
-                    setSidebarPosition({ x: visibleLeft, y: pos.y });
-                } else if (distToRight <= SNAP_THRESHOLD) {
-                    // Snap to right edge of active monitor
-                    useAppStore.getState().setEdgePosition('right');
-                    setSidebarPosition({ x: visibleRight - sidebarWidth, y: pos.y });
+                if (orientation === 'horizontal') {
+                    const currentCenterY = pos.y + (sidebarWidth / 2);
+                    const isTopHalf = currentCenterY < activeScreenCenterY;
+                    const distToTop = Math.abs(pos.y - visibleTop);
+                    const distToBottom = Math.abs(pos.y + sidebarWidth - visibleBottom);
+
+                    if (distToTop <= SNAP_THRESHOLD) {
+                        useAppStore.getState().setEdgePosition('top');
+                        setSidebarPosition({ x: pos.x, y: visibleTop });
+                    } else if (distToBottom <= SNAP_THRESHOLD) {
+                        useAppStore.getState().setEdgePosition('bottom');
+                        setSidebarPosition({ x: pos.x, y: visibleBottom - sidebarWidth });
+                    } else {
+                        useAppStore.getState().setEdgePosition(isTopHalf ? 'top' : 'bottom');
+                        setSidebarPosition({ x: pos.x, y: pos.y });
+                    }
                 } else {
-                    // Free-floating: aktif ekranın hangi yarısında olduğuna (isLeftHalf) göre left/right ayarla
-                    useAppStore.getState().setEdgePosition(isLeftHalf ? 'left' : 'right');
-                    setSidebarPosition({ x: pos.x, y: pos.y });
+                    const currentCenter = pos.x + (sidebarWidth / 2);
+                    const isLeftHalf = currentCenter < activeScreenCenter;
+                    const distToLeft = Math.abs(pos.x - visibleLeft);
+                    const distToRight = Math.abs(pos.x + sidebarWidth - visibleRight);
+
+                    if (distToLeft <= SNAP_THRESHOLD) {
+                        // Snap to left edge of active monitor
+                        useAppStore.getState().setEdgePosition('left');
+                        setSidebarPosition({ x: visibleLeft, y: pos.y });
+                    } else if (distToRight <= SNAP_THRESHOLD) {
+                        // Snap to right edge of active monitor
+                        useAppStore.getState().setEdgePosition('right');
+                        setSidebarPosition({ x: visibleRight - sidebarWidth, y: pos.y });
+                    } else {
+                        // Free-floating: aktif ekranın hangi yarısında olduğuna (isLeftHalf) göre left/right ayarla
+                        useAppStore.getState().setEdgePosition(isLeftHalf ? 'left' : 'right');
+                        setSidebarPosition({ x: pos.x, y: pos.y });
+                    }
                 }
             }
         };
@@ -322,9 +404,10 @@ const Sidebar: React.FC = () => {
             window.removeEventListener('mousemove', handleSidebarDragMove);
             window.removeEventListener('mouseup', handleSidebarDragEnd);
         };
-    }, [isSidebarDragging, screenBounds, sidebarWidth]);
+    }, [isSidebarDragging, screenBounds, sidebarWidth, orientation]);
 
     const setLastSidebarHeight = useAppStore(state => state.setLastSidebarHeight);
+    const setLastSidebarWidth = useAppStore(state => state.setLastSidebarWidth);
 
     // Send Rect to electron for clamping natively and store height locally
     React.useEffect(() => {
@@ -332,8 +415,9 @@ const Sidebar: React.FC = () => {
         const observer = new ResizeObserver(() => {
             if (!sidebarContainerRef.current) return;
             const rect = sidebarContainerRef.current.getBoundingClientRect();
-            // Store the dynamic height so we can anchor the sidebar to the bottom when exiting mini-mode
+            // Store the dynamic height and width so we can anchor the sidebar when exiting mini-mode
             setLastSidebarHeight(rect.height);
+            setLastSidebarWidth(rect.width);
             
             window.api?.updateSidebarRect?.({
                  width: rect.width,
@@ -437,47 +521,50 @@ const Sidebar: React.FC = () => {
     };
 
     return (
-        <div className="relative z-50 h-fit pointer-events-none" style={{ width: `${sidebarWidth}px` }}>
+        <div className="relative z-50 pointer-events-none" style={{ width: orientation === 'horizontal' ? 'fit-content' : `${sidebarWidth}px`, height: orientation === 'horizontal' ? `${sidebarWidth}px` : 'fit-content' }}>
             <div 
                 ref={sidebarContainerRef}
-                className={`flex flex-col items-center pt-4 pb-2 w-full h-fit overflow-hidden ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'} transition-all duration-500
-                    ${isMac && edgePosition === 'left' ? 'pt-8' : ''}
+                className={`flex ${orientation === 'horizontal' ? 'flex-row pl-4 pr-2 h-full w-fit' : 'flex-col pt-4 pb-2 w-full h-fit'} items-center overflow-hidden ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'} transition-all duration-500
+                    ${orientation === 'horizontal' ? '' : (isMac && edgePosition === 'left' ? 'pt-8' : '')}
                     ${design === 'style2' 
                         ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/10') 
                         : 'bg-[var(--theme-bg-dark)] rounded-3xl shadow-2xl border border-[var(--theme-border)]'}`}
                 style={{ 
-                    maxHeight: `${calculatedMaxHeight}px`,
-                    borderLeft: edgePosition === 'right' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : '', 
-                    borderRight: edgePosition === 'left' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : '',
+                    maxHeight: orientation === 'horizontal' ? undefined : `${calculatedMaxHeight}px`,
+                    maxWidth: orientation === 'horizontal' ? `${calculatedMaxWidth}px` : undefined,
+                    borderLeft: orientation === 'horizontal' ? '' : (edgePosition === 'right' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : ''), 
+                    borderRight: orientation === 'horizontal' ? '' : (edgePosition === 'left' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : ''),
+                    borderTop: orientation === 'horizontal' && edgePosition === 'bottom' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : '',
+                    borderBottom: orientation === 'horizontal' && edgePosition === 'top' ? (design === 'style2' ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--theme-border)') : '',
                     backgroundColor: design === 'style2' 
                         ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)` 
                         : 'var(--theme-bg-dark)'
                 }}
             >
-                {/* 1a. Top Drag Region & Branding (Always Top) */}
+                {/* 1a. Top/Left Drag Region & Branding */}
                 <div 
-                    className="h-6 w-full shrink-0 flex items-center justify-center -mb-2 cursor-grab active:cursor-grabbing"
+                    className={`${orientation === 'horizontal' ? 'w-6 h-full -mr-2' : 'h-6 w-full -mb-2'} shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing`}
                     onMouseDown={handleSidebarDragStart}
                 >
-                    <div className="w-8 h-1 bg-white/10 rounded-full mt-1 transition-all" style={{ zoom: iconScale }}></div>
+                    <div className={`${orientation === 'horizontal' ? 'w-1 h-8 ml-1' : 'w-8 h-1 mt-1'} bg-white/10 rounded-full transition-all`} style={{ zoom: iconScale }}></div>
                 </div>
 
-                <div className="w-10 h-px bg-white/5 no-drag-region shrink-0 my-2" />
+                <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
 
                 {/* 1b. Scrollable Container for Features */}
                 <div 
                     ref={scrollRef}
                     onMouseDown={handleScrollMouseDown}
-                    className="flex flex-col items-center w-full h-fit overflow-y-hidden custom-scrollbar" 
+                    className={`flex ${orientation === 'horizontal' ? 'flex-row h-full w-fit overflow-x-hidden' : 'flex-col w-full h-fit overflow-y-hidden'} items-center custom-scrollbar`} 
                 >
-                    <div className="w-full flex flex-col items-center cursor-default" style={{ zoom: iconScale, gap: `${featureSpacing}px` }}>
+                    <div className={`${orientation === 'horizontal' ? 'h-full flex-row' : 'w-full flex-col'} flex items-center cursor-default`} style={{ zoom: iconScale, gap: `${featureSpacing}px` }}>
                     {/* Dynamic Feature Order with Separators */}
                     {(() => {
                         const features = featureOrder.map(featureId => {
                         switch (featureId) {
                             case 'shortcuts':
                                 return isShortcutsEnabled ? (
-                                    <div key="shortcuts" className="w-full flex flex-col items-center gap-3 no-drag-region px-2">
+                                    <div key="shortcuts" className={`${orientation === 'horizontal' ? 'h-full flex-row py-2' : 'w-full flex-col px-2'} flex items-center gap-3 no-drag-region`}>
                                         <TooltipButton
                                             as="div"
                                             label={t('dragDropApp')}
@@ -500,7 +587,7 @@ const Sidebar: React.FC = () => {
                                             <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">add_to_home_screen</span>
                                         </TooltipButton>
 
-                                        <div className="flex flex-col items-center gap-2.5 w-full">
+                                        <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-2.5 w-full`}>
                                             {pinnedApps.slice(0, maxShortcuts).map(app => {
                                                 const isGenericOrEmpty = !app.icon || app.icon === '' || app.icon.length < 3000;
                                                 const appInitials = app.name ? app.name.substring(0, 2).toUpperCase() : '??';
@@ -754,7 +841,7 @@ const Sidebar: React.FC = () => {
                         <React.Fragment key={idx}>
                             {feat}
                             {(idx < features.length - 1) && (
-                                <div className="w-10 h-px bg-white/5 no-drag-region shrink-0" />
+                                <div className={`${orientation === 'horizontal' ? 'h-10 w-px' : 'w-10 h-px'} bg-white/5 no-drag-region shrink-0`} />
                             )}
                         </React.Fragment>
                     ));
@@ -762,17 +849,17 @@ const Sidebar: React.FC = () => {
                     </div>
                 </div> {/* End scrollable container */}
 
-                <div className="w-10 h-px bg-white/5 no-drag-region shrink-0 my-2" />
+                <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
 
-                {/* 1c. Bottom Static Utilities (Always Bottom) */}
-                <div className="flex flex-col items-center gap-4 no-drag-region shrink-0 px-2 pb-0">
+                {/* 1c. Bottom Static Utilities (Always Bottom / Right) */}
+                <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-4 no-drag-region shrink-0 ${orientation === 'horizontal' ? 'py-2 pr-2' : 'px-2 pb-0'}`}>
                     <div style={{ zoom: iconScale }} className="transition-all">
                         <TooltipButton
                             label={t('miniMode')}
                             buttonRef={eyeButtonRef}
                             onMouseDown={handleEyeMouseDown}
                             onClick={handleEyeClick}
-                            className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:bg-primary/40 cursor-grab active:cursor-grabbing group mt-2
+                            className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:bg-primary/40 cursor-grab active:cursor-grabbing group ${orientation === 'horizontal' ? '' : 'mt-2'}
                                 ${design === 'style2' ? 'bg-primary/5 backdrop-blur-md' : 'bg-primary/20 shadow-[0_0_20px_rgba(244,161,37,0.2)]'}`}
                         >
                             <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
@@ -785,22 +872,42 @@ const Sidebar: React.FC = () => {
 
             <TooltipButton
                 label={t('toggleNotes')}
-                className={`absolute top-1/2 -translate-y-1/2 h-12 border flex items-center justify-center text-slate-400 hover:text-primary hover:bg-white/5 transition-all shadow-2xl z-[60] ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                className={`absolute border flex items-center justify-center text-slate-400 hover:text-primary hover:bg-white/5 transition-all shadow-2xl z-[60] ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}`}
                 style={{ 
                     backgroundColor: design === 'style2' 
                         ? (isMac ? 'transparent' : `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)`) 
                         : 'var(--theme-bg-dark)', 
                     borderColor: design === 'style2' ? 'rgba(255,255,255,0.1)' : 'var(--theme-border)',
-                    width: `${toggleWidth}px`,
+                    ...(orientation === 'horizontal'
+                        ? {
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            height: `${toggleWidth}px`,
+                            width: '48px',
+                            ...(edgePosition === 'top'
+                                ? { top: '100%', borderTop: 'none', borderBottomRightRadius: design === 'style2' ? '15px' : '10px', borderBottomLeftRadius: design === 'style2' ? '15px' : '10px' }
+                                : { bottom: '100%', borderBottom: 'none', borderTopRightRadius: design === 'style2' ? '15px' : '10px', borderTopLeftRadius: design === 'style2' ? '15px' : '10px' }
+                            )
+                        }
+                        : {
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: `${toggleWidth}px`,
+                            height: '48px',
+                            ...(edgePosition === 'left' 
+                                ? { right: `-${toggleWidth}px`, borderLeft: 'none', borderTopRightRadius: design === 'style2' ? '15px' : '10px', borderBottomRightRadius: design === 'style2' ? '15px' : '10px' }
+                                : { left: `-${toggleWidth}px`, borderRight: 'none', borderTopLeftRadius: design === 'style2' ? '15px' : '10px', borderBottomLeftRadius: design === 'style2' ? '15px' : '10px' })
+                        }
+                    ),
                     ...(design === 'style2' && !isMac ? { backdropFilter: 'blur(16px)' } : {}),
-                    ...(edgePosition === 'left' 
-                        ? { right: `-${toggleWidth}px`, borderLeft: 'none', borderTopRightRadius: design === 'style2' ? '15px' : '10px', borderBottomRightRadius: design === 'style2' ? '15px' : '10px' }
-                        : { left: `-${toggleWidth}px`, borderRight: 'none', borderTopLeftRadius: design === 'style2' ? '15px' : '10px', borderBottomLeftRadius: design === 'style2' ? '15px' : '10px' })
                 }}
                 onClick={toggleNotePanel}
             >
                 <span className="material-symbols-outlined text-[20px]">
-                    {edgePosition === 'left' ? (isNotePanelOpen ? 'chevron_left' : 'chevron_right') : (isNotePanelOpen ? 'chevron_right' : 'chevron_left')}
+                    {orientation === 'horizontal'
+                        ? (edgePosition === 'top' ? (isNotePanelOpen ? 'expand_less' : 'expand_more') : (isNotePanelOpen ? 'expand_more' : 'expand_less'))
+                        : (edgePosition === 'left' ? (isNotePanelOpen ? 'chevron_left' : 'chevron_right') : (isNotePanelOpen ? 'chevron_right' : 'chevron_left'))
+                    }
                 </span>
             </TooltipButton>
         </div>

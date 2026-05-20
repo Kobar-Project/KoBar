@@ -94,20 +94,17 @@ export const FocusPopup: React.FC = () => {
     // We need sidebarPosition because if it exists, our wrapper is absolute, which shifts the coordinate space.
     const sidebarPosition = useAppStore(state => state.sidebarPosition);
 
+    const orientation = useAppStore(state => state.orientation);
+
     const getPopupStyle = (): React.CSSProperties => {
         if (!focusAnchorRect) return { display: 'none' };
         
         const popupHeight = 280; // approximate
+        const popupWidth = 256; // w-64 is 256px
         const screenHeight = screenBounds?.height ?? 800;
+        const screenWidth = screenBounds?.width ?? 1200;
         const offsetTop = sidebarPosition ? sidebarPosition.y : 0;
-
-        let adjustedTop = (focusAnchorRect.top - offsetTop) - 20 + (focusAnchorRect.height / 2) - (popupHeight / 2);
-
-        const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
-        const minTop = -offsetTop + 20;
-
-        if (adjustedTop < minTop) adjustedTop = minTop;
-        if (adjustedTop > maxTop) adjustedTop = maxTop;
+        const offsetLeft = sidebarPosition ? sidebarPosition.x : 0;
 
         const style: React.CSSProperties = {
             position: 'absolute',
@@ -118,19 +115,48 @@ export const FocusPopup: React.FC = () => {
             transitionProperty: 'opacity, transform, filter'
         };
 
-        if (!isPopupSmartPositioning) {
-            style.top = '50%';
-            style.transform = 'translateY(-50%)';
-        } else {
-            style.top = adjustedTop;
-        }
+        if (orientation === 'horizontal') {
+            let adjustedLeft = (focusAnchorRect.left - offsetLeft) + (focusAnchorRect.width / 2) - (popupWidth / 2);
+            const maxLeft = (screenWidth - offsetLeft) - popupWidth - 20;
+            const minLeft = -offsetLeft + 20;
+            if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+            if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
-        if (edgePosition === 'left') {
-            style.left = '100%';
-            style.marginLeft = '12px';
+            if (!isPopupSmartPositioning) {
+                style.left = '50%';
+                style.transform = 'translateX(-50%)';
+            } else {
+                style.left = adjustedLeft;
+            }
+
+            if (edgePosition === 'top') {
+                style.top = '100%';
+                style.marginTop = '12px';
+            } else {
+                style.bottom = '100%';
+                style.marginBottom = '12px';
+            }
         } else {
-            style.right = '100%';
-            style.marginRight = '12px';
+            let adjustedTop = (focusAnchorRect.top - offsetTop) - 20 + (focusAnchorRect.height / 2) - (popupHeight / 2);
+            const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
+            const minTop = -offsetTop + 20;
+            if (adjustedTop < minTop) adjustedTop = minTop;
+            if (adjustedTop > maxTop) adjustedTop = maxTop;
+
+            if (!isPopupSmartPositioning) {
+                style.top = '50%';
+                style.transform = 'translateY(-50%)';
+            } else {
+                style.top = adjustedTop;
+            }
+
+            if (edgePosition === 'left') {
+                style.left = '100%';
+                style.marginLeft = '12px';
+            } else {
+                style.right = '100%';
+                style.marginRight = '12px';
+            }
         }
         return style;
     };
@@ -141,19 +167,34 @@ export const FocusPopup: React.FC = () => {
     useEffect(() => {
         const onDrag = (e: any) => {
             if (!popupRef.current || !focusAnchorRect || !isSmartRef.current) return;
+            const newX = e.detail.x;
             const newY = e.detail.y;
             const popupHeight = 280;
-            const screenHeight = screenBounds?.height ?? 800;
-            let adjustedTop = (focusAnchorRect.top - newY) - 20 + (focusAnchorRect.height / 2) - (popupHeight / 2);
-            const maxTop = (screenHeight - newY) - popupHeight - 20;
-            const minTop = -newY + 20;
-            if (adjustedTop < minTop) adjustedTop = minTop;
-            if (adjustedTop > maxTop) adjustedTop = maxTop;
-            popupRef.current.style.top = `${adjustedTop}px`;
+            const popupWidth = 256;
+            
+            if (orientation === 'horizontal') {
+                const screenWidth = screenBounds?.width ?? 1200;
+                let adjustedLeft = (focusAnchorRect.left - newX) + (focusAnchorRect.width / 2) - (popupWidth / 2);
+                const maxLeft = (screenWidth - newX) - popupWidth - 20;
+                const minLeft = -newX + 20;
+                if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+                if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
+                popupRef.current.style.left = `${adjustedLeft}px`;
+                popupRef.current.style.top = '';
+            } else {
+                const screenHeight = screenBounds?.height ?? 800;
+                let adjustedTop = (focusAnchorRect.top - newY) - 20 + (focusAnchorRect.height / 2) - (popupHeight / 2);
+                const maxTop = (screenHeight - newY) - popupHeight - 20;
+                const minTop = -newY + 20;
+                if (adjustedTop < minTop) adjustedTop = minTop;
+                if (adjustedTop > maxTop) adjustedTop = maxTop;
+                popupRef.current.style.top = `${adjustedTop}px`;
+                popupRef.current.style.left = '';
+            }
         };
         document.addEventListener('kobar-drag', onDrag);
         return () => document.removeEventListener('kobar-drag', onDrag);
-    }, [focusAnchorRect, screenBounds?.height]);
+    }, [focusAnchorRect, screenBounds, orientation]);
 
     if (!isFocusPopupOpen) return null;
 

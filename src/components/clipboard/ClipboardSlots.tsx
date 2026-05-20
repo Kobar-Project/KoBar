@@ -35,7 +35,7 @@ const ClipboardSlots: React.FC = () => {
         setSelectedSlot,
         setSlotCount: setStoreSlotCount,
     } = useClipboardStore();
-    const { t, design, slotCount, edgePosition } = useAppStore();
+    const { t, design, slotCount, edgePosition, orientation } = useAppStore();
 
     const [activePreviewSlot, setActivePreviewSlot] = useState<number | null>(null);
     const [previewRect, setPreviewRect] = useState<DOMRect | null>(null);
@@ -176,7 +176,7 @@ const ClipboardSlots: React.FC = () => {
     };
 
     return (
-        <div ref={containerRef} className="flex flex-col items-center gap-2 w-full px-2 no-drag-region">
+        <div ref={containerRef} className={`flex ${orientation === 'horizontal' ? 'flex-row h-full py-2 px-1' : 'flex-col w-full px-2'} items-center gap-2 no-drag-region`}>
             {/* Copy Button */}
             <TooltipButton
                 onClick={toggleCopyMode}
@@ -191,7 +191,9 @@ const ClipboardSlots: React.FC = () => {
             </TooltipButton>
 
             {/* Unified Slot Circles */}
-            <div className="grid grid-cols-4 gap-2 relative w-[80%] mx-auto justify-items-center">
+            <div className={orientation === 'horizontal' 
+                ? "grid grid-rows-2 grid-flow-col gap-1.5 relative h-[80%] my-auto justify-items-center items-center" 
+                : "grid grid-cols-4 gap-2 relative w-[80%] mx-auto justify-items-center"}>
                 {slots.map((slot, index) => (
                     <div key={`slot-container-${index}`} className="relative">
                         <label
@@ -216,13 +218,22 @@ const ClipboardSlots: React.FC = () => {
                             <div 
                                 id="clipboard-preview-portal"
                                 className={`fixed z-[999999] animate-in fade-in slide-in-from-top-1 duration-200 pointer-events-auto`}
-                                style={{
-                                    top: `${previewRect.top + previewRect.height / 2}px`,
-                                    transform: 'translateY(-50%)',
-                                    ...(edgePosition === 'left' 
-                                        ? { left: `${previewRect.right + 12}px` } 
-                                        : { right: `${window.innerWidth - previewRect.left + 12}px` })
-                                }}
+                                style={orientation === 'horizontal'
+                                    ? {
+                                        left: `${previewRect.left + previewRect.width / 2}px`,
+                                        transform: 'translateX(-50%)',
+                                        ...(edgePosition === 'top'
+                                            ? { top: `${previewRect.bottom + 12}px` }
+                                            : { bottom: `${window.innerHeight - previewRect.top + 12}px` })
+                                    }
+                                    : {
+                                        top: `${previewRect.top + previewRect.height / 2}px`,
+                                        transform: 'translateY(-50%)',
+                                        ...(edgePosition === 'left' 
+                                            ? { left: `${previewRect.right + 12}px` } 
+                                            : { right: `${window.innerWidth - previewRect.left + 12}px` })
+                                    }
+                                }
                             >
                                 <div className="min-w-[140px] max-w-[240px] p-2 rounded-md bg-black/90 backdrop-blur-3xl border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.8)] ring-1 ring-white/10 relative overflow-hidden group/preview">
                                     {/* Close Button */}
@@ -236,7 +247,7 @@ const ClipboardSlots: React.FC = () => {
                                     >
                                         <span className="material-symbols-outlined text-[16px]">close</span>
                                     </button>
-
+ 
                                     <div className="flex items-center gap-1.5 mb-1 opacity-40 select-none">
                                         <span className="material-symbols-outlined text-[13px]">
                                             {slot.type === 'image' ? 'image' : 'description'}
@@ -254,10 +265,15 @@ const ClipboardSlots: React.FC = () => {
                                     </div>
                                 </div>
                                 {/* Arrow */}
-                                <div className={`absolute top-1/2 -translate-y-1/2 border-y-[5px] border-y-transparent 
-                                    ${edgePosition === 'left' 
-                                        ? 'border-r-[5px] border-r-black/90 -left-1' 
-                                        : 'border-l-[5px] border-l-black/90 -right-1'}` 
+                                <div className={orientation === 'horizontal'
+                                    ? `absolute left-1/2 -translate-x-1/2 border-x-[5px] border-x-transparent 
+                                       ${edgePosition === 'top' 
+                                           ? 'border-b-[5px] border-b-black/90 -top-1' 
+                                           : 'border-t-[5px] border-t-black/90 -bottom-1'}`
+                                    : `absolute top-1/2 -translate-y-1/2 border-y-[5px] border-y-transparent 
+                                       ${edgePosition === 'left' 
+                                           ? 'border-r-[5px] border-r-black/90 -left-1' 
+                                           : 'border-l-[5px] border-l-black/90 -right-1'}`
                                 } />
                             </div>,
                             document.body

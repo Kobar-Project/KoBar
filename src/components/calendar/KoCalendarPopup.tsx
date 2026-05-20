@@ -37,21 +37,17 @@ const KoCalendarPopup: React.FC = () => {
     // We need sidebarPosition because if it exists, our wrapper is absolute, which shifts the coordinate space.
     const sidebarPosition = useAppStore(state => state.sidebarPosition);
 
+    const orientation = useAppStore(state => state.orientation);
+
     const getPopupStyle = (): React.CSSProperties => {
         if (!koCalendarAnchorRect) return { display: 'none' };
         
         const popupHeight = 440; // Calendar is taller
         const popupWidth = 350;
         const screenHeight = screenBounds?.height ?? 800;
+        const screenWidth = screenBounds?.width ?? 1200;
         const offsetTop = sidebarPosition ? sidebarPosition.y : 0;
-
-        let adjustedTop = (koCalendarAnchorRect.top - offsetTop) - 20 + (koCalendarAnchorRect.height / 2) - (popupHeight / 2);
-
-        const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
-        const minTop = -offsetTop + 20;
-
-        if (adjustedTop < minTop) adjustedTop = minTop;
-        if (adjustedTop > maxTop) adjustedTop = maxTop;
+        const offsetLeft = sidebarPosition ? sidebarPosition.x : 0;
 
         const style: React.CSSProperties = {
             position: 'absolute',
@@ -67,19 +63,48 @@ const KoCalendarPopup: React.FC = () => {
             transitionProperty: 'opacity, transform, filter'
         };
 
-        if (!isSmartPositioning) {
-            style.top = '50%';
-            style.transform = 'translateY(-50%)';
-        } else {
-            style.top = adjustedTop;
-        }
+        if (orientation === 'horizontal') {
+            let adjustedLeft = (koCalendarAnchorRect.left - offsetLeft) + (koCalendarAnchorRect.width / 2) - (popupWidth / 2);
+            const maxLeft = (screenWidth - offsetLeft) - popupWidth - 20;
+            const minLeft = -offsetLeft + 20;
+            if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+            if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
-        if (edgePosition === 'left') {
-            style.left = '100%';
-            style.marginLeft = '12px';
+            if (!isSmartPositioning) {
+                style.left = '50%';
+                style.transform = 'translateX(-50%)';
+            } else {
+                style.left = adjustedLeft;
+            }
+
+            if (edgePosition === 'top') {
+                style.top = '100%';
+                style.marginTop = '12px';
+            } else {
+                style.bottom = '100%';
+                style.marginBottom = '12px';
+            }
         } else {
-            style.right = '100%';
-            style.marginRight = '12px';
+            let adjustedTop = (koCalendarAnchorRect.top - offsetTop) - 20 + (koCalendarAnchorRect.height / 2) - (popupHeight / 2);
+            const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
+            const minTop = -offsetTop + 20;
+            if (adjustedTop < minTop) adjustedTop = minTop;
+            if (adjustedTop > maxTop) adjustedTop = maxTop;
+
+            if (!isSmartPositioning) {
+                style.top = '50%';
+                style.transform = 'translateY(-50%)';
+            } else {
+                style.top = adjustedTop;
+            }
+
+            if (edgePosition === 'left') {
+                style.left = '100%';
+                style.marginLeft = '12px';
+            } else {
+                style.right = '100%';
+                style.marginRight = '12px';
+            }
         }
         return style;
     };
@@ -91,19 +116,34 @@ const KoCalendarPopup: React.FC = () => {
     React.useEffect(() => {
         const onDrag = (e: any) => {
             if (!popupRef.current || !koCalendarAnchorRect || !isSmartRef.current) return;
+            const newX = e.detail.x;
             const newY = e.detail.y;
             const popupHeight = 440;
-            const screenHeight = screenBounds?.height ?? 800;
-            let adjustedTop = (koCalendarAnchorRect.top - newY) - 20 + (koCalendarAnchorRect.height / 2) - (popupHeight / 2);
-            const maxTop = (screenHeight - newY) - popupHeight - 20;
-            const minTop = -newY + 20;
-            if (adjustedTop < minTop) adjustedTop = minTop;
-            if (adjustedTop > maxTop) adjustedTop = maxTop;
-            popupRef.current.style.top = `${adjustedTop}px`;
+            const popupWidth = 350;
+            
+            if (orientation === 'horizontal') {
+                const screenWidth = screenBounds?.width ?? 1200;
+                let adjustedLeft = (koCalendarAnchorRect.left - newX) + (koCalendarAnchorRect.width / 2) - (popupWidth / 2);
+                const maxLeft = (screenWidth - newX) - popupWidth - 20;
+                const minLeft = -newX + 20;
+                if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+                if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
+                popupRef.current.style.left = `${adjustedLeft}px`;
+                popupRef.current.style.top = '';
+            } else {
+                const screenHeight = screenBounds?.height ?? 800;
+                let adjustedTop = (koCalendarAnchorRect.top - newY) - 20 + (koCalendarAnchorRect.height / 2) - (popupHeight / 2);
+                const maxTop = (screenHeight - newY) - popupHeight - 20;
+                const minTop = -newY + 20;
+                if (adjustedTop < minTop) adjustedTop = minTop;
+                if (adjustedTop > maxTop) adjustedTop = maxTop;
+                popupRef.current.style.top = `${adjustedTop}px`;
+                popupRef.current.style.left = '';
+            }
         };
         document.addEventListener('kobar-drag', onDrag);
         return () => document.removeEventListener('kobar-drag', onDrag);
-    }, [koCalendarAnchorRect, screenBounds?.height]);
+    }, [koCalendarAnchorRect, screenBounds, orientation]);
 
 
     const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
