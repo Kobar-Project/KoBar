@@ -80,20 +80,15 @@ export const AiHubPopup: React.FC = () => {
     // We need sidebarPosition because if it exists, our wrapper is absolute, which shifts the coordinate space.
     const sidebarPosition = useAppStore(state => state.sidebarPosition);
 
+    const orientation = useAppStore(state => state.orientation);
+
     const getPopupStyle = (): React.CSSProperties => {
         if (!aiHubAnchorRect) return { display: 'none' };
         
         const screenHeight = screenBounds?.height ?? 800;
+        const screenWidth = screenBounds?.width ?? 1200;
         const offsetTop = sidebarPosition ? sidebarPosition.y : 0;
-        
-        let adjustedTop = (aiHubAnchorRect.top - offsetTop) - 20 + (aiHubAnchorRect.height / 2) - (aiHubHeight / 2);
-
-        // Clamp to prevent bleeding (20px margin)
-        const maxTop = (screenHeight - offsetTop) - aiHubHeight - 20;
-        const minTop = -offsetTop + 20;
-
-        if (adjustedTop < minTop) adjustedTop = minTop;
-        if (adjustedTop > maxTop) adjustedTop = maxTop;
+        const offsetLeft = sidebarPosition ? sidebarPosition.x : 0;
 
         const style: React.CSSProperties = {
             position: 'absolute',
@@ -115,19 +110,48 @@ export const AiHubPopup: React.FC = () => {
             willChange: 'transform, opacity' 
         };
 
-        if (!isSmartPositioning) {
-            style.top = '50%';
-            style.transform = 'translateY(-50%)';
-        } else {
-            style.top = adjustedTop;
-        }
+        if (orientation === 'horizontal') {
+            let adjustedLeft = (aiHubAnchorRect.left - offsetLeft) + (aiHubAnchorRect.width / 2) - (aiHubWidth / 2);
+            const maxLeft = (screenWidth - offsetLeft) - aiHubWidth - 20;
+            const minLeft = -offsetLeft + 20;
+            if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+            if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
-        if (edgePosition === 'left') {
-            style.left = '100%';
-            style.marginLeft = '12px';
+            if (!isSmartPositioning) {
+                style.left = '50%';
+                style.transform = 'translateX(-50%)';
+            } else {
+                style.left = adjustedLeft;
+            }
+
+            if (edgePosition === 'top') {
+                style.top = '100%';
+                style.marginTop = '12px';
+            } else {
+                style.bottom = '100%';
+                style.marginBottom = '12px';
+            }
         } else {
-            style.right = '100%';
-            style.marginRight = '12px';
+            let adjustedTop = (aiHubAnchorRect.top - offsetTop) - 20 + (aiHubAnchorRect.height / 2) - (aiHubHeight / 2);
+            const maxTop = (screenHeight - offsetTop) - aiHubHeight - 20;
+            const minTop = -offsetTop + 20;
+            if (adjustedTop < minTop) adjustedTop = minTop;
+            if (adjustedTop > maxTop) adjustedTop = maxTop;
+
+            if (!isSmartPositioning) {
+                style.top = '50%';
+                style.transform = 'translateY(-50%)';
+            } else {
+                style.top = adjustedTop;
+            }
+
+            if (edgePosition === 'left') {
+                style.left = '100%';
+                style.marginLeft = '12px';
+            } else {
+                style.right = '100%';
+                style.marginRight = '12px';
+            }
         }
         return style;
     };
@@ -138,18 +162,32 @@ export const AiHubPopup: React.FC = () => {
     useEffect(() => {
         const onDrag = (e: any) => {
             if (!popupRef.current || !aiHubAnchorRect || !isSmartRef.current) return;
+            const newX = e.detail.x;
             const newY = e.detail.y;
-            const screenHeight = screenBounds?.height ?? 800;
-            let adjustedTop = (aiHubAnchorRect.top - newY) - 20 + (aiHubAnchorRect.height / 2) - (aiHubHeight / 2);
-            const maxTop = (screenHeight - newY) - aiHubHeight - 20;
-            const minTop = -newY + 20;
-            if (adjustedTop < minTop) adjustedTop = minTop;
-            if (adjustedTop > maxTop) adjustedTop = maxTop;
-            popupRef.current.style.top = `${adjustedTop}px`;
+            
+            if (orientation === 'horizontal') {
+                const screenWidth = screenBounds?.width ?? 1200;
+                let adjustedLeft = (aiHubAnchorRect.left - newX) + (aiHubAnchorRect.width / 2) - (aiHubWidth / 2);
+                const maxLeft = (screenWidth - newX) - aiHubWidth - 20;
+                const minLeft = -newX + 20;
+                if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+                if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
+                popupRef.current.style.left = `${adjustedLeft}px`;
+                popupRef.current.style.top = '';
+            } else {
+                const screenHeight = screenBounds?.height ?? 800;
+                let adjustedTop = (aiHubAnchorRect.top - newY) - 20 + (aiHubAnchorRect.height / 2) - (aiHubHeight / 2);
+                const maxTop = (screenHeight - newY) - aiHubHeight - 20;
+                const minTop = -newY + 20;
+                if (adjustedTop < minTop) adjustedTop = minTop;
+                if (adjustedTop > maxTop) adjustedTop = maxTop;
+                popupRef.current.style.top = `${adjustedTop}px`;
+                popupRef.current.style.left = '';
+            }
         };
         document.addEventListener('kobar-drag', onDrag);
         return () => document.removeEventListener('kobar-drag', onDrag);
-    }, [aiHubAnchorRect, screenBounds?.height, aiHubHeight]);
+    }, [aiHubAnchorRect, screenBounds, aiHubWidth, aiHubHeight, orientation]);
 
 
     const handleResizeTemp = (w: number, h: number) => {

@@ -36,23 +36,19 @@ const KoPlayerPopup: React.FC = () => {
     // We need sidebarPosition because if it exists, our wrapper is absolute, which shifts the coordinate space.
     const sidebarPosition = useAppStore(state => state.sidebarPosition);
 
+    const orientation = useAppStore(state => state.orientation);
+
     const getPopupStyle = (): React.CSSProperties => {
         if (!koPlayerAnchorRect) return { display: 'none' };
         
         const popupHeight = 280;
+        const popupWidth = 288; // w-72 is 288px
         const screenHeight = screenBounds?.height ?? 800;
+        const screenWidth = screenBounds?.width ?? 1200;
         
         // Remove wrapper offset from viewport rect
         const offsetTop = sidebarPosition ? sidebarPosition.y : 0;
-
-        let adjustedTop = (koPlayerAnchorRect.top - offsetTop) - 20 + (koPlayerAnchorRect.height / 2) - (popupHeight / 2);
-
-        // Clamp to logical screen bounds relative to wrapper
-        const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
-        const minTop = -offsetTop + 20;
-
-        if (adjustedTop < minTop) adjustedTop = minTop;
-        if (adjustedTop > maxTop) adjustedTop = maxTop;
+        const offsetLeft = sidebarPosition ? sidebarPosition.x : 0;
 
         const style: React.CSSProperties = {
             position: 'absolute',
@@ -61,19 +57,48 @@ const KoPlayerPopup: React.FC = () => {
             transitionProperty: 'opacity, transform, filter'
         };
 
-        if (!isSmartPositioning) {
-            style.top = '50%';
-            style.transform = 'translateY(-50%)';
-        } else {
-            style.top = adjustedTop;
-        }
+        if (orientation === 'horizontal') {
+            let adjustedLeft = (koPlayerAnchorRect.left - offsetLeft) + (koPlayerAnchorRect.width / 2) - (popupWidth / 2);
+            const maxLeft = (screenWidth - offsetLeft) - popupWidth - 20;
+            const minLeft = -offsetLeft + 20;
+            if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+            if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
-        if (edgePosition === 'left') {
-            style.left = '100%';
-            style.marginLeft = '12px';
+            if (!isSmartPositioning) {
+                style.left = '50%';
+                style.transform = 'translateX(-50%)';
+            } else {
+                style.left = adjustedLeft;
+            }
+
+            if (edgePosition === 'top') {
+                style.top = '100%';
+                style.marginTop = '12px';
+            } else {
+                style.bottom = '100%';
+                style.marginBottom = '12px';
+            }
         } else {
-            style.right = '100%';
-            style.marginRight = '12px';
+            let adjustedTop = (koPlayerAnchorRect.top - offsetTop) - 20 + (koPlayerAnchorRect.height / 2) - (popupHeight / 2);
+            const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
+            const minTop = -offsetTop + 20;
+            if (adjustedTop < minTop) adjustedTop = minTop;
+            if (adjustedTop > maxTop) adjustedTop = maxTop;
+
+            if (!isSmartPositioning) {
+                style.top = '50%';
+                style.transform = 'translateY(-50%)';
+            } else {
+                style.top = adjustedTop;
+            }
+
+            if (edgePosition === 'left') {
+                style.left = '100%';
+                style.marginLeft = '12px';
+            } else {
+                style.right = '100%';
+                style.marginRight = '12px';
+            }
         }
         return style;
     };
@@ -84,19 +109,34 @@ const KoPlayerPopup: React.FC = () => {
     useEffect(() => {
         const onDrag = (e: any) => {
             if (!popupRef.current || !koPlayerAnchorRect || !isSmartRef.current) return;
+            const newX = e.detail.x;
             const newY = e.detail.y;
             const popupHeight = 280;
-            const screenHeight = screenBounds?.height ?? 800;
-            let adjustedTop = (koPlayerAnchorRect.top - newY) - 20 + (koPlayerAnchorRect.height / 2) - (popupHeight / 2);
-            const maxTop = (screenHeight - newY) - popupHeight - 20;
-            const minTop = -newY + 20;
-            if (adjustedTop < minTop) adjustedTop = minTop;
-            if (adjustedTop > maxTop) adjustedTop = maxTop;
-            popupRef.current.style.top = `${adjustedTop}px`;
+            const popupWidth = 288;
+            
+            if (orientation === 'horizontal') {
+                const screenWidth = screenBounds?.width ?? 1200;
+                let adjustedLeft = (koPlayerAnchorRect.left - newX) + (koPlayerAnchorRect.width / 2) - (popupWidth / 2);
+                const maxLeft = (screenWidth - newX) - popupWidth - 20;
+                const minLeft = -newX + 20;
+                if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+                if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
+                popupRef.current.style.left = `${adjustedLeft}px`;
+                popupRef.current.style.top = '';
+            } else {
+                const screenHeight = screenBounds?.height ?? 800;
+                let adjustedTop = (koPlayerAnchorRect.top - newY) - 20 + (koPlayerAnchorRect.height / 2) - (popupHeight / 2);
+                const maxTop = (screenHeight - newY) - popupHeight - 20;
+                const minTop = -newY + 20;
+                if (adjustedTop < minTop) adjustedTop = minTop;
+                if (adjustedTop > maxTop) adjustedTop = maxTop;
+                popupRef.current.style.top = `${adjustedTop}px`;
+                popupRef.current.style.left = '';
+            }
         };
         document.addEventListener('kobar-drag', onDrag);
         return () => document.removeEventListener('kobar-drag', onDrag);
-    }, [koPlayerAnchorRect, screenBounds?.height]);
+    }, [koPlayerAnchorRect, screenBounds, orientation]);
 
     const handleCommand = (cmd: 'play' | 'pause' | 'next' | 'prev') => {
         window.api?.sendMediaCommand?.(cmd);

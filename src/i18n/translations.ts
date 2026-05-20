@@ -246,6 +246,9 @@ export const translations = {
         smartPopupPositioning: "Smart Popup Positioning",
         smartPopupPositioningDesc: "Popups dynamically follow their launch icons and stay within screen bounds. If disabled, popups stay rigidly centered to the Bar.",
         enableEyeAnimation: "Enable Eye Animation",
+        orientation: "Orientation",
+        vertical: "Vertical",
+        horizontal: "Horizontal",
     },
     tr: {
         updateAvailableTitle: "Güncelleme Mevcut",
@@ -467,6 +470,9 @@ export const translations = {
         smartPopupPositioning: "Akıllı Pencere Konumlandırma",
         smartPopupPositioningDesc: "Pencereler, açıldıkları ikonları takip eder ve ekran sınırları içinde kalır. Devre dışı bırakılırsa pencereler Bar'ın ortasına sabitlenir.",
         enableEyeAnimation: "Göz Animasyonunu Etkinleştir",
+        orientation: "Yönelim",
+        vertical: "Dikey",
+        horizontal: "Yatay",
     },
     de: {
         updateAvailableTitle: "Update verfügbar",

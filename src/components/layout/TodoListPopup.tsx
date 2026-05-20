@@ -18,6 +18,8 @@ const TodoListPopup: React.FC = () => {
     const screenBounds = useAppStore(state => state.screenBounds);
     const isSmartPositioning = useAppStore(state => state.isPopupSmartPositioning);
 
+    const orientation = useAppStore(state => state.orientation);
+
     const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
     const popupRef = useRef<HTMLDivElement>(null);
 
@@ -28,16 +30,11 @@ const TodoListPopup: React.FC = () => {
         if (!todoListAnchorRect) return { display: 'none' };
         
         const popupHeight = 300; // Expected approximate height
+        const popupWidth = 320; // w-80 is 320px
         const screenHeight = screenBounds?.height ?? 800;
+        const screenWidth = screenBounds?.width ?? 1200;
         const offsetTop = sidebarPosition ? sidebarPosition.y : 0;
-
-        let adjustedTop = (todoListAnchorRect.top - offsetTop) - 20 + (todoListAnchorRect.height / 2) - (popupHeight / 2);
-
-        const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
-        const minTop = -offsetTop + 20;
-
-        if (adjustedTop < minTop) adjustedTop = minTop;
-        if (adjustedTop > maxTop) adjustedTop = maxTop;
+        const offsetLeft = sidebarPosition ? sidebarPosition.x : 0;
 
         const style: React.CSSProperties = {
             position: 'absolute',
@@ -52,19 +49,48 @@ const TodoListPopup: React.FC = () => {
             transitionProperty: 'opacity, transform, filter'
         };
 
-        if (!isSmartPositioning) {
-            style.top = '50%';
-            style.transform = 'translateY(-50%)';
-        } else {
-            style.top = adjustedTop;
-        }
+        if (orientation === 'horizontal') {
+            let adjustedLeft = (todoListAnchorRect.left - offsetLeft) + (todoListAnchorRect.width / 2) - (popupWidth / 2);
+            const maxLeft = (screenWidth - offsetLeft) - popupWidth - 20;
+            const minLeft = -offsetLeft + 20;
+            if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+            if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
-        if (edgePosition === 'left') {
-            style.left = '100%';
-            style.marginLeft = '12px';
+            if (!isSmartPositioning) {
+                style.left = '50%';
+                style.transform = 'translateX(-50%)';
+            } else {
+                style.left = adjustedLeft;
+            }
+
+            if (edgePosition === 'top') {
+                style.top = '100%';
+                style.marginTop = '12px';
+            } else {
+                style.bottom = '100%';
+                style.marginBottom = '12px';
+            }
         } else {
-            style.right = '100%';
-            style.marginRight = '12px';
+            let adjustedTop = (todoListAnchorRect.top - offsetTop) - 20 + (todoListAnchorRect.height / 2) - (popupHeight / 2);
+            const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
+            const minTop = -offsetTop + 20;
+            if (adjustedTop < minTop) adjustedTop = minTop;
+            if (adjustedTop > maxTop) adjustedTop = maxTop;
+
+            if (!isSmartPositioning) {
+                style.top = '50%';
+                style.transform = 'translateY(-50%)';
+            } else {
+                style.top = adjustedTop;
+            }
+
+            if (edgePosition === 'left') {
+                style.left = '100%';
+                style.marginLeft = '12px';
+            } else {
+                style.right = '100%';
+                style.marginRight = '12px';
+            }
         }
         return style;
     };
@@ -75,19 +101,34 @@ const TodoListPopup: React.FC = () => {
     React.useEffect(() => {
         const onDrag = (e: any) => {
             if (!popupRef.current || !todoListAnchorRect || !isSmartRef.current) return;
+            const newX = e.detail.x;
             const newY = e.detail.y;
             const popupHeight = 300;
-            const screenHeight = screenBounds?.height ?? 800;
-            let adjustedTop = (todoListAnchorRect.top - newY) - 20 + (todoListAnchorRect.height / 2) - (popupHeight / 2);
-            const maxTop = (screenHeight - newY) - popupHeight - 20;
-            const minTop = -newY + 20;
-            if (adjustedTop < minTop) adjustedTop = minTop;
-            if (adjustedTop > maxTop) adjustedTop = maxTop;
-            popupRef.current.style.top = `${adjustedTop}px`;
+            const popupWidth = 320;
+            
+            if (orientation === 'horizontal') {
+                const screenWidth = screenBounds?.width ?? 1200;
+                let adjustedLeft = (todoListAnchorRect.left - newX) + (todoListAnchorRect.width / 2) - (popupWidth / 2);
+                const maxLeft = (screenWidth - newX) - popupWidth - 20;
+                const minLeft = -newX + 20;
+                if (adjustedLeft < minLeft) adjustedLeft = minLeft;
+                if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
+                popupRef.current.style.left = `${adjustedLeft}px`;
+                popupRef.current.style.top = '';
+            } else {
+                const screenHeight = screenBounds?.height ?? 800;
+                let adjustedTop = (todoListAnchorRect.top - newY) - 20 + (todoListAnchorRect.height / 2) - (popupHeight / 2);
+                const maxTop = (screenHeight - newY) - popupHeight - 20;
+                const minTop = -newY + 20;
+                if (adjustedTop < minTop) adjustedTop = minTop;
+                if (adjustedTop > maxTop) adjustedTop = maxTop;
+                popupRef.current.style.top = `${adjustedTop}px`;
+                popupRef.current.style.left = '';
+            }
         };
         document.addEventListener('kobar-drag', onDrag);
         return () => document.removeEventListener('kobar-drag', onDrag);
-    }, [todoListAnchorRect, screenBounds?.height]);
+    }, [todoListAnchorRect, screenBounds, orientation]);
 
     const completedCount = todos.filter(t => t.completed).length;
     const progress = todos.length === 0 ? 0 : (completedCount / todos.length) * 100;

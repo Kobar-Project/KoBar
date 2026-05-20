@@ -137,15 +137,18 @@ export interface WorkspaceConfig {
     design: 'style1' | 'style2';
     glassOpacity: number;
     featureOrder: string[];
-    edgePosition: 'left' | 'right';
+    edgePosition: 'left' | 'right' | 'top' | 'bottom';
     isPopupSmartPositioning: boolean;
     enableEyeAnimation: boolean;
+    orientation: 'vertical' | 'horizontal';
 }
 
 interface AppState {
     isMac: boolean;
-    edgePosition: 'left' | 'right';
-    setEdgePosition: (edge: 'left' | 'right') => void;
+    edgePosition: 'left' | 'right' | 'top' | 'bottom';
+    setEdgePosition: (edge: 'left' | 'right' | 'top' | 'bottom') => void;
+    orientation: 'vertical' | 'horizontal';
+    setOrientation: (orientation: 'vertical' | 'horizontal') => void;
     isNotePanelOpen: boolean;
     setNotePanelOpen: (isOpen: boolean) => void;
     toggleNotePanel: () => void;
@@ -194,6 +197,8 @@ interface AppState {
     setSidebarWidth: (val: number) => void;
     lastSidebarHeight: number;
     setLastSidebarHeight: (val: number) => void;
+    lastSidebarWidth: number;
+    setLastSidebarWidth: (val: number) => void;
     iconScale: number;
     setIconScale: (val: number) => void;
 
@@ -451,6 +456,11 @@ export const useAppStore = create<AppState>()(
             }),
             edgePosition: 'right',
             setEdgePosition: (edge) => set({ edgePosition: edge }),
+            orientation: 'vertical',
+            setOrientation: (orientation) => {
+                const defaultEdge = orientation === 'horizontal' ? 'bottom' : 'right';
+                set({ orientation, edgePosition: defaultEdge, sidebarPosition: null });
+            },
             isNotePanelOpen: false,
             setNotePanelOpen: (isOpen) => set({ isNotePanelOpen: isOpen }),
             toggleNotePanel: () => set((state) => ({ isNotePanelOpen: !state.isNotePanelOpen })),
@@ -518,6 +528,8 @@ export const useAppStore = create<AppState>()(
             setSidebarWidth: (val) => set({ sidebarWidth: val }),
             lastSidebarHeight: 800,
             setLastSidebarHeight: (val) => set({ lastSidebarHeight: val }),
+            lastSidebarWidth: 200,
+            setLastSidebarWidth: (val) => set({ lastSidebarWidth: val }),
             iconScale: 0.8,
             setIconScale: (val) => set({ iconScale: val }),
 
@@ -764,12 +776,27 @@ export const useAppStore = create<AppState>()(
                 if (pos) {
                     updates.miniModePosition = pos;
                     if (!isMini) {
-                        // Position the sidebar's bottom handle precisely where the eye was located
-                        // We subtract lastSidebarHeight so the bottom of the sidebar rests at the eye's Y pos
-                        // The eye button itself has a height of 48px, so its half-height is 24 * iconScale.
-                        // We add the bottom padding (8px from pb-2) to get the exact distance from the center of the button to the bottom of the sidebar.
-                        const centerToBottom = (24 * state.iconScale) + 8;
-                        updates.sidebarPosition = { x: pos.x - (state.sidebarWidth / 2), y: pos.y - state.lastSidebarHeight + centerToBottom };
+                        if (state.orientation === 'horizontal') {
+                            // In horizontal mode, the static utilities (like the Eye button) are on the far right.
+                            // The eye button itself has a width of 48px, so its half-width is 24 * iconScale.
+                            // The horizontal container has a right padding of pr-2 (8px).
+                            // Thus, the distance from the center of the eye to the rightmost edge of the sidebar is:
+                            const centerToRight = (24 * state.iconScale) + 8;
+                            updates.sidebarPosition = {
+                                x: pos.x - state.lastSidebarWidth + centerToRight,
+                                y: pos.y - (state.sidebarWidth / 2)
+                            };
+                        } else {
+                            // Position the sidebar's bottom handle precisely where the eye was located
+                            // We subtract lastSidebarHeight so the bottom of the sidebar rests at the eye's Y pos
+                            // The eye button itself has a height of 48px, so its half-height is 24 * iconScale.
+                            // We add the bottom padding (8px from pb-2) to get the exact distance from the center of the button to the bottom of the sidebar.
+                            const centerToBottom = (24 * state.iconScale) + 8;
+                            updates.sidebarPosition = {
+                                x: pos.x - (state.sidebarWidth / 2),
+                                y: pos.y - state.lastSidebarHeight + centerToBottom
+                            };
+                        }
                     }
                 } else if (!pos && isMini) {
                     updates.miniModePosition = null;
@@ -908,7 +935,8 @@ export const useAppStore = create<AppState>()(
                     featureOrder: [...state.featureOrder],
                     edgePosition: state.edgePosition,
                     isPopupSmartPositioning: state.isPopupSmartPositioning,
-                    enableEyeAnimation: state.enableEyeAnimation
+                    enableEyeAnimation: state.enableEyeAnimation,
+                    orientation: state.orientation
                 };
                 return { workspaces: [...state.workspaces, newWorkspace] };
             }),
@@ -953,7 +981,8 @@ export const useAppStore = create<AppState>()(
                     featureOrder: [...ws.featureOrder],
                     edgePosition: ws.edgePosition,
                     isPopupSmartPositioning: ws.isPopupSmartPositioning || false,
-                    enableEyeAnimation: ws.enableEyeAnimation !== undefined ? ws.enableEyeAnimation : true
+                    enableEyeAnimation: ws.enableEyeAnimation !== undefined ? ws.enableEyeAnimation : true,
+                    orientation: ws.orientation || 'vertical'
                 };
             }),
             deleteWorkspace: (id) => set((state) => ({
@@ -995,14 +1024,24 @@ export const useAppStore = create<AppState>()(
                     glassOpacity: state.glassOpacity,
                     featureOrder: [...state.featureOrder],
                     edgePosition: state.edgePosition,
-                    enableEyeAnimation: state.enableEyeAnimation
+                    enableEyeAnimation: state.enableEyeAnimation,
+                    orientation: state.orientation
                 } : w)
             })),
         }),
         {
             name: 'kobar-storage',
-            version: 17,
+            version: 18,
             migrate: (persistedState: any, version: number) => {
+                // version 18 migration for orientation
+                if (version <= 17) {
+                    if (persistedState.orientation === undefined) {
+                        persistedState.orientation = 'vertical';
+                    }
+                    if (persistedState.edgePosition === undefined) {
+                        persistedState.edgePosition = 'right';
+                    }
+                }
                 // version 17 migration for enableEyeAnimation
                 if (version <= 16) {
                     if (persistedState.enableEyeAnimation === undefined) {
@@ -1215,6 +1254,8 @@ export const useAppStore = create<AppState>()(
                 isCalculatorScientific: state.isCalculatorScientific,
                 settingsFeatureViewMode: state.settingsFeatureViewMode,
                 settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
+                orientation: state.orientation,
+                edgePosition: state.edgePosition,
             }),
             onRehydrateStorage: (_) => {
                 console.log('[Store] Hydration starting...');
