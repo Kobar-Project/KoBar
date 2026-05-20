@@ -233,7 +233,7 @@ const Sidebar: React.FC = () => {
                 // Compute exact absolute coordinates in OS space
                 // Windows ghost window origin (newX=0) maps precisely to this physical OS pixel:
                 const physicalOriginX = primaryX + (primaryW / 2) - 3000;
-                const physicalOriginY = primaryY + (primaryH / 2) - 2000;
+                const physicalOriginY = primaryY;
                 
                 // Add relative dragged sidebar center to get absolute physical pixel
                 const physicalCurrentX = physicalOriginX + newX + (orientation === 'horizontal' ? 0 : sidebarWidth / 2);
@@ -325,7 +325,7 @@ const Sidebar: React.FC = () => {
                     }
 
                     const physicalOriginX = primaryX + (primaryW / 2) - 3000;
-                    const physicalOriginY = primaryY + (primaryH / 2) - 2000;
+                    const physicalOriginY = primaryY;
 
                     const physicalCurrentX = physicalOriginX + pos.x + (orientation === 'horizontal' ? 0 : sidebarWidth / 2);
                     const physicalCurrentY = physicalOriginY + pos.y + (orientation === 'horizontal' ? sidebarWidth / 2 : 0);
@@ -349,7 +349,7 @@ const Sidebar: React.FC = () => {
                         const fallBackH = screenBounds?.height ?? window.innerHeight;
                         visibleLeft = 3000 + (screenBounds?.x ?? 0) - (fallBackW / 2);
                         visibleRight = visibleLeft + fallBackW;
-                        visibleTop = 2000 + (screenBounds?.y ?? 0) - (fallBackH / 2);
+                        visibleTop = (screenBounds?.y ?? 0);
                         visibleBottom = visibleTop + fallBackH;
                         activeScreenCenter = visibleLeft + (fallBackW / 2);
                         activeScreenCenterY = visibleTop + (fallBackH / 2);
