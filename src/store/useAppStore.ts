@@ -782,20 +782,34 @@ export const useAppStore = create<AppState>()(
                             // The horizontal container has a right padding of pr-2 (8px).
                             // Thus, the distance from the center of the eye to the rightmost edge of the sidebar is:
                             const centerToRight = (24 * state.iconScale) + 8;
+                            const sidebarY = pos.y - (state.sidebarWidth / 2);
                             updates.sidebarPosition = {
                                 x: pos.x - state.lastSidebarWidth + centerToRight,
-                                y: pos.y - (state.sidebarWidth / 2)
+                                y: sidebarY
                             };
+
+                            // Recalculate edgePosition so NotePanel/SettingsPanel opens on the correct side
+                            const screenH = state.screenBounds?.height ?? 800;
+                            const sidebarCenterY = sidebarY + (state.sidebarWidth / 2);
+                            updates.edgePosition = sidebarCenterY < (screenH / 2) ? 'top' : 'bottom';
                         } else {
                             // Position the sidebar's bottom handle precisely where the eye was located
                             // We subtract lastSidebarHeight so the bottom of the sidebar rests at the eye's Y pos
                             // The eye button itself has a height of 48px, so its half-height is 24 * iconScale.
                             // We add the bottom padding (8px from pb-2) to get the exact distance from the center of the button to the bottom of the sidebar.
                             const centerToBottom = (24 * state.iconScale) + 8;
+                            const sidebarX = pos.x - (state.sidebarWidth / 2);
                             updates.sidebarPosition = {
-                                x: pos.x - (state.sidebarWidth / 2),
+                                x: sidebarX,
                                 y: pos.y - state.lastSidebarHeight + centerToBottom
                             };
+
+                            // Recalculate edgePosition so NotePanel/SettingsPanel opens on the correct side
+                            const screenW = state.screenBounds?.width ?? 1920;
+                            const isMacPlatform = state.isMac;
+                            const screenCenter = isMacPlatform ? (screenW / 2) : 3000;
+                            const sidebarCenterX = sidebarX + (state.sidebarWidth / 2);
+                            updates.edgePosition = sidebarCenterX < screenCenter ? 'left' : 'right';
                         }
                     }
                 } else if (!pos && isMini) {
