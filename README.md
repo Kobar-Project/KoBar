@@ -272,8 +272,8 @@ KoBar follows strict Electron security practices:
 | Platform | Format | Link / Store |
 |----------|--------|--------------|
 | Windows | AppX | [Microsoft Store](https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS) |
-| Windows (Standalone) | EXE | [GitHub Release (v1.0.21)](https://github.com/eedali/KoBar/releases/tag/v1.0.21) |
-| macOS | DMG / ZIP | [GitHub Release (v1.0.21)](https://github.com/eedali/KoBar/releases/tag/v1.0.21) |
+| Windows (Standalone) | EXE | [GitHub Releases](https://github.com/Kobar-Project/KoBar/releases) |
+| macOS | DMG / ZIP | [GitHub Releases](https://github.com/Kobar-Project/KoBar/releases) |
 
 ---
 
@@ -314,16 +314,10 @@ For support or inquiries, you can contact us at [contact@ko48.com](mailto:contac
 If you find KoBar useful and want to support its ongoing development, consider backing the project through any of the platforms below:
 
 <p align="center">
-  <a href="https://ko-fi.com/eedali" target="_blank">
-    <img src="https://img.shields.io/badge/Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support on Ko-fi" />
-  </a>
   <a href="https://www.patreon.com/kobarproject" target="_blank">
     <img src="https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white" alt="Become a Patron" />
   </a>
   <a href="https://opencollective.com/kobar" target="_blank">
     <img src="https://img.shields.io/badge/Open_Collective-7FADF2?style=for-the-badge&logo=open-collective&logoColor=white" alt="Open Collective" />
-  </a>
-  <a href="https://www.paypal.me/ekremedali" target="_blank">
-    <img src="https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donate via PayPal" />
   </a>
 </p>

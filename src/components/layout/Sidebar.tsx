@@ -265,6 +265,7 @@ const Sidebar: React.FC = () => {
                 const visibleH = screenBounds?.height ?? window.innerHeight;
                 activeScreenCenter = visibleW / 2;
                 activeScreenCenterY = visibleH / 2;
+            } else {
                 let allDisplays = [] as any[];
 
                 if (localDisplaysRef.current) {
@@ -321,11 +322,10 @@ const Sidebar: React.FC = () => {
         };
         const handleSidebarDragEnd = async () => {
             if (isSidebarDragging) {
-                setIsSidebarDragging(false);
-                setIsResizingGlobal(false);
-                useAppStore.getState().setIsDraggingGlobal(false);
-
                 if (!dragRef.current.dragged) {
+                    setIsSidebarDragging(false);
+                    setIsResizingGlobal(false);
+                    useAppStore.getState().setIsDraggingGlobal(false);
                     return;
                 }
 
@@ -339,9 +339,6 @@ const Sidebar: React.FC = () => {
                         displayBounds = result.displayBounds;
                     }
                 }
-
-                // Synchronize global store with the final drop position
-                setSidebarPosition(pos);
 
                 let activeScreenCenter = 0;
                 let activeScreenCenterY = 0;
@@ -384,13 +381,13 @@ const Sidebar: React.FC = () => {
 
                     if (distToTop <= SNAP_THRESHOLD) {
                         useAppStore.getState().setEdgePosition('top');
-                        setSidebarPosition({ x: pos.x, y: visibleTop });
+                        pos = { x: pos.x, y: visibleTop };
                     } else if (distToBottom <= SNAP_THRESHOLD) {
                         useAppStore.getState().setEdgePosition('bottom');
-                        setSidebarPosition({ x: pos.x, y: visibleBottom - sidebarWidth });
+                        pos = { x: pos.x, y: visibleBottom - sidebarWidth };
                     } else {
                         useAppStore.getState().setEdgePosition(isTopHalf ? 'top' : 'bottom');
-                        setSidebarPosition({ x: pos.x, y: pos.y });
+                        pos = { x: pos.x, y: pos.y };
                     }
                 } else {
                     const currentCenter = pos.x + (sidebarWidth / 2);
@@ -401,17 +398,24 @@ const Sidebar: React.FC = () => {
                     if (distToLeft <= SNAP_THRESHOLD) {
                         // Snap to left edge of active monitor
                         useAppStore.getState().setEdgePosition('left');
-                        setSidebarPosition({ x: visibleLeft, y: pos.y });
+                        pos = { x: visibleLeft, y: pos.y };
                     } else if (distToRight <= SNAP_THRESHOLD) {
                         // Snap to right edge of active monitor
                         useAppStore.getState().setEdgePosition('right');
-                        setSidebarPosition({ x: visibleRight - sidebarWidth, y: pos.y });
+                        pos = { x: visibleRight - sidebarWidth, y: pos.y };
                     } else {
                         // Free-floating: aktif ekranın hangi yarısında olduğuna (isLeftHalf) göre left/right ayarla
                         useAppStore.getState().setEdgePosition(isLeftHalf ? 'left' : 'right');
-                        setSidebarPosition({ x: pos.x, y: pos.y });
+                        pos = { x: pos.x, y: pos.y };
                     }
                 }
+
+                // Synchronize global store with the final drop position AFTER calculations
+                setSidebarPosition(pos);
+
+                setIsSidebarDragging(false);
+                setIsResizingGlobal(false);
+                useAppStore.getState().setIsDraggingGlobal(false);
             }
         };
         if (isSidebarDragging) {

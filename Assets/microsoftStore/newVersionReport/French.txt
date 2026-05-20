@@ -1,11 +1,29 @@
-🚀 Notes de mise à jour :
+KoBar v1.0.23 : Mode Horizontal, Magie Multi-Écrans et Suivi Oculaire 🚀 Dernière version
+Cette version transforme KoBar en un « couteau suisse » extrêmement polyvalent qui s'adapte à n'importe quelle configuration de bureau. Le Mode Horizontal et le support Multi-Écrans tant attendus sont enfin là !
 
-- Correction d'un bug qui empêchait KoBar de s'ouvrir automatiquement au démarrage de l'ordinateur.
-- Ajout d'une nouvelle interface dans les Paramètres pour transformer les menus en accordéon en format boîte.
-- Mise à jour des champs "À propos" dans toutes les options de langue.
-- Optimisation des outils actifs par défaut lors de la première installation de KoBar.
-- Mise à jour des valeurs par défaut pour la disposition de l'interface utilisateur et l'espacement.
-- Fixation de la position de l'icône du mode mini (symbole de l'œil) en bas et résolution des problèmes d'alignement lors des transitions de mode.
-- Activation du masquage automatique des info-bulles (tooltips) pendant le déplacement de KoBar, et correction de leur positionnement après le déplacement.
-- Enrichissement du contenu de la note d'accueil par défaut "Welcome to KoBar!".
-- Implémentation de l'infrastructure de mise à jour automatique avec des boîtes de dialogue de confirmation multilingues pour les versions autonomes (.exe).
+✨ Nouvelles Fonctionnalités
+
+Disposition Horizontale : KoBar prend désormais entièrement en charge l'orientation horizontale. Accrochez-le et utilisez-le horizontalement ou verticalement selon votre flux de travail.
+
+Support Multi-Écrans : Faites glisser la fenêtre de manière fluide entre les différents écrans sans perdre le focus.
+
+Animation de Suivi Oculaire : Ajout d'une animation de suivi oculaire fluide et interactive qui donne vie à l'interface (peut être facilement activée/désactivée dans les paramètres).
+
+Recentrage Intelligent : Mise en œuvre du recentrage de la fenêtre en fonction de la position actuelle du widget.
+
+🐛 Corrections de Bugs
+
+Résolution Multi-Écrans : Correction d'un bug majeur où le widget disparaissait ou était coupé lorsqu'il était déplacé vers des moniteurs secondaires.
+
+Détection des Bords : Amélioration de la détection des bords en temps réel pendant le glissement (résolution des bugs de détection des bords verticaux lors des glissements horizontaux).
+
+Positionnement en Mode Mini : Correction des problèmes de positionnement du panneau lors de la sortie du mode mini.
+
+📝 Infrastructure et Documentation
+
+Configuration du Financement : Ajout de la configuration officielle de parrainage du projet via Open Source Collective (suppression des anciens liens personnels Ko-fi et PayPal).
+
+Mises à jour du README : Ajout des liens de téléchargement macOS, des informations de contact et mise à jour de la section des sponsors.
+
+🤝 Remerciements Spéciaux
+Un immense merci à @arindam-sahoo (GitHub) pour ses contributions incroyables à la Disposition Horizontale et aux fonctionnalités Multi-Écrans ! 🎉
