@@ -1461,6 +1461,38 @@ ipcMain.on('move-window', (event, { dx, dy }) => {
     }
 });
 
+ipcMain.handle('recenter-window-on-widget', async (event, relativeX, relativeY, width, height) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return null;
+
+    const [winX, winY] = win.getPosition();
+    const physicalX = winX + relativeX;
+    const physicalY = winY + relativeY;
+
+    // Find nearest display to the widget center
+    const activeDisplay = screen.getDisplayNearestPoint({ 
+        x: Math.round(physicalX + width / 2), 
+        y: Math.round(physicalY + height / 2) 
+    });
+
+    // Calculate new centered window position
+    const windowWidth = 6000;
+    const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
+    const newWinY = activeDisplay.workArea.y;
+
+    // Move the window
+    win.setPosition(newWinX, newWinY);
+
+    // Calculate new relative coordinates
+    const newRelativeX = physicalX - newWinX;
+    const newRelativeY = physicalY - newWinY;
+
+    // Trigger edge-changed to update screen bounds in the frontend
+    handleWindowMove(true);
+
+    return { x: newRelativeX, y: newRelativeY, displayBounds: activeDisplay.workArea };
+});
+
 ipcMain.handle('get-displays-info', () => {
     return {
         primaryDisplay: screen.getPrimaryDisplay(),

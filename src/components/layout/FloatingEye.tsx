@@ -91,15 +91,26 @@ const FloatingEye: React.FC = () => {
             }
         };
 
-        const handleMouseUp = () => {
+        const handleMouseUp = async () => {
             if (isDragging) {
                 setIsDragging(false);
                 setIsResizingGlobal(false);
                 useAppStore.getState().setIsDraggingGlobal(false);
-                // Re-sync React state once drag completes
-                setPos({ x: posRef.current.x, y: posRef.current.y });
-                // Persist the final position to global store so Sidebar knows where the Eye was
-                useAppStore.getState().setMiniMode(true, { x: posRef.current.x, y: posRef.current.y });
+
+                if (dragInitRef.current.dragged) {
+                    let finalPos = { x: posRef.current.x, y: posRef.current.y };
+                    if (window.api?.recenterWindowOnWidget && !isMac) {
+                        const result = await window.api.recenterWindowOnWidget(finalPos.x, finalPos.y, 48, 48);
+                        if (result) {
+                            finalPos = { x: result.x, y: result.y };
+                        }
+                    }
+
+                    // Re-sync React state once drag completes
+                    setPos(finalPos);
+                    // Persist the final position to global store so Sidebar knows where the Eye was
+                    useAppStore.getState().setMiniMode(true, finalPos);
+                }
             }
         };
 

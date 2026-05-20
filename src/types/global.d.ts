@@ -35,6 +35,7 @@ declare global {
             triggerScreenshot: () => void;
             takeScreenshot: (hideApp: boolean) => void;
             moveWindow: (dx: number, dy: number) => void;
+            recenterWindowOnWidget: (x: number, y: number, width: number, height: number) => Promise<{ x: number; y: number; displayBounds: any } | null>;
             // Native App Launcher
             getFileIcon: (path: string) => Promise<string | null>;
             launchFile: (path: string) => void;

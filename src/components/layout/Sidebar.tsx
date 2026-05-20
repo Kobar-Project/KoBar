@@ -240,13 +240,27 @@ const Sidebar: React.FC = () => {
                 useAppStore.getState().setEdgePosition(newEdge);
             }
         };
-        const handleSidebarDragEnd = () => {
+        const handleSidebarDragEnd = async () => {
             if (isSidebarDragging) {
                 setIsSidebarDragging(false);
                 setIsResizingGlobal(false);
                 useAppStore.getState().setIsDraggingGlobal(false);
 
-                const pos = { x: sidebarDragRef.current.lastX, y: sidebarDragRef.current.lastY };
+                if (!dragRef.current.dragged) {
+                    return;
+                }
+
+                let pos = { x: sidebarDragRef.current.lastX, y: sidebarDragRef.current.lastY };
+                let displayBounds = null;
+
+                if (window.api?.recenterWindowOnWidget && !isMac) {
+                    const result = await window.api.recenterWindowOnWidget(pos.x, pos.y, sidebarWidth, 20);
+                    if (result) {
+                        pos = { x: result.x, y: result.y };
+                        displayBounds = result.displayBounds;
+                    }
+                }
+
                 // Synchronize global store with the final drop position
                 setSidebarPosition(pos);
 
@@ -260,36 +274,14 @@ const Sidebar: React.FC = () => {
                     visibleRight = visibleW;
                     activeScreenCenter = visibleW / 2;
                 } else {
-                    let primaryX = 0;
-                    let primaryW = 1920;
-                    let allDisplays = [] as any[];
-
-                    if (localDisplaysRef.current) {
-                        primaryX = localDisplaysRef.current.primaryDisplay.workArea.x;
-                        primaryW = localDisplaysRef.current.primaryDisplay.workArea.width;
-                        allDisplays = localDisplaysRef.current.allDisplays;
-                    } else {
-                        primaryX = screenBounds?.x ?? 0;
-                        primaryW = screenBounds?.width ?? window.innerWidth;
-                    }
-
-                    const physicalOriginX = primaryX + (primaryW / 2) - 3000;
-                    const physicalCurrentX = physicalOriginX + pos.x + (sidebarWidth / 2);
-
-                    const activeMonitor = allDisplays.find(d => 
-                        physicalCurrentX >= d.bounds.x && physicalCurrentX < (d.bounds.x + d.bounds.width)
-                    );
-
-                    if (activeMonitor) {
-                        visibleLeft = activeMonitor.bounds.x - physicalOriginX;
-                        visibleRight = (activeMonitor.bounds.x + activeMonitor.bounds.width) - physicalOriginX;
-                        activeScreenCenter = visibleLeft + (activeMonitor.bounds.width / 2);
-                    } else {
-                        const fallBackW = screenBounds?.width ?? window.innerWidth;
-                        visibleLeft = 3000 + (screenBounds?.x ?? 0) - (fallBackW / 2);
-                        visibleRight = visibleLeft + fallBackW;
-                        activeScreenCenter = visibleLeft + (fallBackW / 2);
-                    }
+                    // Since the window has been recentered on the active monitor, the active monitor's bounds
+                    // relative to the window are simplified:
+                    // window center is at X=3000, so active monitor starts at 3000 - activeMonitorW / 2
+                    // and ends at 3000 + activeMonitorW / 2.
+                    const activeMonitorW = displayBounds?.width ?? screenBounds?.width ?? window.innerWidth;
+                    visibleLeft = 3000 - activeMonitorW / 2;
+                    visibleRight = 3000 + activeMonitorW / 2;
+                    activeScreenCenter = 3000;
                 }
 
                 const currentCenter = pos.x + (sidebarWidth / 2);
