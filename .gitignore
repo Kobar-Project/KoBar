@@ -44,3 +44,7 @@ kobar-secrets.json
 
 # Microsoft Store assets (private)
 Assets/microsoftStore/
+
+# Wiki contents (private/managed separately)
+Assets/wiki/
+Assets/wiki.md
