@@ -314,16 +314,10 @@ For support or inquiries, you can contact us at [contact@ko48.com](mailto:contac
 If you find KoBar useful and want to support its ongoing development, consider backing the project through any of the platforms below:
 
 <p align="center">
-  <a href="https://ko-fi.com/eedali" target="_blank">
-    <img src="https://img.shields.io/badge/Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support on Ko-fi" />
-  </a>
   <a href="https://www.patreon.com/kobarproject" target="_blank">
     <img src="https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white" alt="Become a Patron" />
   </a>
   <a href="https://opencollective.com/kobar" target="_blank">
     <img src="https://img.shields.io/badge/Open_Collective-7FADF2?style=for-the-badge&logo=open-collective&logoColor=white" alt="Open Collective" />
-  </a>
-  <a href="https://www.paypal.me/ekremedali" target="_blank">
-    <img src="https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donate via PayPal" />
   </a>
 </p>
