@@ -128,7 +128,7 @@ const KoPlayerPopup: React.FC = () => {
                 if (adjustedLeft < minLeft) adjustedLeft = minLeft;
                 if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
                 popupRef.current.style.left = `${adjustedLeft}px`;
-                popupRef.current.style.top = '';
+
             } else {
                 const screenHeight = screenBounds?.height ?? 800;
                 let adjustedTop = (koPlayerAnchorRect.top - newY) - 20 + (koPlayerAnchorRect.height / 2) - (popupHeight / 2);
@@ -137,7 +137,7 @@ const KoPlayerPopup: React.FC = () => {
                 if (adjustedTop < minTop) adjustedTop = minTop;
                 if (adjustedTop > maxTop) adjustedTop = maxTop;
                 popupRef.current.style.top = `${adjustedTop}px`;
-                popupRef.current.style.left = '';
+
             }
         };
         document.addEventListener('kobar-drag', onDrag);
