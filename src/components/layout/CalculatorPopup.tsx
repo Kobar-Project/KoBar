@@ -53,10 +53,13 @@ const CalculatorPopup: React.FC = () => {
             transition: 'width 0.3s ease'
         };
 
-        if (orientation === 'horizontal') {
-            let adjustedLeft = (screenWidth / 2) - (popupWidth / 2) - offsetLeft;
-            const maxLeft = (screenWidth - offsetLeft) - popupWidth - 20;
-            const minLeft = -offsetLeft + 20;
+        const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
+            let adjustedLeft = screenXInViewport + (screenWidth / 2) - (popupWidth / 2) - offsetLeft;
+            const maxLeft = screenXInViewport + (screenWidth - offsetLeft) - popupWidth - 20;
+            const minLeft = screenXInViewport - offsetLeft + 20;
             if (adjustedLeft < minLeft) adjustedLeft = minLeft;
             if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
@@ -75,9 +78,9 @@ const CalculatorPopup: React.FC = () => {
                 style.marginBottom = '12px';
             }
         } else {
-            let adjustedTop = (screenHeight / 2) - (popupHeight / 2) - offsetTop;
-            const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
-            const minTop = -offsetTop + 20;
+            let adjustedTop = screenYInViewport + (screenHeight / 2) - (popupHeight / 2) - offsetTop;
+            const maxTop = screenYInViewport + (screenHeight - offsetTop) - popupHeight - 20;
+            const minTop = screenYInViewport - offsetTop + 20;
             if (adjustedTop < minTop) adjustedTop = minTop;
             if (adjustedTop > maxTop) adjustedTop = maxTop;
 
@@ -110,20 +113,23 @@ const CalculatorPopup: React.FC = () => {
             const popupHeight = isScientific ? 520 : 400;
             const popupWidth = isScientific ? 360 : 280;
             
-            if (orientation === 'horizontal') {
+            const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
                 const screenWidth = screenBounds?.width ?? 1200;
-                let adjustedLeft = (screenWidth / 2) - (popupWidth / 2) - newX;
-                const maxLeft = (screenWidth - newX) - popupWidth - 20;
-                const minLeft = -newX + 20;
+                let adjustedLeft = screenXInViewport + (screenWidth / 2) - (popupWidth / 2) - newX;
+                const maxLeft = screenXInViewport + (screenWidth - newX) - popupWidth - 20;
+                const minLeft = screenXInViewport - newX + 20;
                 if (adjustedLeft < minLeft) adjustedLeft = minLeft;
                 if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
                 popupRef.current.style.left = `${adjustedLeft}px`;
                 popupRef.current.style.top = '';
             } else {
                 const screenHeight = screenBounds?.height ?? 800;
-                let adjustedTop = (screenHeight / 2) - (popupHeight / 2) - newY;
-                const maxTop = (screenHeight - newY) - popupHeight - 20;
-                const minTop = -newY + 20;
+                let adjustedTop = screenYInViewport + (screenHeight / 2) - (popupHeight / 2) - newY;
+                const maxTop = screenYInViewport + (screenHeight - newY) - popupHeight - 20;
+                const minTop = screenYInViewport - newY + 20;
                 if (adjustedTop < minTop) adjustedTop = minTop;
                 if (adjustedTop > maxTop) adjustedTop = maxTop;
                 popupRef.current.style.top = `${adjustedTop}px`;
