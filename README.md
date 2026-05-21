@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS"><img src="https://img.shields.io/badge/Microsoft%20Store-Download-blue?logo=microsoft&logoColor=white" alt="Microsoft Store" /></a>
-  <img src="https://img.shields.io/badge/version-1.0.21-f4a125?style=flat" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.23-f4a125?style=flat" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
@@ -297,7 +297,10 @@ This project is licensed under the **MIT License** — see the [LICENSE.md](LICE
 
 ## 🙏 Credits
 
-**KoBar** is made by **[Ekrem EDALI](https://www.linkedin.com/in/ekrem-edali/)**.
+**Created by [Ekrem EDALI](https://www.linkedin.com/in/ekrem-edali/)**
+
+**Contributors:**
+* [arindam-sahoo](https://github.com/arindam-sahoo)
 
 Special thanks to: **Tolunay PARLAK** & **MJ**.
 
