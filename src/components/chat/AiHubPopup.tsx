@@ -110,10 +110,13 @@ export const AiHubPopup: React.FC = () => {
             willChange: 'transform, opacity' 
         };
 
-        if (orientation === 'horizontal') {
+        const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
             let adjustedLeft = (aiHubAnchorRect.left - offsetLeft) + (aiHubAnchorRect.width / 2) - (aiHubWidth / 2);
-            const maxLeft = (screenWidth - offsetLeft) - aiHubWidth - 20;
-            const minLeft = -offsetLeft + 20;
+            const maxLeft = screenXInViewport + (screenWidth - offsetLeft) - aiHubWidth - 20;
+            const minLeft = screenXInViewport - offsetLeft + 20;
             if (adjustedLeft < minLeft) adjustedLeft = minLeft;
             if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
@@ -133,8 +136,8 @@ export const AiHubPopup: React.FC = () => {
             }
         } else {
             let adjustedTop = (aiHubAnchorRect.top - offsetTop) - 20 + (aiHubAnchorRect.height / 2) - (aiHubHeight / 2);
-            const maxTop = (screenHeight - offsetTop) - aiHubHeight - 20;
-            const minTop = -offsetTop + 20;
+            const maxTop = screenYInViewport + (screenHeight - offsetTop) - aiHubHeight - 20;
+            const minTop = screenYInViewport - offsetTop + 20;
             if (adjustedTop < minTop) adjustedTop = minTop;
             if (adjustedTop > maxTop) adjustedTop = maxTop;
 
@@ -165,11 +168,14 @@ export const AiHubPopup: React.FC = () => {
             const newX = e.detail.x;
             const newY = e.detail.y;
             
-            if (orientation === 'horizontal') {
+            const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
                 const screenWidth = screenBounds?.width ?? 1200;
                 let adjustedLeft = (aiHubAnchorRect.left - newX) + (aiHubAnchorRect.width / 2) - (aiHubWidth / 2);
-                const maxLeft = (screenWidth - newX) - aiHubWidth - 20;
-                const minLeft = -newX + 20;
+                const maxLeft = screenXInViewport + (screenWidth - newX) - aiHubWidth - 20;
+                const minLeft = screenXInViewport - newX + 20;
                 if (adjustedLeft < minLeft) adjustedLeft = minLeft;
                 if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
                 popupRef.current.style.left = `${adjustedLeft}px`;
@@ -177,8 +183,8 @@ export const AiHubPopup: React.FC = () => {
             } else {
                 const screenHeight = screenBounds?.height ?? 800;
                 let adjustedTop = (aiHubAnchorRect.top - newY) - 20 + (aiHubAnchorRect.height / 2) - (aiHubHeight / 2);
-                const maxTop = (screenHeight - newY) - aiHubHeight - 20;
-                const minTop = -newY + 20;
+                const maxTop = screenYInViewport + (screenHeight - newY) - aiHubHeight - 20;
+                const minTop = screenYInViewport - newY + 20;
                 if (adjustedTop < minTop) adjustedTop = minTop;
                 if (adjustedTop > maxTop) adjustedTop = maxTop;
                 popupRef.current.style.top = `${adjustedTop}px`;
