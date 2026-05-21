@@ -6,6 +6,7 @@ declare global {
         artist: string;
         albumArt: string | null;
         isPlaying: boolean;
+        sourceAppId?: string;
     }
 
     interface Window {
@@ -85,9 +86,11 @@ declare global {
 
             // PIP Video Player (webview-based mini browser)
             getActiveVideoUrls: () => Promise<string[]>;
-            openPip: (url: string, title: string) => void;
+            openPip: (url: string, title: string, albumArt?: string) => void;
             closePip: () => void;
             onPipClosed: (callback: () => void) => (() => void);
+            onVideoUrlsUpdate: (callback: (urls: string[]) => void) => (() => void);
+            getSmtcSource: () => Promise<string>;
 
             // KoCalendar
             fetchCalendarEvents: (timeMin: string, timeMax: string) => Promise<any[]>;

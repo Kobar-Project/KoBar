@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 /** Convert a raw URL to the best playable form for the webview */
 function getPlayableUrl(rawUrl: string): string {
@@ -9,7 +9,8 @@ function getPlayableUrl(rawUrl: string): string {
         /(?:youtube\.com\/watch[?&]v=|youtu\.be\/)([\w-]+)/
     );
     if (ytMatch) {
-        return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+        const origin = window.location.origin;
+        return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(origin)}`;
     }
 
     return rawUrl;
@@ -18,7 +19,8 @@ function getPlayableUrl(rawUrl: string): string {
 const PipPlayer: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const rawUrl = decodeURIComponent(urlParams.get('url') || '');
-    const title = decodeURIComponent(urlParams.get('title') || 'PIP Video');
+    const initialTitle = decodeURIComponent(urlParams.get('title') || 'PIP Video');
+    const initialAlbumArt = decodeURIComponent(urlParams.get('albumArt') || '');
 
     const finalUrl = getPlayableUrl(rawUrl);
 
@@ -26,6 +28,24 @@ const PipPlayer: React.FC = () => {
     const [isHovered, setIsHovered] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Live media state — mirrors KoPlayer, updated via SMTC polling
+    const [mediaTitle, setMediaTitle] = useState(initialTitle);
+    const [mediaArt, setMediaArt] = useState(initialAlbumArt || null);
+    const [isPlaying, setIsPlaying] = useState(true);
+
+    // Subscribe to SMTC media updates (same as KoPlayer — preload has full api bridge)
+    useEffect(() => {
+        const unsub = window.api?.onMediaUpdate?.((data) => {
+            if (data) {
+                if (data.title) setMediaTitle(data.title);
+                if (data.albumArt) setMediaArt(data.albumArt);
+                // Intentionally NOT updating isPlaying from SMTC here
+                // because we paused the browser's SMTC session!
+            }
+        });
+        return () => unsub?.();
+    }, []);
 
     // Create the iframe element imperatively to avoid React re-rendering issues
     // Using iframe instead of <webview> fixes YouTube Error 153 (automation detection)
@@ -82,6 +102,26 @@ const PipPlayer: React.FC = () => {
         window.api?.closePip?.();
     };
 
+    const handleCommand = useCallback((cmd: 'play' | 'pause' | 'next' | 'prev') => {
+        if (!containerRef.current) return;
+        const iframe = containerRef.current.querySelector('iframe');
+        if (!iframe || !iframe.contentWindow) return;
+
+        if (cmd === 'play') {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+            setIsPlaying(true);
+        } else if (cmd === 'pause') {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+            setIsPlaying(false);
+        } else if (cmd === 'next') {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'nextVideo', args: [] }), '*');
+        } else if (cmd === 'prev') {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'previousVideo', args: [] }), '*');
+        }
+    }, []);
+
+    const hasArt = !!mediaArt;
+
     return (
         <div
             style={{
@@ -94,10 +134,28 @@ const PipPlayer: React.FC = () => {
             }}
             onDoubleClick={handleClose}
         >
+            {/* Blurred album art background — mirrors KoPlayer exactly */}
+            {hasArt && (
+                <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+                    <img
+                        src={mediaArt!}
+                        alt=""
+                        style={{
+                            width: '100%', height: '100%', objectFit: 'cover',
+                            filter: 'blur(30px) brightness(0.25) saturate(1.6)',
+                            transform: 'scale(1.4)',
+                            pointerEvents: 'none',
+                        }}
+                        draggable={false}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' }} />
+                </div>
+            )}
+
             {/* Webview container — fills the entire window */}
             <div
                 ref={containerRef}
-                style={{ position: 'absolute', inset: 0 }}
+                style={{ position: 'absolute', inset: 0, zIndex: 1 }}
             />
 
             {/* Loading spinner */}
@@ -149,29 +207,48 @@ const PipPlayer: React.FC = () => {
                 justifyContent: 'space-between',
                 opacity: isHovered ? 1 : 0,
                 transition: 'opacity 0.18s ease',
-                pointerEvents: 'none', // Allow clicks to pass through to the video
+                pointerEvents: 'none',
                 zIndex: 20,
             }}>
-                {/* Top bar: drag region + title + close */}
+                {/* Top bar: drag region + album art thumbnail + title + close */}
                 <div style={{
                     display: 'flex', alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '7px 10px',
-                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.82) 0%, transparent 100%)',
+                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%)',
                     WebkitAppRegion: 'drag',
                     pointerEvents: isHovered ? 'auto' : 'none',
+                    gap: 8,
                 } as React.CSSProperties}>
                     <div style={{
-                        display: 'flex', alignItems: 'center', gap: 7,
+                        display: 'flex', alignItems: 'center', gap: 7, flex: 1, minWidth: 0,
                         WebkitAppRegion: 'drag',
                     } as React.CSSProperties}>
-                        <span className="material-symbols-outlined"
-                            style={{ color: '#f4a125', fontSize: 15, flexShrink: 0 }}>pip</span>
+                        {/* Album art thumbnail — same as KoPlayer's album art */}
+                        {hasArt ? (
+                            <img
+                                src={mediaArt!}
+                                alt=""
+                                style={{
+                                    width: 22, height: 22, borderRadius: 4,
+                                    objectFit: 'cover', flexShrink: 0,
+                                    border: '1px solid rgba(255,255,255,0.15)',
+                                    WebkitAppRegion: 'drag',
+                                } as React.CSSProperties}
+                                draggable={false}
+                            />
+                        ) : (
+                            <span className="material-symbols-outlined"
+                                style={{ color: '#f4a125', fontSize: 15, flexShrink: 0, WebkitAppRegion: 'drag' } as React.CSSProperties}>
+                                pip
+                            </span>
+                        )}
                         <span style={{
                             color: '#e2e8f0', fontSize: 11, fontWeight: 600,
-                            maxWidth: 220, overflow: 'hidden',
+                            overflow: 'hidden',
                             textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>{title}</span>
+                            flex: 1,
+                        }}>{mediaTitle}</span>
                     </div>
                     <button
                         onClick={handleClose}
@@ -189,22 +266,62 @@ const PipPlayer: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Bottom bar: hint text + drag knob */}
+                {/* Bottom bar: playback controls (mirrors KoPlayer) + drag knob */}
                 <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '6px 10px',
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)',
+                    padding: '8px 10px',
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 100%)',
                     WebkitAppRegion: 'no-drag',
                     pointerEvents: isHovered ? 'auto' : 'none',
+                    gap: 6,
                 } as React.CSSProperties}>
-                    <span style={{ color: 'rgba(148,163,184,0.7)', fontSize: 10, userSelect: 'none' }}>
-                        Double-click to close
-                    </span>
+                    {/* Playback controls — identical to KoPlayer's prev/play/next */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleCommand('prev'); }}
+                            style={pipCtrlBtn}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                            title="Previous"
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>skip_previous</span>
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleCommand(isPlaying ? 'pause' : 'play'); }}
+                            style={{
+                                ...pipCtrlBtn,
+                                width: 30, height: 30,
+                                background: 'rgba(244,161,37,0.85)',
+                                color: '#1a1207',
+                                borderRadius: '50%',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,161,37,1)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(244,161,37,0.85)')}
+                            title={isPlaying ? 'Pause' : 'Play'}
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
+                                {isPlaying ? 'pause' : 'play_arrow'}
+                            </span>
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleCommand('next'); }}
+                            style={pipCtrlBtn}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                            title="Next"
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>skip_next</span>
+                        </button>
+                    </div>
+
                     <div style={{
                         display: 'flex', alignItems: 'center', gap: 4,
                         color: 'rgba(148,163,184,0.5)', fontSize: 10,
                         WebkitAppRegion: 'drag', cursor: 'grab',
                     } as React.CSSProperties}>
+                        <span style={{ color: 'rgba(148,163,184,0.55)', fontSize: 9, userSelect: 'none' }}>
+                            dbl-click to close
+                        </span>
                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>drag_indicator</span>
                     </div>
                 </div>
@@ -219,6 +336,21 @@ const PipPlayer: React.FC = () => {
             `}</style>
         </div>
     );
+};
+
+/** Shared style for prev/next control buttons */
+const pipCtrlBtn: any = {
+    width: 26, height: 26,
+    borderRadius: '50%',
+    border: 'none',
+    background: 'rgba(255,255,255,0.08)',
+    color: '#e2e8f0',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'background 0.15s',
+    outline: 'none',
+    flexShrink: 0,
+    WebkitAppRegion: 'no-drag',
 };
 
 export default PipPlayer;

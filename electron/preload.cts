@@ -153,13 +153,21 @@ contextBridge.exposeInMainWorld('api', {
     // Detects video URLs currently open in Chrome/Edge/Brave/Firefox
     getActiveVideoUrls: () => ipcRenderer.invoke('get-active-video-urls') as Promise<string[]>,
     // Opens a PIP window that plays the given URL in an embedded browser
-    openPip: (url: string, title: string) => ipcRenderer.send('open-pip', { url, title }),
+    openPip: (url: string, title: string, albumArt?: string) => ipcRenderer.send('open-pip', { url, title, albumArt }),
     closePip: () => ipcRenderer.send('close-pip'),
     onPipClosed: (callback: () => void) => {
         const handler = () => callback();
         ipcRenderer.on('pip-closed', handler);
         return () => ipcRenderer.removeListener('pip-closed', handler);
     },
+
+    // KoPlayer video URL cache — updated automatically when SMTC detects a browser source
+    onVideoUrlsUpdate: (callback: (urls: string[]) => void) => {
+        const handler = (_event: Electron.IpcRendererEvent, urls: string[]) => callback(urls);
+        ipcRenderer.on('video-urls-update', handler);
+        return () => ipcRenderer.removeListener('video-urls-update', handler);
+    },
+    getSmtcSource: () => ipcRenderer.invoke('get-smtc-source') as Promise<string>,
 
 
     // KoCalendar

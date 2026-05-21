@@ -39,6 +39,13 @@ const KoPlayerPopup: React.FC = () => {
     const [detectedUrls, setDetectedUrls] = useState<string[]>([]);
     const [manualUrl, setManualUrl] = useState('');
 
+    // Pre-cached video URLs from SMTC background scan
+    const activeVideoUrls = useAppStore(state => state.activeVideoUrls);
+    const currentMediaSourceApp = useAppStore(state => state.currentMediaSourceApp);
+    const BROWSER_IDS = ['chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi'];
+    const isBrowserSource = BROWSER_IDS.some(b => currentMediaSourceApp.includes(b));
+    const hasPreCachedVideo = isBrowserSource && activeVideoUrls.length > 0;
+
     // Detect text overflow for marquee effect
     useEffect(() => {
         if (titleRef.current) setTitleOverflows(titleRef.current.scrollWidth > titleRef.current.clientWidth);
@@ -141,7 +148,7 @@ const KoPlayerPopup: React.FC = () => {
         window.api?.sendMediaCommand?.(cmd);
     };
 
-    /** Main PIP button click: detect URLs in browsers, then decide */
+    /** Main PIP button click: use pre-cached URLs or detect URLs in browsers, then decide */
     const handlePipClick = useCallback(async () => {
         if (pipActive) {
             window.api?.closePip?.();
@@ -150,6 +157,22 @@ const KoPlayerPopup: React.FC = () => {
             return;
         }
 
+        // Fast path: use pre-cached URLs from SMTC background scan
+        if (hasPreCachedVideo) {
+            if (activeVideoUrls.length === 1) {
+                window.api?.sendMediaCommand?.('pause');
+                window.api?.openPip?.(activeVideoUrls[0], currentMedia?.title || 'PIP Video', currentMedia?.albumArt || undefined);
+                setPipActive(true);
+                setPipPhase('idle');
+                return;
+            } else {
+                setDetectedUrls(activeVideoUrls);
+                setPipPhase('pick');
+                return;
+            }
+        }
+
+        // Slow path: on-demand scan
         setPipPhase('detecting');
         setDetectedUrls([]);
 
@@ -157,7 +180,8 @@ const KoPlayerPopup: React.FC = () => {
 
         if (urls.length === 1) {
             // Exactly one → open immediately
-            window.api?.openPip?.(urls[0], currentMedia?.title || 'PIP Video');
+            window.api?.sendMediaCommand?.('pause');
+            window.api?.openPip?.(urls[0], currentMedia?.title || 'PIP Video', currentMedia?.albumArt || undefined);
             setPipActive(true);
             setPipPhase('idle');
         } else if (urls.length > 1) {
@@ -168,10 +192,11 @@ const KoPlayerPopup: React.FC = () => {
             // Nothing found → show manual URL input
             setPipPhase('manual');
         }
-    }, [pipActive, currentMedia?.title]);
+    }, [pipActive, currentMedia?.title, currentMedia?.albumArt, hasPreCachedVideo, activeVideoUrls]);
 
     const handlePickUrl = (url: string) => {
-        window.api?.openPip?.(url, currentMedia?.title || 'PIP Video');
+        window.api?.sendMediaCommand?.('pause');
+        window.api?.openPip?.(url, currentMedia?.title || 'PIP Video', currentMedia?.albumArt || undefined);
         setPipActive(true);
         setPipPhase('idle');
     };
@@ -179,7 +204,8 @@ const KoPlayerPopup: React.FC = () => {
     const handleManualOpen = () => {
         const url = manualUrl.trim();
         if (!url) return;
-        window.api?.openPip?.(url, currentMedia?.title || 'PIP Video');
+        window.api?.sendMediaCommand?.('pause');
+        window.api?.openPip?.(url, currentMedia?.title || 'PIP Video', currentMedia?.albumArt || undefined);
         setPipActive(true);
         setPipPhase('idle');
         setManualUrl('');
@@ -236,8 +262,8 @@ const KoPlayerPopup: React.FC = () => {
                         {/* PIP Button — always visible */}
                         <button
                             onClick={handlePipClick}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all no-drag-region ${getPipBtnClass()}`}
-                            title={pipActive ? 'Close PIP' : 'Open video in Picture-in-Picture'}
+                            className={`relative w-6 h-6 rounded-full flex items-center justify-center transition-all no-drag-region ${getPipBtnClass()}`}
+                            title={pipActive ? 'Close PIP' : hasPreCachedVideo ? 'Video detected — open in PiP' : 'Open video in Picture-in-Picture'}
                         >
                             {pipPhase === 'detecting' ? (
                                 <div style={{
@@ -250,6 +276,15 @@ const KoPlayerPopup: React.FC = () => {
                                 <span className="material-symbols-outlined text-[14px]">
                                     {pipActive ? 'pip_exit' : 'pip'}
                                 </span>
+                            )}
+                            {/* Green dot: video pre-detected via SMTC background scan */}
+                            {hasPreCachedVideo && !pipActive && pipPhase !== 'detecting' && (
+                                <span style={{
+                                    position: 'absolute', top: 1, right: 1,
+                                    width: 5, height: 5, borderRadius: '50%',
+                                    background: '#4ade80',
+                                    boxShadow: '0 0 4px rgba(74,222,128,0.7)',
+                                }} />
                             )}
                         </button>
                         <button

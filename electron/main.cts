@@ -23,7 +23,8 @@ function getSystemConfig() {
 console.log("[SYS] Hardware Acceleration: FORCED ENABLED");
 
 // SURGICAL FIX FOR VIDEO BLACKOUT & OCCLUSION
-app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion,WindowOcclusion');
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion,WindowOcclusion,HardwareMediaKeyHandling,MediaSessionService');
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 const windowStatePath = path.join(app.getPath('userData'), 'window-state.json');
 
@@ -49,6 +50,13 @@ let allPinnedHwnds: Set<number> = new Set();
 // KoPlayer Media Polling
 let mediaPollingInterval: ReturnType<typeof setInterval> | null = null;
 let lastMediaState = '';
+
+// Video PiP — background URL scan debounce
+const BROWSER_APP_IDS = ['chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi'];
+let lastVideoScanAt = 0;
+const VIDEO_SCAN_DEBOUNCE_MS = 5000;
+let lastSmtcSourceAppId = '';
+let lastSmtcAlbumArt: string | null = null;
 
 // Set these flags for feature toggling (managed by kobar-build.js)
 const IS_STORE_BUILD = true;
@@ -1457,7 +1465,65 @@ ipcMain.on('screenshot-session-complete', () => {
 
 // ─── PIP Video Player (Webview-based mini browser) ───────────────────────────────
 
-function createPipWindow(videoUrl: string, title: string) {
+/**
+ * Extract video URLs from open browsers (shared between on-demand and background scans).
+ */
+function runVideoUrlScan(): Promise<string[]> {
+    return new Promise<string[]>((resolve) => {
+        if (!isWin) { resolve([]); return; }
+
+        const psScript = `
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+
+$domains = @('youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com', 'twitch.tv', 'netflix.com', 'primevideo.com', 'hulu.com', 'disneyplus.com', 'crunchyroll.com', 'bilibili.com', 'bilibili.tv')
+$browsers = @('chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi')
+$urls = [System.Collections.Generic.List[string]]::new()
+
+foreach ($b in $browsers) {
+    $procs = Get-Process -Name $b -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }
+    foreach ($p in $procs) {
+        try {
+            $root = [System.Windows.Automation.AutomationElement]::FromHandle($p.MainWindowHandle)
+            if ($null -eq $root) { continue }
+            $cond = New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+                [System.Windows.Automation.ControlType]::Edit
+            )
+            $edits = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)
+            foreach ($e in $edits) {
+                try {
+                    $vp = $e.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+                    $v = $vp.Current.Value
+                    if ($v -match '^https?://') {
+                        foreach ($d in $domains) {
+                            if ($v -match [regex]::Escape($d)) {
+                                if (!$urls.Contains($v)) { $urls.Add($v) }
+                                break
+                            }
+                        }
+                    }
+                } catch {}
+            }
+        } catch {}
+    }
+}
+
+if ($urls.Count -gt 0) { $urls | ForEach-Object { Write-Output $_ } }
+`;
+        const child = exec('powershell -NoProfile -NonInteractive -Command -', { timeout: 6000 }, (err, stdout) => {
+            if (err || !stdout.trim()) { resolve([]); return; }
+            const lines = stdout
+                .split('\n')
+                .map((l: string) => l.trim())
+                .filter((l: string) => l.startsWith('http'));
+            resolve(lines);
+        });
+        if (child.stdin) { child.stdin.write(psScript); child.stdin.end(); }
+    });
+}
+
+function createPipWindow(videoUrl: string, title: string, albumArt?: string | null) {
     if (pipWindow && !pipWindow.isDestroyed()) {
         pipWindow.close();
     }
@@ -1503,12 +1569,13 @@ function createPipWindow(videoUrl: string, title: string) {
 
     const encodedUrl = encodeURIComponent(videoUrl);
     const encodedTitle = encodeURIComponent(title);
+    const encodedArt = albumArt ? encodeURIComponent(albumArt) : '';
 
     if (isDev) {
-        pipWindow.loadURL(`http://localhost:5173/?pip=true&url=${encodedUrl}&title=${encodedTitle}`);
+        pipWindow.loadURL(`http://localhost:5173/?pip=true&url=${encodedUrl}&title=${encodedTitle}&albumArt=${encodedArt}`);
     } else {
         pipWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
-            query: { pip: 'true', url: videoUrl, title },
+            query: { pip: 'true', url: videoUrl, title, albumArt: albumArt || '' },
         });
     }
 
@@ -1520,77 +1587,15 @@ function createPipWindow(videoUrl: string, title: string) {
 
 // Detect video URLs playing in open browsers using PowerShell UIAutomation
 // Returns an array of video URLs found in Chrome/Edge/Brave/Firefox address bars
-ipcMain.handle('get-active-video-urls', () => {
-    return new Promise<string[]>((resolve) => {
-        if (!isWin) {
-            // macOS: not implemented yet, return empty
-            resolve([]);
-            return;
-        }
-
-        const psScript = `
-Add-Type -AssemblyName UIAutomationClient
-Add-Type -AssemblyName UIAutomationTypes
-
-$domains = @('youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com', 'twitch.tv', 'netflix.com', 'primevideo.com', 'hulu.com', 'disneyplus.com', 'crunchyroll.com', 'bilibili.com', 'bilibili.tv')
-$browsers = @('chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi')
-$urls = [System.Collections.Generic.List[string]]::new()
-
-foreach ($b in $browsers) {
-    $procs = Get-Process -Name $b -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }
-    foreach ($p in $procs) {
-        try {
-            $root = [System.Windows.Automation.AutomationElement]::FromHandle($p.MainWindowHandle)
-            if ($null -eq $root) { continue }
-            $cond = New-Object System.Windows.Automation.PropertyCondition(
-                [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-                [System.Windows.Automation.ControlType]::Edit
-            )
-            $edits = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)
-            foreach ($e in $edits) {
-                try {
-                    $vp = $e.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
-                    $v = $vp.Current.Value
-                    if ($v -match '^https?://') {
-                        foreach ($d in $domains) {
-                            if ($v -match [regex]::Escape($d)) {
-                                if (!$urls.Contains($v)) { $urls.Add($v) }
-                                break
-                            }
-                        }
-                    }
-                } catch {}
-            }
-        } catch {}
-    }
-}
-
-if ($urls.Count -gt 0) { $urls | ForEach-Object { Write-Output $_ } }
-`;
-
-        const child = exec('powershell -NoProfile -NonInteractive -Command -', { timeout: 6000 }, (err, stdout) => {
-            if (err || !stdout.trim()) {
-                resolve([]);
-                return;
-            }
-            const lines = stdout
-                .split('\n')
-                .map((l: string) => l.trim())
-                .filter((l: string) => l.startsWith('http'));
-            resolve(lines);
-        });
-
-        if (child.stdin) {
-            child.stdin.write(psScript);
-            child.stdin.end();
-        }
-    });
-});
+ipcMain.handle('get-active-video-urls', () => runVideoUrlScan());
 
 // Open PIP with a URL (mini browser approach — no capture needed)
-ipcMain.on('open-pip', (_event, { url, title }: { url: string; title: string }) => {
-    createPipWindow(url, title);
+ipcMain.on('open-pip', (_event, { url, title, albumArt }: { url: string; title: string; albumArt?: string }) => {
+    createPipWindow(url, title, albumArt || lastSmtcAlbumArt || undefined);
 });
+
+// Return current SMTC source app ID (for renderer to query on-demand)
+ipcMain.handle('get-smtc-source', () => lastSmtcSourceAppId);
 
 // Close PIP window
 ipcMain.on('close-pip', () => {
@@ -1776,6 +1781,31 @@ function startMediaPolling() {
                 if (msg.type === 'poll-result' && mainWindow) {
                     const mediaData = msg.data;
                     mainWindow.webContents.send('media-update', mediaData);
+
+                    // Video PiP: if the current media source is a browser, run a
+                    // background URL scan (debounced) and cache results for instant PiP open.
+                    if (mediaData) {
+                        const appId: string = (mediaData.sourceAppId || '').toLowerCase();
+                        lastSmtcSourceAppId = appId;
+                        lastSmtcAlbumArt = mediaData.albumArt || null;
+                        const isBrowser = BROWSER_APP_IDS.some(b => appId.includes(b));
+                        if (isBrowser) {
+                            const now = Date.now();
+                            if (now - lastVideoScanAt >= VIDEO_SCAN_DEBOUNCE_MS) {
+                                lastVideoScanAt = now;
+                                runVideoUrlScan().then(urls => {
+                                    mainWindow?.webContents.send('video-urls-update', urls);
+                                }).catch(() => {});
+                            }
+                        } else {
+                            // Non-browser source: clear cached video URLs
+                            mainWindow.webContents.send('video-urls-update', []);
+                        }
+                    } else {
+                        lastSmtcSourceAppId = '';
+                        lastSmtcAlbumArt = null;
+                        mainWindow.webContents.send('video-urls-update', []);
+                    }
                 }
             });
             smtcWorker.on('error', (err) => {
