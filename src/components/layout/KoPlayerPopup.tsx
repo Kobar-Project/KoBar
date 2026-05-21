@@ -233,27 +233,25 @@ const KoPlayerPopup: React.FC = () => {
                         <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold ml-1">KoPlayer</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                        {/* PIP Button — always visible when media is playing */}
-                        {hasMedia && (
-                            <button
-                                onClick={handlePipClick}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all no-drag-region ${getPipBtnClass()}`}
-                                title={pipActive ? 'Close PIP' : 'Open video in Picture-in-Picture'}
-                            >
-                                {pipPhase === 'detecting' ? (
-                                    <div style={{
-                                        width: 12, height: 12, borderRadius: '50%',
-                                        border: '1.5px solid rgba(165,180,252,0.3)',
-                                        borderTop: '1.5px solid #a5b4fc',
-                                        animation: 'koplayer-spin 0.7s linear infinite',
-                                    }} />
-                                ) : (
-                                    <span className="material-symbols-outlined text-[14px]">
-                                        {pipActive ? 'pip_exit' : 'pip'}
-                                    </span>
-                                )}
-                            </button>
-                        )}
+                        {/* PIP Button — always visible */}
+                        <button
+                            onClick={handlePipClick}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all no-drag-region ${getPipBtnClass()}`}
+                            title={pipActive ? 'Close PIP' : 'Open video in Picture-in-Picture'}
+                        >
+                            {pipPhase === 'detecting' ? (
+                                <div style={{
+                                    width: 12, height: 12, borderRadius: '50%',
+                                    border: '1.5px solid rgba(165,180,252,0.3)',
+                                    borderTop: '1.5px solid #a5b4fc',
+                                    animation: 'koplayer-spin 0.7s linear infinite',
+                                }} />
+                            ) : (
+                                <span className="material-symbols-outlined text-[14px]">
+                                    {pipActive ? 'pip_exit' : 'pip'}
+                                </span>
+                            )}
+                        </button>
                         <button
                             onClick={() => setIsKoPlayerOpen(false)}
                             className="w-6 h-6 rounded-full bg-white/5 text-slate-400 hover:text-white hover:bg-red-500/20 flex items-center justify-center transition-all no-drag-region"
