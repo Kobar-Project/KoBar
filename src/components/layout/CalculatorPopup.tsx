@@ -219,7 +219,10 @@ const CalculatorPopup: React.FC = () => {
     };
 
     const handleBackspace = () => {
-        if (waitingForOperand) return;
+        if (operatorJustPressed.current) return;
+        
+        setWaitingForOperand(false);
+        
         if (display === '0') return;
         if (display.length === 1) {
             setDisplay('0');
