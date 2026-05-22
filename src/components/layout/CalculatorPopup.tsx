@@ -293,7 +293,7 @@ const CalculatorPopup: React.FC = () => {
         const num = typeof val === 'string' ? parseFloat(val) : val;
         if (isNaN(num)) return 'Error';
         if (!isFinite(num)) return '∞';
-        const str = String(num);
+        const str = typeof val === 'string' ? val : String(num);
         if (str.length > 14) {
             return num.toExponential(8);
         }
