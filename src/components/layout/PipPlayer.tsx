@@ -285,7 +285,7 @@ const PipPlayer: React.FC = () => {
                             />
                         ) : (
                             <span className="material-symbols-outlined"
-                                style={{ color: '#f4a125', fontSize: 15, flexShrink: 0, WebkitAppRegion: 'drag' } as React.CSSProperties}>
+                                style={{ color: '#ffffff', fontSize: 15, flexShrink: 0, WebkitAppRegion: 'drag' } as React.CSSProperties}>
                                 pip
                             </span>
                         )}
@@ -312,58 +312,7 @@ const PipPlayer: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Bottom bar: playback controls (mirrors KoPlayer) + drag knob */}
-                <div 
-                    onMouseEnter={() => setIsOverControls(true)}
-                    onMouseLeave={() => setIsOverControls(false)}
-                    style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 10px',
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 100%)',
-                    WebkitAppRegion: 'no-drag',
-                    pointerEvents: isHovered ? 'auto' : 'none',
-                    gap: 6,
-                } as React.CSSProperties}>
-                    {/* Playback controls — identical to KoPlayer's prev/play/next */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); handleCommand('prev'); }}
-                            style={pipCtrlBtn}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-                            title="Previous"
-                        >
-                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>skip_previous</span>
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); handleCommand(isPlaying ? 'pause' : 'play'); }}
-                            style={{
-                                ...pipCtrlBtn,
-                                width: 30, height: 30,
-                                background: 'rgba(244,161,37,0.85)',
-                                color: '#1a1207',
-                                borderRadius: '50%',
-                            }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,161,37,1)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(244,161,37,0.85)')}
-                            title={isPlaying ? 'Pause' : 'Play'}
-                        >
-                            <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
-                                {isPlaying ? 'pause' : 'play_arrow'}
-                            </span>
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); handleCommand('next'); }}
-                            style={pipCtrlBtn}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-                            title="Next"
-                        >
-                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>skip_next</span>
-                        </button>
-                    </div>
                 </div>
-            </div>
 
             {/* Animations + font preload */}
             <style>{`
