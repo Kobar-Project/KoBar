@@ -25,8 +25,32 @@ const PipPlayer: React.FC = () => {
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
+    const [isOverControls, setIsOverControls] = useState(false);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const triggerHover = useCallback(() => {
+        setIsHovered(true);
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        if (!isOverControls) {
+            hoverTimeoutRef.current = setTimeout(() => {
+                setIsHovered(false);
+            }, 2500);
+        }
+    }, [isOverControls]);
+
+    useEffect(() => {
+        if (isOverControls) {
+            setIsHovered(true);
+            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        } else {
+            triggerHover();
+        }
+        return () => {
+            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        };
+    }, [isOverControls, triggerHover]);
 
     // Live media state — mirrors KoPlayer, updated via SMTC polling
     const [mediaTitle, setMediaTitle] = useState(initialTitle);
@@ -44,6 +68,22 @@ const PipPlayer: React.FC = () => {
             }
         });
         return () => unsub?.();
+    }, []);
+
+    // Listen to YouTube iframe messages to sync play/pause button state
+    useEffect(() => {
+        const handleMessage = (e: MessageEvent) => {
+            if (e.origin !== 'https://www.youtube.com') return;
+            try {
+                const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                if (data.event === 'infoDelivery' && data.info) {
+                    if (data.info.playerState === 1) setIsPlaying(true);   // Playing
+                    if (data.info.playerState === 2) setIsPlaying(false);  // Paused
+                }
+            } catch (err) {}
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
     }, []);
 
     // Create the iframe element imperatively to avoid React re-rendering issues
@@ -71,7 +111,11 @@ const PipPlayer: React.FC = () => {
         iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
         iframe.setAttribute('allowfullscreen', 'true');
 
-        iframe.addEventListener('load', () => setLoading(false));
+        iframe.addEventListener('load', () => {
+            setLoading(false);
+            // Tell YouTube to start broadcasting infoDelivery events
+            iframe.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), '*');
+        });
 
         containerRef.current.appendChild(iframe);
 
@@ -121,15 +165,14 @@ const PipPlayer: React.FC = () => {
                 background: '#000',
                 fontFamily: "'Space Grotesk', 'Inter', sans-serif",
             }}
-            onDoubleClick={handleClose}
         >
             {/* Edge hit-boxes to reliably trigger hover since the cross-origin iframe swallows document-level mouse events */}
             {!isHovered && (
                 <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 12, pointerEvents: 'auto' }} onMouseEnter={() => setIsHovered(true)} />
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 12, pointerEvents: 'auto' }} onMouseEnter={() => setIsHovered(true)} />
-                    <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 12, pointerEvents: 'auto' }} onMouseEnter={() => setIsHovered(true)} />
-                    <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 12, pointerEvents: 'auto' }} onMouseEnter={() => setIsHovered(true)} />
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 16, pointerEvents: 'auto' }} onMouseEnter={triggerHover} onMouseMove={triggerHover} />
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 16, pointerEvents: 'auto' }} onMouseEnter={triggerHover} onMouseMove={triggerHover} />
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 16, pointerEvents: 'auto' }} onMouseEnter={triggerHover} onMouseMove={triggerHover} />
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 16, pointerEvents: 'auto' }} onMouseEnter={triggerHover} onMouseMove={triggerHover} />
                 </div>
             )}
 
@@ -201,23 +244,20 @@ const PipPlayer: React.FC = () => {
 
             {/* Hover overlay — controls + drag handle */}
             <div 
-                onMouseLeave={(e) => {
-                    // Only hide if we actually left the window, not just moving between children
-                    if (e.relatedTarget === null || (e.relatedTarget as HTMLElement)?.nodeName === 'IFRAME') {
-                        setIsHovered(false);
-                    }
-                }}
                 style={{
                 position: 'absolute', inset: 0,
                 display: 'flex', flexDirection: 'column',
                 justifyContent: 'space-between',
                 opacity: isHovered ? 1 : 0,
                 transition: 'opacity 0.18s ease',
-                pointerEvents: isHovered ? 'auto' : 'none',
+                pointerEvents: 'none', // Must be none to allow clicks to pass to YouTube iframe!
                 zIndex: 20,
             }}>
                 {/* Top bar: drag region + album art thumbnail + title + close */}
-                <div style={{
+                <div 
+                    onMouseEnter={() => setIsOverControls(true)}
+                    onMouseLeave={() => setIsOverControls(false)}
+                    style={{
                     display: 'flex', alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '7px 10px',
@@ -273,7 +313,10 @@ const PipPlayer: React.FC = () => {
                 </div>
 
                 {/* Bottom bar: playback controls (mirrors KoPlayer) + drag knob */}
-                <div style={{
+                <div 
+                    onMouseEnter={() => setIsOverControls(true)}
+                    onMouseLeave={() => setIsOverControls(false)}
+                    style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '8px 10px',
                     background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 100%)',
@@ -318,17 +361,6 @@ const PipPlayer: React.FC = () => {
                         >
                             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>skip_next</span>
                         </button>
-                    </div>
-
-                    <div style={{
-                        display: 'flex', alignItems: 'center', gap: 4,
-                        color: 'rgba(148,163,184,0.5)', fontSize: 10,
-                        WebkitAppRegion: 'drag', cursor: 'grab',
-                    } as React.CSSProperties}>
-                        <span style={{ color: 'rgba(148,163,184,0.55)', fontSize: 9, userSelect: 'none' }}>
-                            dbl-click to close
-                        </span>
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>drag_indicator</span>
                     </div>
                 </div>
             </div>
