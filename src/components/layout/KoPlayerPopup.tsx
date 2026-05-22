@@ -15,6 +15,64 @@ function urlShortLabel(url: string): string {
     }
 }
 
+const DetectedTabItem: React.FC<{ url: string; onPick: (url: string) => void }> = ({ url, onPick }) => {
+    const [title, setTitle] = useState<string | null>(null);
+    const [thumbnail, setThumbnail] = useState<string | null>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        
+        // Extract video ID for fast thumbnail loading before oEmbed
+        let videoId = null;
+        try {
+            const u = new URL(url);
+            videoId = u.searchParams.get('v') || (u.hostname.includes('youtu.be') ? u.pathname.slice(1) : null);
+            if (videoId && isMounted) {
+                setThumbnail(`https://i.ytimg.com/vi/${videoId}/default.jpg`);
+            }
+        } catch {}
+
+        const fetchMeta = async () => {
+            try {
+                const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+                const res = await fetch(oembedUrl);
+                if (!res.ok) throw new Error('oEmbed failed');
+                const data = await res.json();
+                if (isMounted) {
+                    setTitle(data.title);
+                    if (data.thumbnail_url) setThumbnail(data.thumbnail_url);
+                }
+            } catch (e) {
+                // Ignore errors, will fall back to urlShortLabel and basic thumbnail
+            }
+        };
+        fetchMeta();
+
+        return () => { isMounted = false; };
+    }, [url]);
+
+    return (
+        <button
+            onClick={() => onPick(url)}
+            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left hover:bg-white/10 transition-colors"
+        >
+            {thumbnail ? (
+                <div className="w-12 h-8 rounded overflow-hidden shrink-0 bg-black/40 border border-white/10 relative flex items-center justify-center">
+                    <img src={thumbnail} alt="" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <span className="material-symbols-outlined text-white text-[14px]">play_arrow</span>
+                    </div>
+                </div>
+            ) : (
+                <span className="material-symbols-outlined text-primary text-[14px] shrink-0 w-12 text-center">play_circle</span>
+            )}
+            <span className="text-xs text-slate-300 truncate" title={title || urlShortLabel(url)}>
+                {title || urlShortLabel(url)}
+            </span>
+        </button>
+    );
+};
+
 const KoPlayerPopup: React.FC = () => {
     const edgePosition = useAppStore(state => state.edgePosition);
     const koPlayerAnchorRect = useAppStore(state => state.koPlayerAnchorRect);
@@ -159,17 +217,9 @@ const KoPlayerPopup: React.FC = () => {
 
         // Fast path: use pre-cached URLs from SMTC background scan
         if (hasPreCachedVideo) {
-            if (activeVideoUrls.length === 1) {
-                window.api?.sendMediaCommand?.('pause');
-                window.api?.openPip?.(activeVideoUrls[0], currentMedia?.title || 'PIP Video', currentMedia?.albumArt || undefined);
-                setPipActive(true);
-                setPipPhase('idle');
-                return;
-            } else {
-                setDetectedUrls(activeVideoUrls);
-                setPipPhase('pick');
-                return;
-            }
+            setDetectedUrls(activeVideoUrls);
+            setPipPhase('manual');
+            return;
         }
 
         // Slow path: on-demand scan
@@ -178,20 +228,8 @@ const KoPlayerPopup: React.FC = () => {
 
         const urls = await window.api?.getActiveVideoUrls?.().catch(() => []) ?? [];
 
-        if (urls.length === 1) {
-            // Exactly one → open immediately
-            window.api?.sendMediaCommand?.('pause');
-            window.api?.openPip?.(urls[0], currentMedia?.title || 'PIP Video', currentMedia?.albumArt || undefined);
-            setPipActive(true);
-            setPipPhase('idle');
-        } else if (urls.length > 1) {
-            // Multiple → let user pick
-            setDetectedUrls(urls);
-            setPipPhase('pick');
-        } else {
-            // Nothing found → show manual URL input
-            setPipPhase('manual');
-        }
+        setDetectedUrls(urls);
+        setPipPhase('manual');
     }, [pipActive, currentMedia?.title, currentMedia?.albumArt, hasPreCachedVideo, activeVideoUrls]);
 
     const handlePickUrl = (url: string) => {
@@ -296,38 +334,24 @@ const KoPlayerPopup: React.FC = () => {
                     </div>
                 </div>
 
-                {/* ── Pick URL panel (multiple detected) ── */}
-                {pipPhase === 'pick' && (
-                    <div className="mx-3 mb-2 rounded-lg overflow-hidden no-drag-region"
-                        style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.45)' }}>
-                        <div className="flex justify-between items-center px-3 pt-2 pb-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Multiple videos — pick one
-                            </span>
-                            <button onClick={() => setPipPhase('idle')}
-                                className="text-slate-500 hover:text-white transition-colors">
-                                <span className="material-symbols-outlined text-[13px]">close</span>
-                            </button>
-                        </div>
-                        <div style={{ maxHeight: 130, overflowY: 'auto' }} className="custom-scrollbar pb-1">
-                            {detectedUrls.map((url, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => handlePickUrl(url)}
-                                    className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-white/5 transition-colors"
-                                >
-                                    <span className="material-symbols-outlined text-primary text-[14px] shrink-0">play_circle</span>
-                                    <span className="text-xs text-slate-300 truncate">{urlShortLabel(url)}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* ── Manual URL input (nothing detected) ── */}
-                {pipPhase === 'manual' && (
+                {/* ── Manual URL input and Detected Tabs ── */}
+                {(pipPhase === 'manual' || pipPhase === 'pick') && (
                     <div className="mx-3 mb-2 rounded-lg overflow-hidden no-drag-region"
                         style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.45)', padding: '10px 12px' }}>
+                        
+                        {detectedUrls.length > 0 && (
+                            <div className="mb-3">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">
+                                    Detected YouTube Tabs
+                                </span>
+                                <div style={{ maxHeight: 120, overflowY: 'auto' }} className="custom-scrollbar pb-1 -mx-2 px-2">
+                                    {detectedUrls.map((url, i) => (
+                                        <DetectedTabItem key={i} url={url} onPick={handlePickUrl} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <p className="text-[10px] text-slate-500 mb-2 leading-snug">
                             Paste a video URL:
                         </p>

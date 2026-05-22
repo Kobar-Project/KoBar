@@ -1476,37 +1476,45 @@ function runVideoUrlScan(): Promise<string[]> {
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 
-$domains = @('youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com', 'twitch.tv', 'netflix.com', 'primevideo.com', 'hulu.com', 'disneyplus.com', 'crunchyroll.com', 'bilibili.com', 'bilibili.tv')
+$domains = @('youtube.com', 'youtu.be')
 $browsers = @('chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi')
 $urls = [System.Collections.Generic.List[string]]::new()
 
-foreach ($b in $browsers) {
-    $procs = Get-Process -Name $b -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }
-    foreach ($p in $procs) {
-        try {
-            $root = [System.Windows.Automation.AutomationElement]::FromHandle($p.MainWindowHandle)
-            if ($null -eq $root) { continue }
+$root = [System.Windows.Automation.AutomationElement]::RootElement
+$windows = $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)
+
+foreach ($w in $windows) {
+    try {
+        $pidVal = $w.Current.ProcessId
+        if ($pidVal -eq 0) { continue }
+        $proc = Get-Process -Id $pidVal -ErrorAction SilentlyContinue
+        if ($null -eq $proc) { continue }
+        
+        $procName = $proc.Name.ToLower()
+        if ($browsers -contains $procName) {
             $cond = New-Object System.Windows.Automation.PropertyCondition(
                 [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
                 [System.Windows.Automation.ControlType]::Edit
             )
-            $edits = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)
+            $edits = $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)
             foreach ($e in $edits) {
                 try {
                     $vp = $e.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
                     $v = $vp.Current.Value
-                    if ($v -match '^https?://') {
-                        foreach ($d in $domains) {
-                            if ($v -match [regex]::Escape($d)) {
-                                if (!$urls.Contains($v)) { $urls.Add($v) }
-                                break
+                    foreach ($d in $domains) {
+                        if ($v -match [regex]::Escape($d)) {
+                            $fullUrl = $v
+                            if ($fullUrl -notmatch '^https?://') {
+                                $fullUrl = "https://" + $fullUrl
                             }
+                            if (!$urls.Contains($fullUrl)) { $urls.Add($fullUrl) }
+                            break
                         }
                     }
                 } catch {}
             }
-        } catch {}
-    }
+        }
+    } catch {}
 }
 
 if ($urls.Count -gt 0) { $urls | ForEach-Object { Write-Output $_ } }
@@ -1569,13 +1577,12 @@ function createPipWindow(videoUrl: string, title: string, albumArt?: string | nu
 
     const encodedUrl = encodeURIComponent(videoUrl);
     const encodedTitle = encodeURIComponent(title);
-    const encodedArt = albumArt ? encodeURIComponent(albumArt) : '';
 
     if (isDev) {
-        pipWindow.loadURL(`http://localhost:5173/?pip=true&url=${encodedUrl}&title=${encodedTitle}&albumArt=${encodedArt}`);
+        pipWindow.loadURL(`http://localhost:5173/?pip=true&url=${encodedUrl}&title=${encodedTitle}`);
     } else {
         pipWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
-            query: { pip: 'true', url: videoUrl, title, albumArt: albumArt || '' },
+            query: { pip: 'true', url: videoUrl, title },
         });
     }
 
