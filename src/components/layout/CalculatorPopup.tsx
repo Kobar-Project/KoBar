@@ -206,7 +206,7 @@ const CalculatorPopup: React.FC = () => {
         setDisplay(resultStr);
         setPrevValue(null);
         setOperator(null);
-        setWaitingForOperand(false);
+        setWaitingForOperand(true);
     };
 
     const handleClear = () => {
