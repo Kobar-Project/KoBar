@@ -16,6 +16,7 @@ const CalculatorPopup: React.FC = () => {
     const [operator, setOperator] = useState<string | null>(null);
     const [waitingForOperand, setWaitingForOperand] = useState(false);
     const [parenStack, setParenStack] = useState<Array<{ prevValue: number | null, operator: string | null }>>([]);
+    const operatorJustPressed = useRef(false);
     const isScientific = useAppStore(state => state.isCalculatorScientific);
     const setIsScientific = useAppStore(state => state.setIsCalculatorScientific);
     const [angleMode, setAngleMode] = useState<'DEG' | 'RAD'>('DEG');
@@ -142,6 +143,7 @@ const CalculatorPopup: React.FC = () => {
     }, [calculatorAnchorRect, screenBounds, isScientific, orientation]);
 
     const handleDigit = (digit: string) => {
+        operatorJustPressed.current = false;
         if (waitingForOperand) {
             setDisplay(digit === '00' ? '0' : digit);
             setWaitingForOperand(false);
@@ -155,6 +157,11 @@ const CalculatorPopup: React.FC = () => {
     };
 
     const handleOperator = (nextOperator: string) => {
+        if (operatorJustPressed.current) {
+            setOperator(nextOperator);
+            return;
+        }
+
         const inputValue = parseFloat(display);
 
         if (prevValue === null) {
@@ -168,6 +175,7 @@ const CalculatorPopup: React.FC = () => {
 
         setWaitingForOperand(true);
         setOperator(nextOperator);
+        operatorJustPressed.current = true;
     };
 
     const performCalculation = () => {
@@ -189,6 +197,7 @@ const CalculatorPopup: React.FC = () => {
     };
 
     const handleEqual = () => {
+        operatorJustPressed.current = false;
         if (!operator) return;
         const expression = `${formatDisplay(prevValue!)} ${operator} ${formatDisplay(display)}`;
         const result = performCalculation();
@@ -201,6 +210,7 @@ const CalculatorPopup: React.FC = () => {
     };
 
     const handleClear = () => {
+        operatorJustPressed.current = false;
         setDisplay('0');
         setPrevValue(null);
         setOperator(null);
@@ -219,6 +229,7 @@ const CalculatorPopup: React.FC = () => {
     };
 
     const handleParenOpen = () => {
+        operatorJustPressed.current = false;
         setParenStack([...parenStack, { prevValue, operator }]);
         setPrevValue(null);
         setOperator(null);
@@ -227,6 +238,7 @@ const CalculatorPopup: React.FC = () => {
     };
 
     const handleParenClose = () => {
+        operatorJustPressed.current = false;
         if (parenStack.length === 0) return;
         
         let result = parseFloat(display);
@@ -249,6 +261,7 @@ const CalculatorPopup: React.FC = () => {
     const getAngleInput = (val: number) => angleMode === 'DEG' ? toRadians(val) : val;
 
     const handleScientific = (fn: string) => {
+        operatorJustPressed.current = false;
         const val = parseFloat(display);
         let result: number;
 
@@ -289,6 +302,7 @@ const CalculatorPopup: React.FC = () => {
     };
 
     const insertConstant = (val: number) => {
+        operatorJustPressed.current = false;
         setDisplay(String(val));
         setWaitingForOperand(true);
     };
@@ -312,6 +326,7 @@ const CalculatorPopup: React.FC = () => {
 
     // Memory functions
     const handleMemory = (action: string) => {
+        operatorJustPressed.current = false;
         const val = parseFloat(display);
         switch (action) {
             case 'MC': setMemory(0); break;
