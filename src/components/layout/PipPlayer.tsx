@@ -9,8 +9,7 @@ function getPlayableUrl(rawUrl: string): string {
         /(?:youtube\.com\/watch[?&]v=|youtu\.be\/)([\w-]+)/
     );
     if (ytMatch) {
-        const origin = window.location.origin;
-        return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(origin)}`;
+        return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
     }
 
     return rawUrl;
@@ -56,6 +55,8 @@ const PipPlayer: React.FC = () => {
             return;
         }
 
+        containerRef.current.innerHTML = ''; // GUARANTEE ONLY ONE IFRAME EXISTS
+
         const iframe = document.createElement('iframe');
         iframe.src = finalUrl;
         iframe.style.cssText = `
@@ -82,20 +83,8 @@ const PipPlayer: React.FC = () => {
     }, [finalUrl]);
 
     useEffect(() => {
-        const handleMouseLeave = (e: MouseEvent) => {
-            // e.relatedTarget is null when leaving the actual browser window
-            if (e.relatedTarget === null) {
-                setIsHovered(false);
-            }
-        };
-        const handleMouseEnter = () => setIsHovered(true);
-
-        document.addEventListener('mouseleave', handleMouseLeave);
-        document.addEventListener('mouseenter', handleMouseEnter);
-        return () => {
-            document.removeEventListener('mouseleave', handleMouseLeave);
-            document.removeEventListener('mouseenter', handleMouseEnter);
-        };
+        // We handle hover state using edge hitboxes and overlay mouseLeave instead of document listeners
+        // because the cross-origin iframe swallows document-level mouse events.
     }, []);
 
     const handleClose = () => {
@@ -134,6 +123,16 @@ const PipPlayer: React.FC = () => {
             }}
             onDoubleClick={handleClose}
         >
+            {/* Edge hit-boxes to reliably trigger hover since the cross-origin iframe swallows document-level mouse events */}
+            {!isHovered && (
+                <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 12, pointerEvents: 'auto' }} onMouseEnter={() => setIsHovered(true)} />
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 12, pointerEvents: 'auto' }} onMouseEnter={() => setIsHovered(true)} />
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 12, pointerEvents: 'auto' }} onMouseEnter={() => setIsHovered(true)} />
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 12, pointerEvents: 'auto' }} onMouseEnter={() => setIsHovered(true)} />
+                </div>
+            )}
+
             {/* Blurred album art background — mirrors KoPlayer exactly */}
             {hasArt && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
@@ -201,13 +200,20 @@ const PipPlayer: React.FC = () => {
             )}
 
             {/* Hover overlay — controls + drag handle */}
-            <div style={{
+            <div 
+                onMouseLeave={(e) => {
+                    // Only hide if we actually left the window, not just moving between children
+                    if (e.relatedTarget === null || (e.relatedTarget as HTMLElement)?.nodeName === 'IFRAME') {
+                        setIsHovered(false);
+                    }
+                }}
+                style={{
                 position: 'absolute', inset: 0,
                 display: 'flex', flexDirection: 'column',
                 justifyContent: 'space-between',
                 opacity: isHovered ? 1 : 0,
                 transition: 'opacity 0.18s ease',
-                pointerEvents: 'none',
+                pointerEvents: isHovered ? 'auto' : 'none',
                 zIndex: 20,
             }}>
                 {/* Top bar: drag region + album art thumbnail + title + close */}

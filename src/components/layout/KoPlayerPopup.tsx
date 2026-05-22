@@ -233,8 +233,10 @@ const KoPlayerPopup: React.FC = () => {
     }, [pipActive, currentMedia?.title, currentMedia?.albumArt, hasPreCachedVideo, activeVideoUrls]);
 
     const handlePickUrl = (url: string) => {
-        window.api?.sendMediaCommand?.('pause');
-        window.api?.openPip?.(url, currentMedia?.title || 'PIP Video', currentMedia?.albumArt || undefined);
+        if (currentMedia?.isPlaying) {
+            window.api?.sendMediaCommand?.('pause');
+        }
+        window.api?.openPip?.(url, currentMedia?.title || 'PIP Video');
         setPipActive(true);
         setPipPhase('idle');
     };
@@ -242,8 +244,10 @@ const KoPlayerPopup: React.FC = () => {
     const handleManualOpen = () => {
         const url = manualUrl.trim();
         if (!url) return;
-        window.api?.sendMediaCommand?.('pause');
-        window.api?.openPip?.(url, currentMedia?.title || 'PIP Video', currentMedia?.albumArt || undefined);
+        if (currentMedia?.isPlaying) {
+            window.api?.sendMediaCommand?.('pause');
+        }
+        window.api?.openPip?.(url, currentMedia?.title || 'PIP Video');
         setPipActive(true);
         setPipPhase('idle');
         setManualUrl('');
