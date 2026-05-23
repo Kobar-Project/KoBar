@@ -329,19 +329,30 @@ const KoCalendarPopup: React.FC = () => {
                     <div className="mt-auto pt-2 flex justify-end">
                         <button 
                             onClick={() => {
+                                const currentEvents = useAppStore.getState().localEvents;
+                                const addedKeys = new Set<string>();
+
                                 pendingHolidays.forEach((holiday: HolidayData) => {
                                     if (holiday.date) {
                                         const date = new Date(holiday.date);
                                         date.setHours(0, 0, 0, 0);
                                         const startTime = date.toISOString();
-                                        addCalendarEvent({
-                                            title: holiday.name || 'Holiday',
-                                            startTime: startTime,
-                                            endTime: startTime,
-                                            notificationEnabled: false,
-                                            notificationMinutes: 15,
-                                            colorId: importColor
-                                        });
+                                        const title = holiday.name || 'Holiday';
+                                        
+                                        const key = `${title}-${startTime}`;
+                                        const isDuplicate = currentEvents.some(ev => ev.title === title && ev.startTime === startTime);
+
+                                        if (!isDuplicate && !addedKeys.has(key)) {
+                                            addedKeys.add(key);
+                                            addCalendarEvent({
+                                                title: title,
+                                                startTime: startTime,
+                                                endTime: startTime,
+                                                notificationEnabled: false,
+                                                notificationMinutes: 15,
+                                                colorId: importColor
+                                            });
+                                        }
                                     }
                                 });
                                 setPendingHolidays(null);
