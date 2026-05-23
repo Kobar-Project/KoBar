@@ -28,6 +28,9 @@ const KoCalendarPopup: React.FC = () => {
     const [newEventHours, setNewEventHours] = useState('12');
     const [newEventMinutes, setNewEventMinutes] = useState('00');
     const [newEventNotification, setNewEventNotification] = useState(true);
+    const [newEventColor, setNewEventColor] = useState(koCalendarColor);
+    const [pendingHolidays, setPendingHolidays] = useState<any[] | null>(null);
+    const [importColor, setImportColor] = useState<string>(koCalendarColor);
 
     useEffect(() => {
         // Just keeping anchor rect check
@@ -42,8 +45,8 @@ const KoCalendarPopup: React.FC = () => {
     const getPopupStyle = (): React.CSSProperties => {
         if (!koCalendarAnchorRect) return { display: 'none' };
         
-        const popupHeight = 440; // Calendar is taller
-        const popupWidth = 350;
+        const popupHeight = 620; // Calendar is taller
+        const popupWidth = 440;
         const screenHeight = screenBounds?.height ?? 800;
         const screenWidth = screenBounds?.width ?? 1200;
         const offsetTop = sidebarPosition ? sidebarPosition.y : 0;
@@ -113,6 +116,7 @@ const KoCalendarPopup: React.FC = () => {
     };
 
     const popupRef = React.useRef<HTMLDivElement>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
     const isSmartRef = React.useRef(isSmartPositioning);
     React.useEffect(() => { isSmartRef.current = isSmartPositioning; }, [isSmartPositioning]);
 
@@ -121,8 +125,8 @@ const KoCalendarPopup: React.FC = () => {
             if (!popupRef.current || !koCalendarAnchorRect || !isSmartRef.current) return;
             const newX = e.detail.x;
             const newY = e.detail.y;
-            const popupHeight = 440;
-            const popupWidth = 350;
+            const popupHeight = 620;
+            const popupWidth = 440;
             
             const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
         const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
@@ -156,6 +160,28 @@ const KoCalendarPopup: React.FC = () => {
     const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
     const handleToday = () => setCurrentDate(new Date());
 
+    const handleImportHolidays = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const json = JSON.parse(event.target?.result as string);
+                if (json && json.holidays && Array.isArray(json.holidays)) {
+                    setPendingHolidays(json.holidays);
+                    setImportColor(koCalendarColor);
+                }
+            } catch (err) {
+                console.error("Failed to parse holidays JSON", err);
+            }
+        };
+        reader.readAsText(file);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     // Generate Calendar Grid
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(monthStart);
@@ -171,8 +197,8 @@ const KoCalendarPopup: React.FC = () => {
         >
             {/* Header */}
             <div className="flex justify-between items-center p-4 pb-2 border-b border-white/5 drag-region">
-                <div className="flex items-center gap-2 min-w-0 max-w-[200px]">
-                    <span className="text-xs font-bold text-slate-200 whitespace-nowrap truncate shrink-0">
+                <div className="flex items-center gap-2 min-w-0 max-w-[250px]">
+                    <span className="text-sm font-bold text-slate-200 whitespace-nowrap truncate shrink-0">
                         {t(`month_${currentDate.getMonth()}` as any)} {currentDate.getFullYear()}
                     </span>
                     {/* Tiny Color Picker */}
@@ -188,16 +214,26 @@ const KoCalendarPopup: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex gap-1 shrink-0 no-drag-region">
-                    <button onClick={handleToday} className="px-2 py-1 bg-white/5 rounded hover:bg-white/10 text-xs font-semibold text-slate-300 transition-colors">{t('today')}</button>
-                    <button onClick={handlePrevMonth} className="w-6 h-6 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all">
-                        <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all" title={(t as any)('importHolidays') || "Import Holidays"}>
+                        <span className="material-symbols-outlined text-[18px]">download</span>
                     </button>
-                    <button onClick={handleNextMonth} className="w-6 h-6 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all">
-                        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                    <input 
+                        type="file" 
+                        accept=".json" 
+                        ref={fileInputRef} 
+                        onChange={handleImportHolidays} 
+                        style={{ display: 'none' }} 
+                    />
+                    <button onClick={handleToday} className="px-3 py-1.5 bg-white/5 rounded hover:bg-white/10 text-sm font-semibold text-slate-300 transition-colors">{t('today')}</button>
+                    <button onClick={handlePrevMonth} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all">
+                        <span className="material-symbols-outlined text-[18px]">chevron_left</span>
                     </button>
-                    <div className="w-[1px] h-4 bg-white/10 my-auto mx-1" />
-                    <button onClick={() => setIsKoCalendarOpen(false)} className="w-6 h-6 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-red-500/20 flex items-center justify-center transition-all">
-                        <span className="material-symbols-outlined text-[16px]">close</span>
+                    <button onClick={handleNextMonth} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all">
+                        <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                    </button>
+                    <div className="w-[1px] h-5 bg-white/10 my-auto mx-1" />
+                    <button onClick={() => setIsKoCalendarOpen(false)} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-red-500/20 flex items-center justify-center transition-all">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>
                 </div>
             </div>
@@ -205,12 +241,12 @@ const KoCalendarPopup: React.FC = () => {
             {/* Grid Days Header */}
             <div className="grid grid-cols-7 gap-1 p-2 pb-0 pt-3">
                 {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                    <div key={i} className="text-center text-[10px] font-bold text-slate-500 uppercase">{d}</div>
+                    <div key={i} className="text-center text-xs font-bold text-slate-500 uppercase">{d}</div>
                 ))}
             </div>
 
             {/* Grid Body */}
-            <div className="grid grid-cols-7 gap-1 p-2 custom-scrollbar overflow-y-auto" style={{ maxHeight: '310px' }}>
+            <div className="grid grid-cols-7 gap-1 p-2 custom-scrollbar overflow-y-auto" style={{ maxHeight: '400px' }}>
                 {dayIntervals.map((day, i) => {
                     const isCurrentMonth = isSameMonth(day, monthStart);
                     const isToday = isSameDay(day, new Date());
@@ -225,24 +261,27 @@ const KoCalendarPopup: React.FC = () => {
                         <div 
                             key={i} 
                             onClick={() => setSelectedDate(day)}
-                            onDoubleClick={() => setEditingEventDate(day)}
-                            className={`flex flex-col h-14 p-1 rounded-md border border-transparent hover:border-white/10 transition-colors relative cursor-pointer group
+                            onDoubleClick={() => {
+                                setEditingEventDate(day);
+                                setNewEventColor(koCalendarColor);
+                            }}
+                            className={`flex flex-col h-[70px] p-1.5 rounded-md border border-transparent hover:border-white/10 transition-colors relative cursor-pointer group
                                 ${!isCurrentMonth ? 'opacity-30' : 'bg-white/5'}
                                 ${isToday ? 'border-primary/30 bg-primary/5' : ''}
                                 ${isSelected ? `border-[${koCalendarColor}]/50 bg-[${koCalendarColor}]/10` : ''}
                                 ${editingEventDate && isSameDay(day, editingEventDate) ? 'ring-1 ring-primary overflow-visible z-10' : ''}`}
                         >
-                            <div className="flex justify-between items-center px-1">
-                                <span className="text-[10px] font-bold" style={{ color: isToday ? 'var(--theme-primary)' : isSelected ? koCalendarColor : isCurrentMonth ? '#fff' : 'var(--theme-text-faded)' }}>
+                            <div className="flex justify-between items-center px-1 mb-1">
+                                <span className="text-xs font-bold" style={{ color: isToday ? 'var(--theme-primary)' : isSelected ? koCalendarColor : isCurrentMonth ? '#fff' : 'var(--theme-text-faded)' }}>
                                     {format(day, 'd')}
                                 </span>
-                                {isSelected && <div className="w-1 h-1 rounded-full" style={{ backgroundColor: koCalendarColor }} />}
+                                {isSelected && <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: koCalendarColor }} />}
                             </div>
 
                             {/* Event Indicators */}
-                            <div className="flex flex-col gap-[2px] mt-auto overflow-hidden">
+                            <div className="flex flex-col gap-[3px] mt-auto overflow-hidden">
                                 {dayEvents.slice(0, 2).map((ev, ei) => (
-                                    <div key={ei} className="w-full h-[3px] rounded-full" style={{ backgroundColor: ev.colorId || koCalendarColor, opacity: 0.8 }} title={ev.title} />
+                                    <div key={ei} className="w-full h-1 rounded-full" style={{ backgroundColor: ev.colorId || koCalendarColor, opacity: 0.8 }} title={ev.title} />
                                 ))}
                                 {dayTodos.length > 0 && (
                                     <div className="flex items-center justify-start gap-[2px] px-0.5">
@@ -256,7 +295,57 @@ const KoCalendarPopup: React.FC = () => {
             </div>
             
             {/* Quick Agenda View / Add Event View at the bottom */}
-            {editingEventDate ? (
+            {pendingHolidays ? (
+                <div className="p-3 border-t border-white/5 bg-black/40 flex flex-col gap-2 flex-1 animate-in slide-in-from-bottom-2">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-semibold text-slate-300">
+                            {(t as any)('importHolidays') || "Import Holidays"}
+                        </span>
+                        <button onClick={() => setPendingHolidays(null)} className="w-6 h-6 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+                            <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                    </div>
+                    <div className="text-xs text-slate-400 mb-2">
+                        Found {pendingHolidays.length} holidays. Select a color to associate with them:
+                    </div>
+                    <div className="flex gap-2 bg-black/20 border border-white/10 rounded-lg p-2 w-fit mx-auto mb-2">
+                        {['#60a5fa', '#f87171', '#4ade80', '#fbbf24', '#a78bfa'].map(color => (
+                            <button 
+                                key={color}
+                                type="button"
+                                onClick={() => setImportColor(color)}
+                                className={`w-5 h-5 rounded-full transition-transform hover:scale-125 ${importColor === color ? 'ring-2 ring-white scale-125' : 'opacity-50 hover:opacity-100'}`}
+                                style={{ backgroundColor: color }}
+                            />
+                        ))}
+                    </div>
+                    <div className="mt-auto pt-2 flex justify-end">
+                        <button 
+                            onClick={() => {
+                                pendingHolidays.forEach((holiday: any) => {
+                                    if (holiday.date) {
+                                        const date = new Date(holiday.date);
+                                        date.setHours(0, 0, 0, 0);
+                                        const startTime = date.toISOString();
+                                        addCalendarEvent({
+                                            title: holiday.name || 'Holiday',
+                                            startTime: startTime,
+                                            endTime: startTime,
+                                            notificationEnabled: false,
+                                            notificationMinutes: 15,
+                                            colorId: importColor
+                                        });
+                                    }
+                                });
+                                setPendingHolidays(null);
+                            }}
+                            className="w-full px-6 py-2 rounded-lg bg-primary text-black text-sm font-bold hover:brightness-110 active:scale-95 transition-all"
+                        >
+                            Import {pendingHolidays.length} Holidays
+                        </button>
+                    </div>
+                </div>
+            ) : editingEventDate ? (
                 <div className="p-3 border-t border-white/5 bg-black/40 flex flex-col gap-2 flex-1 animate-in slide-in-from-bottom-2">
                     <div className="flex justify-between items-center">
                         <span className="text-xs font-semibold text-slate-300">
@@ -283,6 +372,7 @@ const KoCalendarPopup: React.FC = () => {
                                     startTime: eventStart.toISOString(),
                                     endTime: eventStart.toISOString(),
                                     notificationEnabled: newEventNotification,
+                                    colorId: newEventColor
                                 });
                             } else {
                                 addCalendarEvent({
@@ -291,7 +381,7 @@ const KoCalendarPopup: React.FC = () => {
                                     endTime: eventStart.toISOString(),
                                     notificationEnabled: newEventNotification,
                                     notificationMinutes: 15,
-                                    colorId: koCalendarColor
+                                    colorId: newEventColor
                                 });
                             }
                             setNewEventTitle('');
@@ -353,8 +443,21 @@ const KoCalendarPopup: React.FC = () => {
                                 </span>
                                 {newEventNotification ? t('alertOn') : t('noAlert')}
                             </button>
+                        </div>
 
-                            <button type="submit" disabled={!newEventTitle.trim()} className="ml-auto px-4 py-1.5 rounded-lg bg-primary text-black text-xs font-bold hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <div className="flex items-center gap-2 mt-1">
+                            <div className="flex gap-1.5 bg-black/20 border border-white/10 rounded-lg p-1.5">
+                                {['#60a5fa', '#f87171', '#4ade80', '#fbbf24', '#a78bfa'].map(color => (
+                                    <button 
+                                        key={color}
+                                        type="button"
+                                        onClick={() => setNewEventColor(color)}
+                                        className={`w-4 h-4 rounded-full transition-transform hover:scale-125 ${newEventColor === color ? 'ring-2 ring-white scale-125' : 'opacity-50 hover:opacity-100'}`}
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                            <button type="submit" disabled={!newEventTitle.trim()} className="ml-auto px-6 py-1.5 rounded-lg bg-primary text-black text-sm font-bold hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                 {editingEventId ? t('updateEvent') : t('saveEvent')}
                             </button>
                         </div>
@@ -375,30 +478,33 @@ const KoCalendarPopup: React.FC = () => {
                         return (
                             <>
                                 <div className="flex justify-between items-center pr-1">
-                                    <span className="text-[10px] font-bold text-slate-200 uppercase tracking-widest">
+                                    <span className="text-xs font-bold text-slate-200 uppercase tracking-widest">
                                         {selectedDayHasEvent ? `${format(selectedDate, 'MMM d')} - ${t('events')}` : t('upcomingEvents')}
                                     </span>
-                                    <button onClick={() => setEditingEventDate(selectedDate)} className="w-5 h-5 rounded-full bg-primary/20 text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/40 flex items-center justify-center relative z-20">
-                                        <span className="material-symbols-outlined text-[14px]">add</span>
+                                    <button onClick={() => {
+                                        setEditingEventDate(selectedDate);
+                                        setNewEventColor(koCalendarColor);
+                                    }} className="w-6 h-6 rounded-full bg-primary/20 text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/40 flex items-center justify-center relative z-20">
+                                        <span className="material-symbols-outlined text-[16px]">add</span>
                                     </button>
                                 </div>
-                                <div className="flex flex-col gap-1 overflow-y-auto custom-scrollbar h-20 animate-in fade-in slide-in-from-top-1">
-                                    {agendaData.slice(0, 5).map(ev => {
+                                <div className="flex flex-col gap-1 overflow-y-auto custom-scrollbar h-[160px] animate-in fade-in slide-in-from-top-1">
+                                    {agendaData.slice(0, 8).map(ev => {
                                         const eventDate = parseISO(ev.startTime!);
                                         const isEvToday = isSameDay(eventDate, new Date());
                                         const isEvSelected = isSameDay(eventDate, selectedDate);
                                         
                                         return (
-                                            <div key={ev.id} className="flex justify-between items-center text-xs group/event hover:bg-white/5 rounded pl-1 pr-1 py-1 -mx-0.5 transition-colors" style={{ backgroundColor: isEvSelected ? `color-mix(in srgb, ${ev.colorId || koCalendarColor} 5%, transparent)` : 'transparent' }}>
-                                                <div className="flex items-center gap-2 truncate">
-                                                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isEvSelected ? (ev.colorId || koCalendarColor) : isEvToday ? 'var(--theme-primary)' : 'var(--theme-text-faded)' }} />
+                                            <div key={ev.id} className="flex justify-between items-center text-sm group/event hover:bg-white/5 rounded pl-1.5 pr-1.5 py-1.5 -mx-0.5 transition-colors" style={{ backgroundColor: isEvSelected ? `color-mix(in srgb, ${ev.colorId || koCalendarColor} 5%, transparent)` : 'transparent' }}>
+                                                <div className="flex items-center gap-2.5 truncate">
+                                                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: isEvSelected ? (ev.colorId || koCalendarColor) : isEvToday ? 'var(--theme-primary)' : 'var(--theme-text-faded)' }} />
                                                     <span className="truncate" style={{ color: isEvSelected ? (ev.colorId || koCalendarColor) : '#fff', fontWeight: isEvSelected ? '600' : '400' }}>{ev.title}</span>
                                                     {ev.notificationEnabled && (
-                                                        <span className="material-symbols-outlined text-[10px] text-primary/50 shrink-0">notifications_active</span>
+                                                        <span className="material-symbols-outlined text-xs text-primary/50 shrink-0">notifications_active</span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0">
-                                                    <span className="text-[10px] group-hover/event:hidden" style={{ color: isEvSelected ? (ev.colorId || koCalendarColor) : '#cbd5e1' }}>
+                                                    <span className="text-xs group-hover/event:hidden" style={{ color: isEvSelected ? (ev.colorId || koCalendarColor) : '#cbd5e1' }}>
                                                         {isEvSelected ? format(eventDate, 'HH:mm') : format(eventDate, 'MMM d')}
                                                     </span>
                                                     <button 
@@ -410,6 +516,7 @@ const KoCalendarPopup: React.FC = () => {
                                                             setNewEventHours(format(d, 'HH'));
                                                             setNewEventMinutes(format(d, 'mm'));
                                                             setNewEventNotification(!!ev.notificationEnabled);
+                                                            setNewEventColor(ev.colorId || koCalendarColor);
                                                         }}
                                                         className="hidden group-hover/event:flex w-4 h-4 items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-400/10 rounded"
                                                     >
