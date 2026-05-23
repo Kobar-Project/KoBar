@@ -874,7 +874,7 @@ const Sidebar: React.FC = () => {
                 <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
 
                 {/* 1c. Bottom Static Utilities (Always Bottom / Right) */}
-                <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-4 no-drag-region shrink-0 ${orientation === 'horizontal' ? 'py-2 pr-2' : 'px-2 pb-0'}`}>
+                <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-4 no-drag-region shrink-0 ${orientation === 'horizontal' ? 'py-2 pr-0' : 'px-2 pb-0'}`}>
                     <div style={{ zoom: iconScale }} className="transition-all">
                         <TooltipButton
                             label={t('miniMode')}
