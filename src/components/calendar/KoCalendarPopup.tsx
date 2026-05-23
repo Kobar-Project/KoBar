@@ -506,15 +506,15 @@ const KoCalendarPopup: React.FC = () => {
                                         <span className="material-symbols-outlined text-[16px]">add</span>
                                     </button>
                                 </div>
-                                <div className="flex flex-col gap-1 overflow-y-auto custom-scrollbar h-[160px] animate-in fade-in slide-in-from-top-1">
+                                <div className="flex flex-col gap-1 overflow-y-auto overflow-x-hidden custom-scrollbar h-[160px] animate-in fade-in slide-in-from-top-1 pr-1">
                                     {agendaData.slice(0, 8).map(ev => {
                                         const eventDate = parseISO(ev.startTime!);
                                         const isEvToday = isSameDay(eventDate, new Date());
                                         const isEvSelected = isSameDay(eventDate, selectedDate);
                                         
                                         return (
-                                            <div key={ev.id} className="flex justify-between items-center text-sm group/event hover:bg-white/5 rounded pl-1.5 pr-1.5 py-1.5 -mx-0.5 transition-colors" style={{ backgroundColor: isEvSelected ? `color-mix(in srgb, ${ev.colorId || koCalendarColor} 5%, transparent)` : 'transparent' }}>
-                                                <div className="flex items-center gap-2.5 truncate">
+                                            <div key={ev.id} className="flex justify-between items-center text-sm group/event hover:bg-white/5 rounded px-2 py-1.5 transition-colors" style={{ backgroundColor: isEvSelected ? `color-mix(in srgb, ${ev.colorId || koCalendarColor} 5%, transparent)` : 'transparent' }}>
+                                                <div className="flex items-center gap-2.5 flex-1 min-w-0 mr-3">
                                                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: isEvSelected ? (ev.colorId || koCalendarColor) : isEvToday ? 'var(--theme-primary)' : 'var(--theme-text-faded)' }} />
                                                     <span className="truncate" style={{ color: isEvSelected ? (ev.colorId || koCalendarColor) : '#fff', fontWeight: isEvSelected ? '600' : '400' }}>{ev.title}</span>
                                                     {ev.notificationEnabled && (
