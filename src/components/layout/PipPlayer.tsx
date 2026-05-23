@@ -12,7 +12,33 @@ function getPlayableUrl(rawUrl: string): string {
         return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
     }
 
+    // Sanitize fallback URL to prevent javascript: XSS
+    try {
+        const parsed = new URL(rawUrl);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return '';
+        }
+    } catch {
+        return '';
+    }
+
     return rawUrl;
+}
+
+/** Sanitize image URLs to prevent XSS via javascript: or vbscript: */
+function sanitizeImageUrl(url: string | null): string | null {
+    if (!url) return null;
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'data:') {
+            return url;
+        }
+        return null;
+    } catch {
+        // If it's a relative path (unlikely for SMTC but possible), we can reject it
+        // or let it pass if we wanted to support local assets, but we enforce absolute URLs.
+        return null;
+    }
 }
 
 const PipPlayer: React.FC = () => {
@@ -54,7 +80,7 @@ const PipPlayer: React.FC = () => {
 
     // Live media state — mirrors KoPlayer, updated via SMTC polling
     const [mediaTitle, setMediaTitle] = useState(initialTitle);
-    const [mediaArt, setMediaArt] = useState(initialAlbumArt || null);
+    const [mediaArt, setMediaArt] = useState(sanitizeImageUrl(initialAlbumArt));
     const [isPlaying, setIsPlaying] = useState(true);
 
     // Subscribe to SMTC media updates (same as KoPlayer — preload has full api bridge)
@@ -62,7 +88,7 @@ const PipPlayer: React.FC = () => {
         const unsub = window.api?.onMediaUpdate?.((data) => {
             if (data) {
                 if (data.title) setMediaTitle(data.title);
-                if (data.albumArt) setMediaArt(data.albumArt);
+                if (data.albumArt) setMediaArt(sanitizeImageUrl(data.albumArt));
                 // Intentionally NOT updating isPlaying from SMTC here
                 // because we paused the browser's SMTC session!
             }
@@ -95,7 +121,7 @@ const PipPlayer: React.FC = () => {
             return;
         }
 
-        containerRef.current.innerHTML = ''; // GUARANTEE ONLY ONE IFRAME EXISTS
+        containerRef.current.textContent = ''; // GUARANTEE ONLY ONE IFRAME EXISTS
 
         const iframe = document.createElement('iframe');
         iframe.src = finalUrl;
