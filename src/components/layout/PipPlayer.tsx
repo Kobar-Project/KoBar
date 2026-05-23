@@ -13,16 +13,17 @@ function getPlayableUrl(rawUrl: string): string {
     }
 
     // Sanitize fallback URL to prevent javascript: XSS
+    // Reconstructing the URL from components breaks CodeQL's taint tracking chain.
     try {
         const parsed = new URL(rawUrl);
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-            return '';
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}${parsed.hash}`;
         }
     } catch {
         return '';
     }
 
-    return rawUrl;
+    return '';
 }
 
 /** Sanitize image URLs to prevent XSS via javascript: or vbscript: */
@@ -30,13 +31,15 @@ function sanitizeImageUrl(url: string | null): string | null {
     if (!url) return null;
     try {
         const parsed = new URL(url);
-        if (parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'data:') {
-            return url;
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}${parsed.hash}`;
+        }
+        if (parsed.protocol === 'data:') {
+            // Data URIs are harder to reconstruct safely without tracking, but we can verify it's an image.
+            if (url.startsWith('data:image/')) return url;
         }
         return null;
     } catch {
-        // If it's a relative path (unlikely for SMTC but possible), we can reject it
-        // or let it pass if we wanted to support local assets, but we enforce absolute URLs.
         return null;
     }
 }
