@@ -52,7 +52,7 @@ const PipPlayer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
     const [isOverControls, setIsOverControls] = useState(false);
-    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -81,7 +81,6 @@ const PipPlayer: React.FC = () => {
     // Live media state — mirrors KoPlayer, updated via SMTC polling
     const [mediaTitle, setMediaTitle] = useState(initialTitle);
     const [mediaArt, setMediaArt] = useState(sanitizeImageUrl(initialAlbumArt));
-    const [isPlaying, setIsPlaying] = useState(true);
 
     // Subscribe to SMTC media updates (same as KoPlayer — preload has full api bridge)
     useEffect(() => {
@@ -89,27 +88,9 @@ const PipPlayer: React.FC = () => {
             if (data) {
                 if (data.title) setMediaTitle(data.title);
                 if (data.albumArt) setMediaArt(sanitizeImageUrl(data.albumArt));
-                // Intentionally NOT updating isPlaying from SMTC here
-                // because we paused the browser's SMTC session!
             }
         });
         return () => unsub?.();
-    }, []);
-
-    // Listen to YouTube iframe messages to sync play/pause button state
-    useEffect(() => {
-        const handleMessage = (e: MessageEvent) => {
-            if (e.origin !== 'https://www.youtube.com') return;
-            try {
-                const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-                if (data.event === 'infoDelivery' && data.info) {
-                    if (data.info.playerState === 1) setIsPlaying(true);   // Playing
-                    if (data.info.playerState === 2) setIsPlaying(false);  // Paused
-                }
-            } catch (err) {}
-        };
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
     }, []);
 
     // Create the iframe element imperatively to avoid React re-rendering issues
@@ -160,24 +141,6 @@ const PipPlayer: React.FC = () => {
     const handleClose = () => {
         window.api?.closePip?.();
     };
-
-    const handleCommand = useCallback((cmd: 'play' | 'pause' | 'next' | 'prev') => {
-        if (!containerRef.current) return;
-        const iframe = containerRef.current.querySelector('iframe');
-        if (!iframe || !iframe.contentWindow) return;
-
-        if (cmd === 'play') {
-            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
-            setIsPlaying(true);
-        } else if (cmd === 'pause') {
-            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
-            setIsPlaying(false);
-        } else if (cmd === 'next') {
-            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'nextVideo', args: [] }), '*');
-        } else if (cmd === 'prev') {
-            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'previousVideo', args: [] }), '*');
-        }
-    }, []);
 
     const hasArt = !!mediaArt;
 
@@ -349,21 +312,6 @@ const PipPlayer: React.FC = () => {
             `}</style>
         </div>
     );
-};
-
-/** Shared style for prev/next control buttons */
-const pipCtrlBtn: any = {
-    width: 26, height: 26,
-    borderRadius: '50%',
-    border: 'none',
-    background: 'rgba(255,255,255,0.08)',
-    color: '#e2e8f0',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'background 0.15s',
-    outline: 'none',
-    flexShrink: 0,
-    WebkitAppRegion: 'no-drag',
 };
 
 export default PipPlayer;
