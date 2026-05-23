@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, format, isSameMonth, isSameDay, addMonths, subMonths, eachDayOfInterval, parseISO } from 'date-fns';
 
+interface HolidayData {
+    date: string;
+    name?: string;
+    type?: string[];
+}
+
 const KoCalendarPopup: React.FC = () => {
     const edgePosition = useAppStore(state => state.edgePosition);
     const koCalendarAnchorRect = useAppStore(state => state.koCalendarAnchorRect);
@@ -29,7 +35,7 @@ const KoCalendarPopup: React.FC = () => {
     const [newEventMinutes, setNewEventMinutes] = useState('00');
     const [newEventNotification, setNewEventNotification] = useState(true);
     const [newEventColor, setNewEventColor] = useState(koCalendarColor);
-    const [pendingHolidays, setPendingHolidays] = useState<any[] | null>(null);
+    const [pendingHolidays, setPendingHolidays] = useState<HolidayData[] | null>(null);
     const [importColor, setImportColor] = useState<string>(koCalendarColor);
 
     useEffect(() => {
@@ -121,10 +127,11 @@ const KoCalendarPopup: React.FC = () => {
     React.useEffect(() => { isSmartRef.current = isSmartPositioning; }, [isSmartPositioning]);
 
     React.useEffect(() => {
-        const onDrag = (e: any) => {
+        const onDrag = (e: Event) => {
+            const customEvent = e as CustomEvent<{ x: number; y: number }>;
             if (!popupRef.current || !koCalendarAnchorRect || !isSmartRef.current) return;
-            const newX = e.detail.x;
-            const newY = e.detail.y;
+            const newX = customEvent.detail.x;
+            const newY = customEvent.detail.y;
             const popupHeight = 620;
             const popupWidth = 440;
             
@@ -199,7 +206,7 @@ const KoCalendarPopup: React.FC = () => {
             <div className="flex justify-between items-center p-4 pb-2 border-b border-white/5 drag-region">
                 <div className="flex items-center gap-2 min-w-0 max-w-[250px]">
                     <span className="text-sm font-bold text-slate-200 whitespace-nowrap truncate shrink-0">
-                        {t(`month_${currentDate.getMonth()}` as any)} {currentDate.getFullYear()}
+                        {(t as (key: string) => string)(`month_${currentDate.getMonth()}`)} {currentDate.getFullYear()}
                     </span>
                     {/* Tiny Color Picker */}
                     <div className="flex gap-1 ml-1 no-drag-region shrink-0">
@@ -214,7 +221,7 @@ const KoCalendarPopup: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex gap-1 shrink-0 no-drag-region">
-                    <button onClick={() => fileInputRef.current?.click()} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all" title={(t as any)('importHolidays') || "Import Holidays"}>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all" title={(t as (k: string) => string)('importHolidays') || "Import Holidays"}>
                         <span className="material-symbols-outlined text-[18px]">download</span>
                     </button>
                     <input 
@@ -299,7 +306,7 @@ const KoCalendarPopup: React.FC = () => {
                 <div className="p-3 border-t border-white/5 bg-black/40 flex flex-col gap-2 flex-1 animate-in slide-in-from-bottom-2">
                     <div className="flex justify-between items-center mb-1">
                         <span className="text-sm font-semibold text-slate-300">
-                            {(t as any)('importHolidays') || "Import Holidays"}
+                            {(t as (k: string) => string)('importHolidays') || "Import Holidays"}
                         </span>
                         <button onClick={() => setPendingHolidays(null)} className="w-6 h-6 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
                             <span className="material-symbols-outlined text-[16px]">close</span>
@@ -322,7 +329,7 @@ const KoCalendarPopup: React.FC = () => {
                     <div className="mt-auto pt-2 flex justify-end">
                         <button 
                             onClick={() => {
-                                pendingHolidays.forEach((holiday: any) => {
+                                pendingHolidays.forEach((holiday: HolidayData) => {
                                     if (holiday.date) {
                                         const date = new Date(holiday.date);
                                         date.setHours(0, 0, 0, 0);
