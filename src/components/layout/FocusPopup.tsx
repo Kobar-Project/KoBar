@@ -115,10 +115,13 @@ export const FocusPopup: React.FC = () => {
             transitionProperty: 'opacity, transform, filter'
         };
 
-        if (orientation === 'horizontal') {
+        const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
             let adjustedLeft = (focusAnchorRect.left - offsetLeft) + (focusAnchorRect.width / 2) - (popupWidth / 2);
-            const maxLeft = (screenWidth - offsetLeft) - popupWidth - 20;
-            const minLeft = -offsetLeft + 20;
+            const maxLeft = screenXInViewport + (screenWidth - offsetLeft) - popupWidth - 20;
+            const minLeft = screenXInViewport - offsetLeft + 20;
             if (adjustedLeft < minLeft) adjustedLeft = minLeft;
             if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
@@ -138,8 +141,8 @@ export const FocusPopup: React.FC = () => {
             }
         } else {
             let adjustedTop = (focusAnchorRect.top - offsetTop) - 20 + (focusAnchorRect.height / 2) - (popupHeight / 2);
-            const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
-            const minTop = -offsetTop + 20;
+            const maxTop = screenYInViewport + (screenHeight - offsetTop) - popupHeight - 20;
+            const minTop = screenYInViewport - offsetTop + 20;
             if (adjustedTop < minTop) adjustedTop = minTop;
             if (adjustedTop > maxTop) adjustedTop = maxTop;
 
@@ -172,24 +175,27 @@ export const FocusPopup: React.FC = () => {
             const popupHeight = 280;
             const popupWidth = 256;
             
-            if (orientation === 'horizontal') {
+            const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
                 const screenWidth = screenBounds?.width ?? 1200;
                 let adjustedLeft = (focusAnchorRect.left - newX) + (focusAnchorRect.width / 2) - (popupWidth / 2);
-                const maxLeft = (screenWidth - newX) - popupWidth - 20;
-                const minLeft = -newX + 20;
+                const maxLeft = screenXInViewport + (screenWidth - newX) - popupWidth - 20;
+                const minLeft = screenXInViewport - newX + 20;
                 if (adjustedLeft < minLeft) adjustedLeft = minLeft;
                 if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
                 popupRef.current.style.left = `${adjustedLeft}px`;
-                popupRef.current.style.top = '';
+
             } else {
                 const screenHeight = screenBounds?.height ?? 800;
                 let adjustedTop = (focusAnchorRect.top - newY) - 20 + (focusAnchorRect.height / 2) - (popupHeight / 2);
-                const maxTop = (screenHeight - newY) - popupHeight - 20;
-                const minTop = -newY + 20;
+                const maxTop = screenYInViewport + (screenHeight - newY) - popupHeight - 20;
+                const minTop = screenYInViewport - newY + 20;
                 if (adjustedTop < minTop) adjustedTop = minTop;
                 if (adjustedTop > maxTop) adjustedTop = maxTop;
                 popupRef.current.style.top = `${adjustedTop}px`;
-                popupRef.current.style.left = '';
+
             }
         };
         document.addEventListener('kobar-drag', onDrag);

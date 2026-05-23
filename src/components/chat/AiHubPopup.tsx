@@ -47,6 +47,7 @@ export const AiHubPopup: React.FC = () => {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const popupRef = useRef<HTMLDivElement>(null);
     const [isResizing, setIsResizing] = useState(false);
+    const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
     
     // Title Editing State
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -68,8 +69,13 @@ export const AiHubPopup: React.FC = () => {
     }, [isAiHubOpen]);
 
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [activeChat?.messages.length, activeChat?.messages[activeChat.messages.length - 1]?.content]);
+        if (isAutoScrollEnabled && messagesScrollRef.current) {
+            messagesScrollRef.current.scrollTo({
+                top: messagesScrollRef.current.scrollHeight,
+                behavior: 'auto'
+            });
+        }
+    }, [activeChat?.messages.length, activeChat?.messages[activeChat.messages.length - 1]?.content, isAutoScrollEnabled]);
 
     // Restore scroll position
     useEffect(() => {
@@ -110,10 +116,13 @@ export const AiHubPopup: React.FC = () => {
             willChange: 'transform, opacity' 
         };
 
-        if (orientation === 'horizontal') {
+        const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
             let adjustedLeft = (aiHubAnchorRect.left - offsetLeft) + (aiHubAnchorRect.width / 2) - (aiHubWidth / 2);
-            const maxLeft = (screenWidth - offsetLeft) - aiHubWidth - 20;
-            const minLeft = -offsetLeft + 20;
+            const maxLeft = screenXInViewport + (screenWidth - offsetLeft) - aiHubWidth - 20;
+            const minLeft = screenXInViewport - offsetLeft + 20;
             if (adjustedLeft < minLeft) adjustedLeft = minLeft;
             if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
@@ -133,8 +142,8 @@ export const AiHubPopup: React.FC = () => {
             }
         } else {
             let adjustedTop = (aiHubAnchorRect.top - offsetTop) - 20 + (aiHubAnchorRect.height / 2) - (aiHubHeight / 2);
-            const maxTop = (screenHeight - offsetTop) - aiHubHeight - 20;
-            const minTop = -offsetTop + 20;
+            const maxTop = screenYInViewport + (screenHeight - offsetTop) - aiHubHeight - 20;
+            const minTop = screenYInViewport - offsetTop + 20;
             if (adjustedTop < minTop) adjustedTop = minTop;
             if (adjustedTop > maxTop) adjustedTop = maxTop;
 
@@ -165,24 +174,27 @@ export const AiHubPopup: React.FC = () => {
             const newX = e.detail.x;
             const newY = e.detail.y;
             
-            if (orientation === 'horizontal') {
+            const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
                 const screenWidth = screenBounds?.width ?? 1200;
                 let adjustedLeft = (aiHubAnchorRect.left - newX) + (aiHubAnchorRect.width / 2) - (aiHubWidth / 2);
-                const maxLeft = (screenWidth - newX) - aiHubWidth - 20;
-                const minLeft = -newX + 20;
+                const maxLeft = screenXInViewport + (screenWidth - newX) - aiHubWidth - 20;
+                const minLeft = screenXInViewport - newX + 20;
                 if (adjustedLeft < minLeft) adjustedLeft = minLeft;
                 if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
                 popupRef.current.style.left = `${adjustedLeft}px`;
-                popupRef.current.style.top = '';
+
             } else {
                 const screenHeight = screenBounds?.height ?? 800;
                 let adjustedTop = (aiHubAnchorRect.top - newY) - 20 + (aiHubAnchorRect.height / 2) - (aiHubHeight / 2);
-                const maxTop = (screenHeight - newY) - aiHubHeight - 20;
-                const minTop = -newY + 20;
+                const maxTop = screenYInViewport + (screenHeight - newY) - aiHubHeight - 20;
+                const minTop = screenYInViewport - newY + 20;
                 if (adjustedTop < minTop) adjustedTop = minTop;
                 if (adjustedTop > maxTop) adjustedTop = maxTop;
                 popupRef.current.style.top = `${adjustedTop}px`;
-                popupRef.current.style.left = '';
+
             }
         };
         document.addEventListener('kobar-drag', onDrag);
@@ -355,7 +367,7 @@ export const AiHubPopup: React.FC = () => {
     };
 
     const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
+        window.api?.writeToClipboard?.({ type: 'text', content: text });
     };
 
     const handleSendToSlot = (text: string) => {
@@ -542,8 +554,13 @@ export const AiHubPopup: React.FC = () => {
 
                 <div 
                     ref={messagesScrollRef}
-                    onScroll={(e) => setScrollPosition('aihub_chat', e.currentTarget.scrollTop)}
-                    className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-6 scroll-smooth pointer-events-auto select-auto no-drag-region"
+                    onScroll={(e) => {
+                        setScrollPosition('aihub_chat', e.currentTarget.scrollTop);
+                        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+                        const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+                        setIsAutoScrollEnabled(isNearBottom);
+                    }}
+                    className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-6 pointer-events-auto select-auto no-drag-region"
                 >
                     {activeChat?.messages.length === 0 ? (
                         <div className="flex-1 flex flex-col items-center justify-center opacity-50 select-none pointer-events-none">
@@ -607,7 +624,7 @@ export const AiHubPopup: React.FC = () => {
                                                                     <button 
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
-                                                                            navigator.clipboard.writeText(String(children).replace(/\n$/, ''));
+                                                                            window.api?.writeToClipboard?.({ type: 'text', content: String(children).replace(/\n$/, '') });
                                                                         }}
                                                                         className="p-1.5 bg-white/10 hover:bg-white/20 rounded-md text-slate-300 transition-colors flex items-center"
                                                                         title="Copy to OS Clipboard"

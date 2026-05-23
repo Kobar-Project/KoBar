@@ -15,6 +15,8 @@ const CalculatorPopup: React.FC = () => {
     const [prevValue, setPrevValue] = useState<number | null>(null);
     const [operator, setOperator] = useState<string | null>(null);
     const [waitingForOperand, setWaitingForOperand] = useState(false);
+    const [parenStack, setParenStack] = useState<Array<{ prevValue: number | null, operator: string | null }>>([]);
+    const operatorJustPressed = useRef(false);
     const isScientific = useAppStore(state => state.isCalculatorScientific);
     const setIsScientific = useAppStore(state => state.setIsCalculatorScientific);
     const [angleMode, setAngleMode] = useState<'DEG' | 'RAD'>('DEG');
@@ -31,7 +33,7 @@ const CalculatorPopup: React.FC = () => {
     const getPopupStyle = (): React.CSSProperties => {
         if (!calculatorAnchorRect) return { display: 'none' };
         
-        const popupHeight = isScientific ? 520 : 400;
+        const popupHeight = isScientific ? 570 : 500;
         const popupWidth = isScientific ? 360 : 280;
         const screenHeight = screenBounds?.height ?? 800;
         const screenWidth = screenBounds?.width ?? 1200;
@@ -53,10 +55,13 @@ const CalculatorPopup: React.FC = () => {
             transition: 'width 0.3s ease'
         };
 
-        if (orientation === 'horizontal') {
-            let adjustedLeft = (screenWidth / 2) - (popupWidth / 2) - offsetLeft;
-            const maxLeft = (screenWidth - offsetLeft) - popupWidth - 20;
-            const minLeft = -offsetLeft + 20;
+        const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
+            let adjustedLeft = screenXInViewport + (screenWidth / 2) - (popupWidth / 2) - offsetLeft;
+            const maxLeft = screenXInViewport + (screenWidth - offsetLeft) - popupWidth - 20;
+            const minLeft = screenXInViewport - offsetLeft + 20;
             if (adjustedLeft < minLeft) adjustedLeft = minLeft;
             if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
 
@@ -75,9 +80,9 @@ const CalculatorPopup: React.FC = () => {
                 style.marginBottom = '12px';
             }
         } else {
-            let adjustedTop = (screenHeight / 2) - (popupHeight / 2) - offsetTop;
-            const maxTop = (screenHeight - offsetTop) - popupHeight - 20;
-            const minTop = -offsetTop + 20;
+            let adjustedTop = screenYInViewport + (screenHeight / 2) - (popupHeight / 2) - offsetTop;
+            const maxTop = screenYInViewport + (screenHeight - offsetTop) - popupHeight - 20;
+            const minTop = screenYInViewport - offsetTop + 20;
             if (adjustedTop < minTop) adjustedTop = minTop;
             if (adjustedTop > maxTop) adjustedTop = maxTop;
 
@@ -107,27 +112,30 @@ const CalculatorPopup: React.FC = () => {
             if (!popupRef.current || !calculatorAnchorRect || !isSmartRef.current) return;
             const newX = e.detail.x;
             const newY = e.detail.y;
-            const popupHeight = isScientific ? 520 : 400;
+            const popupHeight = isScientific ? 570 : 500;
             const popupWidth = isScientific ? 360 : 280;
             
-            if (orientation === 'horizontal') {
+            const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
+        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+
+        if (orientation === "horizontal") {
                 const screenWidth = screenBounds?.width ?? 1200;
-                let adjustedLeft = (screenWidth / 2) - (popupWidth / 2) - newX;
-                const maxLeft = (screenWidth - newX) - popupWidth - 20;
-                const minLeft = -newX + 20;
+                let adjustedLeft = screenXInViewport + (screenWidth / 2) - (popupWidth / 2) - newX;
+                const maxLeft = screenXInViewport + (screenWidth - newX) - popupWidth - 20;
+                const minLeft = screenXInViewport - newX + 20;
                 if (adjustedLeft < minLeft) adjustedLeft = minLeft;
                 if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
                 popupRef.current.style.left = `${adjustedLeft}px`;
-                popupRef.current.style.top = '';
+
             } else {
                 const screenHeight = screenBounds?.height ?? 800;
-                let adjustedTop = (screenHeight / 2) - (popupHeight / 2) - newY;
-                const maxTop = (screenHeight - newY) - popupHeight - 20;
-                const minTop = -newY + 20;
+                let adjustedTop = screenYInViewport + (screenHeight / 2) - (popupHeight / 2) - newY;
+                const maxTop = screenYInViewport + (screenHeight - newY) - popupHeight - 20;
+                const minTop = screenYInViewport - newY + 20;
                 if (adjustedTop < minTop) adjustedTop = minTop;
                 if (adjustedTop > maxTop) adjustedTop = maxTop;
                 popupRef.current.style.top = `${adjustedTop}px`;
-                popupRef.current.style.left = '';
+
             }
         };
         document.addEventListener('kobar-drag', onDrag);
@@ -135,27 +143,39 @@ const CalculatorPopup: React.FC = () => {
     }, [calculatorAnchorRect, screenBounds, isScientific, orientation]);
 
     const handleDigit = (digit: string) => {
+        operatorJustPressed.current = false;
         if (waitingForOperand) {
-            setDisplay(digit);
+            setDisplay(digit === '00' ? '0' : digit);
             setWaitingForOperand(false);
         } else {
-            setDisplay(display === '0' ? digit : display + digit);
+            if (display === '0') {
+                setDisplay(digit === '00' ? '0' : digit);
+            } else {
+                setDisplay(display + digit);
+            }
         }
     };
 
     const handleOperator = (nextOperator: string) => {
+        if (operatorJustPressed.current) {
+            setOperator(nextOperator);
+            return;
+        }
+
         const inputValue = parseFloat(display);
 
         if (prevValue === null) {
             setPrevValue(inputValue);
         } else if (operator) {
             const result = performCalculation();
-            setPrevValue(result);
-            setDisplay(String(result));
+            const cleanStr = formatDisplay(result);
+            setPrevValue(parseFloat(cleanStr));
+            setDisplay(cleanStr);
         }
 
         setWaitingForOperand(true);
         setOperator(nextOperator);
+        operatorJustPressed.current = true;
     };
 
     const performCalculation = () => {
@@ -168,32 +188,41 @@ const CalculatorPopup: React.FC = () => {
             case '×': return prevValue * inputValue;
             case '÷': return inputValue !== 0 ? prevValue / inputValue : NaN;
             case '^': return Math.pow(prevValue, inputValue);
-            case 'mod': return prevValue % inputValue;
+            case 'mod': {
+                const res = prevValue % inputValue;
+                return Math.abs(res) < 1e-12 ? 0 : res;
+            }
             default: return inputValue;
         }
     };
 
     const handleEqual = () => {
+        operatorJustPressed.current = false;
         if (!operator) return;
-        const expression = `${prevValue} ${operator} ${display}`;
+        const expression = `${formatDisplay(prevValue!)} ${operator} ${formatDisplay(display)}`;
         const result = performCalculation();
         const resultStr = formatDisplay(result);
         setHistory(prev => [`${expression} = ${resultStr}`, ...prev].slice(0, 10));
-        setDisplay(String(result));
+        setDisplay(resultStr);
         setPrevValue(null);
         setOperator(null);
-        setWaitingForOperand(false);
+        setWaitingForOperand(true);
     };
 
     const handleClear = () => {
+        operatorJustPressed.current = false;
         setDisplay('0');
         setPrevValue(null);
         setOperator(null);
         setWaitingForOperand(false);
+        setParenStack([]);
     };
 
     const handleBackspace = () => {
-        if (waitingForOperand) return;
+        if (operatorJustPressed.current) return;
+        
+        setWaitingForOperand(false);
+        
         if (display === '0') return;
         if (display.length === 1) {
             setDisplay('0');
@@ -202,11 +231,40 @@ const CalculatorPopup: React.FC = () => {
         }
     };
 
+    const handleParenOpen = () => {
+        operatorJustPressed.current = false;
+        setParenStack([...parenStack, { prevValue, operator }]);
+        setPrevValue(null);
+        setOperator(null);
+        setDisplay('0');
+        setWaitingForOperand(true);
+    };
+
+    const handleParenClose = () => {
+        operatorJustPressed.current = false;
+        if (parenStack.length === 0) return;
+        
+        let result = parseFloat(display);
+        if (prevValue !== null && operator !== null) {
+            result = performCalculation();
+        }
+        
+        const newStack = [...parenStack];
+        const { prevValue: savedPrev, operator: savedOp } = newStack.pop()!;
+        setParenStack(newStack);
+        
+        setDisplay(formatDisplay(result));
+        setPrevValue(savedPrev);
+        setOperator(savedOp);
+        setWaitingForOperand(true);
+    };
+
     // Scientific functions
     const toRadians = (deg: number) => (deg * Math.PI) / 180;
     const getAngleInput = (val: number) => angleMode === 'DEG' ? toRadians(val) : val;
 
     const handleScientific = (fn: string) => {
+        operatorJustPressed.current = false;
         const val = parseFloat(display);
         let result: number;
 
@@ -233,7 +291,7 @@ const CalculatorPopup: React.FC = () => {
             default: result = val;
         }
 
-        setDisplay(String(result));
+        setDisplay(formatDisplay(result));
         setWaitingForOperand(true);
     };
 
@@ -247,6 +305,7 @@ const CalculatorPopup: React.FC = () => {
     };
 
     const insertConstant = (val: number) => {
+        operatorJustPressed.current = false;
         setDisplay(String(val));
         setWaitingForOperand(true);
     };
@@ -255,19 +314,26 @@ const CalculatorPopup: React.FC = () => {
         const num = typeof val === 'string' ? parseFloat(val) : val;
         if (isNaN(num)) return 'Error';
         if (!isFinite(num)) return '∞';
-        const str = String(num);
+        
+        const str = typeof val === 'string' ? val : String(num);
         if (str.length > 14) {
-            return num.toExponential(8);
+            const cleanNum = parseFloat(num.toPrecision(12));
+            let formatted = String(cleanNum);
+            if (formatted.length > 14) {
+                formatted = cleanNum.toExponential(8).replace(/\.?0+e/, 'e');
+            }
+            return formatted;
         }
         return str;
     };
 
     // Memory functions
     const handleMemory = (action: string) => {
+        operatorJustPressed.current = false;
         const val = parseFloat(display);
         switch (action) {
             case 'MC': setMemory(0); break;
-            case 'MR': setDisplay(String(memory)); setWaitingForOperand(true); break;
+            case 'MR': setDisplay(formatDisplay(memory)); setWaitingForOperand(true); break;
             case 'M+': setMemory(memory + val); break;
             case 'M-': setMemory(memory - val); break;
         }
@@ -298,12 +364,16 @@ const CalculatorPopup: React.FC = () => {
                 handleBackspace();
             } else if (key === 'Escape' || key.toLowerCase() === 'c') {
                 handleClear();
+            } else if (key === '(') {
+                handleParenOpen();
+            } else if (key === ')') {
+                handleParenClose();
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [display, prevValue, operator, waitingForOperand]);
+    }, [display, prevValue, operator, waitingForOperand, parenStack]);
 
     const CalcButton = ({ onClick, children, className = '', title }: { onClick: () => void; children: React.ReactNode; className?: string; title?: string }) => (
         <button
@@ -363,8 +433,11 @@ const CalculatorPopup: React.FC = () => {
 
             {/* Display */}
             <div className="bg-black/20 rounded-lg p-3 mb-3 text-right border" style={{ borderColor: 'var(--theme-border)' }}>
-                <div className="text-xs text-slate-500 h-4 overflow-hidden tabular-nums">
-                    {prevValue !== null ? `${prevValue} ${operator}` : ''}
+                <div className="text-xs text-slate-500 h-4 overflow-hidden tabular-nums whitespace-nowrap">
+                    {parenStack.map((item, index) => (
+                        <span key={index}>{item.prevValue !== null ? `${formatDisplay(item.prevValue)} ${item.operator} (` : '( '}</span>
+                    ))}
+                    {prevValue !== null ? `${formatDisplay(prevValue)} ${operator}` : ''}
                 </div>
                 <div className="text-2xl font-bold text-slate-200 overflow-hidden truncate tabular-nums">
                     {formatDisplay(display)}
@@ -415,10 +488,19 @@ const CalculatorPopup: React.FC = () => {
                 </div>
             )}
 
+            {/* Parentheses */}
+            <div className="grid grid-cols-4 gap-2 mb-2">
+                <CalcButton onClick={handleParenOpen} className="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20">(</CalcButton>
+                <CalcButton onClick={handleParenClose} className="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20">)</CalcButton>
+                <CalcButton onClick={() => handleScientific('±')} className="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20" title="Plus/Minus">±</CalcButton>
+                <CalcButton onClick={() => handleOperator('÷')} className="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20">÷</CalcButton>
+            </div>
+
             {/* Keypad */}
             <div className="grid grid-cols-4 gap-2">
-                <CalcButton onClick={handleClear} className="col-span-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20">C</CalcButton>
-                <CalcButton onClick={() => handleOperator('÷')} className="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20">÷</CalcButton>
+                <CalcButton onClick={handleClear} className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20">C</CalcButton>
+                <CalcButton onClick={() => handleOperator('mod')} className="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20" title="Modulo">mod</CalcButton>
+                <CalcButton onClick={() => handleScientific('%')} className="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20" title="Percentage">%</CalcButton>
                 <CalcButton onClick={() => handleOperator('×')} className="bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20">×</CalcButton>
 
                 {[7, 8, 9].map(n => (
@@ -436,22 +518,14 @@ const CalculatorPopup: React.FC = () => {
                 ))}
                 <CalcButton onClick={handleEqual} className="row-span-2 h-full bg-primary text-slate-900 hover:opacity-90 font-bold">=</CalcButton>
 
-                <CalcButton onClick={() => handleScientific('±')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">±</CalcButton>
-                <CalcButton onClick={() => handleDigit('0')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">0</CalcButton>
                 <CalcButton onClick={() => !display.includes('.') && handleDigit('.')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">.</CalcButton>
+                <CalcButton onClick={() => handleDigit('0')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">0</CalcButton>
+                <CalcButton onClick={handleBackspace} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700" title="Backspace">
+                    <span className="material-symbols-outlined text-[16px]">backspace</span>
+                </CalcButton>
             </div>
 
-            {/* Scientific Extra Row */}
-            {isScientific && (
-                <div className="grid grid-cols-4 gap-2 mt-2">
-                    <CalcButton onClick={() => handleScientific('%')} className="bg-slate-700/30 text-slate-300 hover:bg-slate-700/50 text-[12px]" title="Percentage">%</CalcButton>
-                    <CalcButton onClick={() => handleOperator('mod')} className="bg-slate-700/30 text-slate-300 hover:bg-slate-700/50 text-[12px]" title="Modulo">mod</CalcButton>
-                    <CalcButton onClick={handleBackspace} className="bg-slate-700/30 text-slate-300 hover:bg-slate-700/50" title="Backspace">
-                        <span className="material-symbols-outlined text-[16px]">backspace</span>
-                    </CalcButton>
-                    <CalcButton onClick={() => setHistory([])} className="bg-slate-700/30 text-slate-300 hover:bg-slate-700/50 text-[12px]" title="Clear History">CLR</CalcButton>
-                </div>
-            )}
+
 
             {/* History (Scientific only) */}
             {isScientific && history.length > 0 && (
