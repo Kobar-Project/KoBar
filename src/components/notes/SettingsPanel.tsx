@@ -1067,8 +1067,35 @@ const SettingsPanel: React.FC = () => {
                     throw new Error('Invalid JSON structure');
                 }
 
-                // Apply parsed data directly to the store
-                useAppStore.setState(parsed);
+                if (type === 'data') {
+                    const state = useAppStore.getState();
+                    
+                    let nextId = state.nextNoteId || Math.max(...state.notes.map(n => n.id), 0) + 1;
+                    const importedNotes = (parsed.notes || []).map((n: any) => ({ ...n, id: nextId++ }));
+                    
+                    const mergedPinnedApps = [...state.pinnedApps];
+                    (parsed.pinnedApps || []).forEach((app: any) => {
+                        if (!mergedPinnedApps.find(a => a.path === app.path)) {
+                            mergedPinnedApps.push(app);
+                        }
+                    });
+
+                    const mergedTodos = [...state.todos, ...(parsed.todos || []).map((t: any) => ({ ...t, id: Date.now().toString() + Math.random() }))];
+                    const mergedSnippets = [...state.snippets, ...(parsed.snippets || []).map((s: any) => ({ ...s, id: crypto.randomUUID() }))];
+                    const mergedLocalEvents = [...state.localEvents, ...(parsed.localEvents || []).map((ev: any) => ({ ...ev, id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000) }))];
+
+                    useAppStore.setState({
+                        notes: [...state.notes, ...importedNotes],
+                        nextNoteId: nextId,
+                        pinnedApps: mergedPinnedApps,
+                        todos: mergedTodos,
+                        snippets: mergedSnippets,
+                        localEvents: mergedLocalEvents
+                    });
+                } else {
+                    // Apply parsed settings directly to the store
+                    useAppStore.setState(parsed);
+                }
                 
                 window.api?.sendNotification?.('Import Complete', `Successfully imported ${type}.`);
             } catch (err) {
