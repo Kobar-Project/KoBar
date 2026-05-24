@@ -102,7 +102,16 @@ const KoPlayerPopup: React.FC = () => {
     const currentMediaSourceApp = useAppStore(state => state.currentMediaSourceApp);
     const BROWSER_IDS = ['chrome', 'msedge', 'brave', 'firefox', 'opera', 'vivaldi'];
     const isBrowserSource = BROWSER_IDS.some(b => currentMediaSourceApp.includes(b));
-    const hasPreCachedVideo = isBrowserSource && activeVideoUrls.length > 0;
+
+    const filterValidUrls = (urls: string[]) => urls.filter(u => {
+        const lower = u.toLowerCase();
+        if (lower.includes('youtube.com')) return lower.includes('watch?v=');
+        if (lower.includes('youtu.be')) return true;
+        return true;
+    });
+
+    const validActiveUrls = filterValidUrls(activeVideoUrls);
+    const hasPreCachedVideo = isBrowserSource && validActiveUrls.length > 0;
 
     // Detect text overflow for marquee effect
     useEffect(() => {
@@ -222,7 +231,7 @@ const KoPlayerPopup: React.FC = () => {
 
         // Fast path: use pre-cached URLs from SMTC background scan
         if (hasPreCachedVideo) {
-            setDetectedUrls(activeVideoUrls);
+            setDetectedUrls(validActiveUrls);
             setPipPhase('manual');
             return;
         }
@@ -233,9 +242,9 @@ const KoPlayerPopup: React.FC = () => {
 
         const urls = await window.api?.getActiveVideoUrls?.().catch(() => []) ?? [];
 
-        setDetectedUrls(urls);
+        setDetectedUrls(filterValidUrls(urls));
         setPipPhase('manual');
-    }, [pipActive, currentMedia?.title, currentMedia?.albumArt, hasPreCachedVideo, activeVideoUrls]);
+    }, [pipActive, currentMedia?.title, currentMedia?.albumArt, hasPreCachedVideo, validActiveUrls]);
 
     const handlePickUrl = (url: string) => {
         if (currentMedia?.isPlaying) {
