@@ -104,10 +104,19 @@ const KoPlayerPopup: React.FC = () => {
     const isBrowserSource = BROWSER_IDS.some(b => currentMediaSourceApp.includes(b));
 
     const filterValidUrls = (urls: string[]) => urls.filter(u => {
-        const lower = u.toLowerCase();
-        if (lower.includes('youtube.com')) return lower.includes('watch?v=');
-        if (lower.includes('youtu.be')) return true;
-        return true;
+        try {
+            const parsed = new URL(u);
+            const host = parsed.hostname.toLowerCase();
+            if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
+                return parsed.searchParams.has('v');
+            }
+            if (host === 'youtu.be' || host.endsWith('.youtu.be')) {
+                return true;
+            }
+            return true;
+        } catch {
+            return false;
+        }
     });
 
     const validActiveUrls = filterValidUrls(activeVideoUrls);
