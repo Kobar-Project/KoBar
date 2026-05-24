@@ -2032,6 +2032,15 @@ const SettingsPanel: React.FC = () => {
                         <div className="flex flex-col gap-2">
                             <span className="text-sm text-slate-300 font-medium">{t('aboutMaker')}</span>
                             <span className="text-xs text-slate-500 leading-relaxed font-medium">{t('aboutCredits')}</span>
+                            <span className="text-xs text-slate-500 leading-relaxed font-medium">
+                                {t('aboutContributors')}{' '}
+                                <button
+                                    onClick={() => window.api?.openExternal('https://github.com/arindam-sahoo')}
+                                    className="text-primary hover:underline font-semibold transition-all cursor-pointer"
+                                >
+                                    Arindam Sahoo
+                                </button>
+                            </span>
                         </div>
                         
                         <div className="w-full h-px opacity-30" style={{ backgroundColor: 'var(--theme-border)' }}></div>
@@ -2051,6 +2060,17 @@ const SettingsPanel: React.FC = () => {
                         <div className="pt-2 flex items-center justify-between">
                             <span className="text-[10px] uppercase tracking-widest text-slate-600 font-bold">{t('version')}</span>
                             <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">{appVersion || '...'}</span>
+                        </div>
+                        
+                        <div className="pt-1">
+                            <button
+                                onClick={() => window.api?.openExternal('https://patreon.com/kobarproject')}
+                                className="w-full py-2.5 px-4 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all duration-300 active:scale-[0.98] border border-[#FF424D]/30 cursor-pointer"
+                                style={{ background: 'linear-gradient(135deg, #FF424D 0%, #D8313A 100%)' }}
+                            >
+                                <span className="material-symbols-outlined text-[16px]">favorite</span>
+                                <span>{t('aboutPatreon')}</span>
+                            </button>
                         </div>
                     </div>
                 </Accordion>

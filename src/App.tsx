@@ -205,6 +205,14 @@ const App: React.FC = () => {
     if (window.api?.onMediaUpdate) {
       unsubs.push(window.api.onMediaUpdate((data) => {
         useAppStore.getState().setCurrentMedia(data);
+        useAppStore.getState().setCurrentMediaSourceApp((data?.sourceAppId || '').toLowerCase());
+      }));
+    }
+
+    // Video PiP: Subscribe to background-scanned video URL cache
+    if (window.api?.onVideoUrlsUpdate) {
+      unsubs.push(window.api.onVideoUrlsUpdate((urls) => {
+        useAppStore.getState().setActiveVideoUrls(urls);
       }));
     }
 
