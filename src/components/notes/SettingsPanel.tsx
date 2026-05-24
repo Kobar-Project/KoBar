@@ -65,6 +65,10 @@ const SettingsPanel: React.FC = () => {
     const setCustomThemeColor = useAppStore(state => state.setCustomThemeColor);
     const language = useAppStore(state => state.language);
     
+    // Refs for file inputs
+    const importSettingsRef = useRef<HTMLInputElement>(null);
+    const importDataRef = useRef<HTMLInputElement>(null);
+
     // --- Custom Theme Color Picker Link ---
     const currentColor = useAppStore(state => state.currentColor);
     const isColorPickerOpen = useAppStore(state => state.isColorPickerOpen);
@@ -970,6 +974,149 @@ const SettingsPanel: React.FC = () => {
         );
     };
 
+    const handleExport = (type: 'settings' | 'data', method: 'download' | 'email') => {
+        const state = useAppStore.getState();
+        let payload: any = {};
+        
+        if (type === 'settings') {
+            payload = {
+                theme: state.theme,
+                customThemeColor: state.customThemeColor,
+                language: state.language,
+                focusSettings: state.focusSettings,
+                showTooltips: state.showTooltips,
+                sidebarWidth: state.sidebarWidth,
+                iconScale: state.iconScale,
+                teleportShortcut: state.teleportShortcut,
+                launchAtStartup: state.launchAtStartup,
+                enableEyeAnimation: state.enableEyeAnimation,
+                isShortcutsEnabled: state.isShortcutsEnabled,
+                maxShortcuts: state.maxShortcuts,
+                isCopyPasteEnabled: state.isCopyPasteEnabled,
+                isScreenshotEnabled: state.isScreenshotEnabled,
+                hideOnScreenshot: state.hideOnScreenshot,
+                isFocusModeEnabled: state.isFocusModeEnabled,
+                isCalculatorEnabled: state.isCalculatorEnabled,
+                isColorPickerEnabled: state.isColorPickerEnabled,
+                isKoCalendarEnabled: state.isKoCalendarEnabled,
+                isTodoListEnabled: state.isTodoListEnabled,
+                isPinInjectorEnabled: state.isPinInjectorEnabled,
+                isKoBoxEnabled: state.isKoBoxEnabled,
+                isSnippetVaultEnabled: state.isSnippetVaultEnabled,
+                isAiHubEnabled: state.isAiHubEnabled,
+                isKoPlayerEnabled: state.isKoPlayerEnabled,
+                koBoxCleanupMode: state.koBoxCleanupMode,
+                autoCopyColor: state.autoCopyColor,
+                colorPalettes: state.colorPalettes,
+                featureOrder: state.featureOrder,
+                design: state.design,
+                glassOpacity: state.glassOpacity,
+                slotCount: state.slotCount,
+                aiHubHeight: state.aiHubHeight,
+                koCalendarColor: state.koCalendarColor,
+                workspaces: state.workspaces,
+                isSnippetVaultCompact: state.isSnippetVaultCompact,
+                isCalculatorScientific: state.isCalculatorScientific,
+                settingsFeatureViewMode: state.settingsFeatureViewMode,
+                settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
+                orientation: state.orientation,
+                edgePosition: state.edgePosition,
+            };
+        } else {
+            payload = {
+                notes: state.notes,
+                pinnedApps: state.pinnedApps,
+                todos: state.todos,
+                snippets: state.snippets,
+                localEvents: state.localEvents,
+            };
+        }
+
+        const jsonString = JSON.stringify(payload, null, 2);
+
+        if (method === 'download') {
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kobar-${type}-export.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            window.api?.sendNotification?.('Export Complete', `Successfully downloaded ${type} export.`);
+        } else if (method === 'email') {
+            const subject = encodeURIComponent(`KoBar ${type === 'settings' ? 'Settings' : 'Data'} Export`);
+            const body = encodeURIComponent(jsonString);
+            window.api?.openExternal(`mailto:?subject=${subject}&body=${body}`);
+            window.api?.sendNotification?.('Export Ready', `Opening your email client to send ${type} export.`);
+        }
+    };
+
+    const handleImport = (type: 'settings' | 'data', event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const jsonStr = e.target?.result as string;
+                const parsed = JSON.parse(jsonStr);
+                
+                if (typeof parsed !== 'object' || parsed === null) {
+                    throw new Error('Invalid JSON structure');
+                }
+
+                if (type === 'data') {
+                    const state = useAppStore.getState();
+                    
+                    let nextId = state.nextNoteId || Math.max(...state.notes.map(n => n.id), 0) + 1;
+                    const importedNotes = (parsed.notes || []).map((n: any) => ({ ...n, id: nextId++ }));
+                    
+                    const mergedPinnedApps = [...state.pinnedApps];
+                    (parsed.pinnedApps || []).forEach((app: any) => {
+                        if (!mergedPinnedApps.find(a => a.path === app.path)) {
+                            mergedPinnedApps.push(app);
+                        }
+                    });
+
+                    const mergedTodos = [...state.todos, ...(parsed.todos || []).map((t: any) => ({ ...t, id: Date.now().toString() + Math.random() }))];
+                    const mergedSnippets = [...state.snippets, ...(parsed.snippets || []).map((s: any) => ({ ...s, id: crypto.randomUUID() }))];
+                    const mergedLocalEvents = [...state.localEvents, ...(parsed.localEvents || []).map((ev: any) => ({ ...ev, id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000) }))];
+
+                    useAppStore.setState({
+                        notes: [...state.notes, ...importedNotes],
+                        nextNoteId: nextId,
+                        pinnedApps: mergedPinnedApps,
+                        todos: mergedTodos,
+                        snippets: mergedSnippets,
+                        localEvents: mergedLocalEvents
+                    });
+                } else {
+                    // Apply parsed settings directly to the store
+                    useAppStore.setState(parsed);
+                    
+                    // Switch to mini mode and teleport to center as if it's a fresh start
+                    const state = useAppStore.getState();
+                    const visibleHeight = state.screenBounds?.height ?? 800;
+                    state.setMiniMode(true, { 
+                        x: state.isMac ? Math.floor(window.innerWidth / 2) : 3000, 
+                        y: Math.floor(visibleHeight / 2) 
+                    });
+                }
+                
+                window.api?.sendNotification?.('Import Complete', `Successfully imported ${type}.`);
+            } catch (err) {
+                console.error('Import failed', err);
+                window.api?.sendNotification?.('Import Failed', `Could not parse the ${type} import file.`);
+            }
+        };
+        reader.readAsText(file);
+        
+        // Reset the input so the same file can be selected again
+        event.target.value = '';
+    };
+
     const localizedLanguages = getLanguageOptions(language);
 
     return (
@@ -1812,12 +1959,96 @@ const SettingsPanel: React.FC = () => {
                     </Accordion>
                 )}
 
+                {/* Export Data & Settings Section */}
+                <Accordion title={t('exportDataSettings') as string || 'Export Data and Settings'} icon="database" defaultOpen={false}>
+                    <div className="flex flex-col gap-4 px-1">
+                        {/* Export Settings */}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-sm text-slate-300 font-medium">{t('exportSettings') as string || 'Export Settings'}</span>
+                                    <span className="text-xs text-slate-500">{t('exportSettingsDesc') as string || 'Backup your layout, themes, and feature toggles.'}</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mt-1">
+                                <button
+                                    onClick={() => handleExport('settings', 'download')}
+                                    className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">download</span>
+                                    {t('downloadJson') as string || 'Download JSON'}
+                                </button>
+                                <button
+                                    onClick={() => handleExport('settings', 'email')}
+                                    className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">mail</span>
+                                    {t('sendToEmail') as string || 'Send to Email'}
+                                </button>
+                                <input type="file" accept=".json" className="hidden" ref={importSettingsRef} onChange={(e) => handleImport('settings', e)} />
+                                <button
+                                    onClick={() => importSettingsRef.current?.click()}
+                                    className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">upload</span>
+                                    {t('import') as string || 'Import'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="w-full h-px opacity-30" style={{ backgroundColor: 'var(--theme-border)' }}></div>
+
+                        {/* Export Data */}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-sm text-slate-300 font-medium">{t('exportData') as string || 'Export Data'}</span>
+                                    <span className="text-xs text-slate-500">{t('exportDataDesc') as string || 'Backup your notes, calendar events, to-dos, and snippets.'}</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mt-1">
+                                <button
+                                    onClick={() => handleExport('data', 'download')}
+                                    className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">download</span>
+                                    {t('downloadJson') as string || 'Download JSON'}
+                                </button>
+                                <button
+                                    onClick={() => handleExport('data', 'email')}
+                                    className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">mail</span>
+                                    {t('sendToEmail') as string || 'Send to Email'}
+                                </button>
+                                <input type="file" accept=".json" className="hidden" ref={importDataRef} onChange={(e) => handleImport('data', e)} />
+                                <button
+                                    onClick={() => importDataRef.current?.click()}
+                                    className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">upload</span>
+                                    {t('import') as string || 'Import'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </Accordion>
+
                 {/* About Section */}
                 <Accordion title={t('about')} icon="help_outline" defaultOpen={false}>
                     <div className="flex flex-col gap-5 px-1">
                         <div className="flex flex-col gap-2">
                             <span className="text-sm text-slate-300 font-medium">{t('aboutMaker')}</span>
                             <span className="text-xs text-slate-500 leading-relaxed font-medium">{t('aboutCredits')}</span>
+                            <span className="text-xs text-slate-500 leading-relaxed font-medium">
+                                {t('aboutContributors')}{' '}
+                                <button
+                                    onClick={() => window.api?.openExternal('https://github.com/arindam-sahoo')}
+                                    className="text-primary hover:underline font-semibold transition-all cursor-pointer"
+                                >
+                                    Arindam Sahoo
+                                </button>
+                            </span>
                         </div>
                         
                         <div className="w-full h-px opacity-30" style={{ backgroundColor: 'var(--theme-border)' }}></div>
@@ -1837,6 +2068,17 @@ const SettingsPanel: React.FC = () => {
                         <div className="pt-2 flex items-center justify-between">
                             <span className="text-[10px] uppercase tracking-widest text-slate-600 font-bold">{t('version')}</span>
                             <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">{appVersion || '...'}</span>
+                        </div>
+                        
+                        <div className="pt-1">
+                            <button
+                                onClick={() => window.api?.openExternal('https://patreon.com/kobarproject')}
+                                className="w-full py-2.5 px-4 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all duration-300 active:scale-[0.98] border border-[#FF424D]/30 cursor-pointer"
+                                style={{ background: 'linear-gradient(135deg, #FF424D 0%, #D8313A 100%)' }}
+                            >
+                                <span className="material-symbols-outlined text-[16px]">favorite</span>
+                                <span>{t('aboutPatreon')}</span>
+                            </button>
                         </div>
                     </div>
                 </Accordion>

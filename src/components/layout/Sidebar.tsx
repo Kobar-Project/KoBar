@@ -850,7 +850,10 @@ const Sidebar: React.FC = () => {
                                                 setIsKoPlayerOpen(!isKoPlayerOpen);
                                             }}
                                         >
-                                            <span className="material-symbols-outlined text-[24px]">music_note</span>
+                                            <div className="relative inline-flex items-center justify-center text-[24px]" style={{ width: '1em', height: '1em' }}>
+                                                <span className="material-symbols-outlined absolute left-1/2 top-1/2" style={{ fontSize: '0.85em', transform: 'translate(-60%, -60%)', opacity: 0.6 }}>movie</span>
+                                                <span className="material-symbols-outlined absolute left-1/2 top-1/2" style={{ fontSize: '0.9em', transform: 'translate(-40%, -40%)' }}>music_note</span>
+                                            </div>
                                         </TooltipButton>
                                     </div>
                                 ) : null;
@@ -874,7 +877,7 @@ const Sidebar: React.FC = () => {
                 <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
 
                 {/* 1c. Bottom Static Utilities (Always Bottom / Right) */}
-                <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-4 no-drag-region shrink-0 ${orientation === 'horizontal' ? 'py-2 pr-2' : 'px-2 pb-0'}`}>
+                <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-4 no-drag-region shrink-0 ${orientation === 'horizontal' ? 'py-2 pr-0' : 'px-2 pb-0'}`}>
                     <div style={{ zoom: iconScale }} className="transition-all">
                         <TooltipButton
                             label={t('miniMode')}
