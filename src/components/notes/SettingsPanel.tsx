@@ -65,6 +65,10 @@ const SettingsPanel: React.FC = () => {
     const setCustomThemeColor = useAppStore(state => state.setCustomThemeColor);
     const language = useAppStore(state => state.language);
     
+    // Refs for file inputs
+    const importSettingsRef = useRef<HTMLInputElement>(null);
+    const importDataRef = useRef<HTMLInputElement>(null);
+
     // --- Custom Theme Color Picker Link ---
     const currentColor = useAppStore(state => state.currentColor);
     const isColorPickerOpen = useAppStore(state => state.isColorPickerOpen);
@@ -1049,6 +1053,35 @@ const SettingsPanel: React.FC = () => {
         }
     };
 
+    const handleImport = (type: 'settings' | 'data', event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const jsonStr = e.target?.result as string;
+                const parsed = JSON.parse(jsonStr);
+                
+                if (typeof parsed !== 'object' || parsed === null) {
+                    throw new Error('Invalid JSON structure');
+                }
+
+                // Apply parsed data directly to the store
+                useAppStore.setState(parsed);
+                
+                window.api?.sendNotification?.('Import Complete', `Successfully imported ${type}.`);
+            } catch (err) {
+                console.error('Import failed', err);
+                window.api?.sendNotification?.('Import Failed', `Could not parse the ${type} import file.`);
+            }
+        };
+        reader.readAsText(file);
+        
+        // Reset the input so the same file can be selected again
+        event.target.value = '';
+    };
+
     const localizedLanguages = getLanguageOptions(language);
 
     return (
@@ -1917,6 +1950,14 @@ const SettingsPanel: React.FC = () => {
                                     <span className="material-symbols-outlined text-[16px]">mail</span>
                                     Send to Email
                                 </button>
+                                <input type="file" accept=".json" className="hidden" ref={importSettingsRef} onChange={(e) => handleImport('settings', e)} />
+                                <button
+                                    onClick={() => importSettingsRef.current?.click()}
+                                    className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">upload</span>
+                                    Import
+                                </button>
                             </div>
                         </div>
 
@@ -1944,6 +1985,14 @@ const SettingsPanel: React.FC = () => {
                                 >
                                     <span className="material-symbols-outlined text-[16px]">mail</span>
                                     Send to Email
+                                </button>
+                                <input type="file" accept=".json" className="hidden" ref={importDataRef} onChange={(e) => handleImport('data', e)} />
+                                <button
+                                    onClick={() => importDataRef.current?.click()}
+                                    className="flex-1 py-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 hover:border-primary/50 text-slate-300 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">upload</span>
+                                    Import
                                 </button>
                             </div>
                         </div>
