@@ -90,6 +90,7 @@ export interface CalendarEvent {
     id: string;
     title: string;
     description?: string;
+    meetingLink?: string;
     startTime: string; // ISO string
     endTime: string; // ISO string
     colorId?: string;
