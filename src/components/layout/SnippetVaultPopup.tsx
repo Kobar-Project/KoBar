@@ -447,7 +447,7 @@ export const SnippetVaultPopup: React.FC = () => {
                                         <button onClick={() => openEdit(snippet)} className="p-1 rounded-md hover:bg-white/20 text-slate-400 hover:text-slate-200 transition-colors" title={t('edit')}>
                                             <span className="material-symbols-outlined text-[16px]">edit</span>
                                         </button>
-                                        <button onClick={() => deleteSnippet(snippet.id)} className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors" title={t('deleteAction')}>
+                                        <button onClick={() => checkLock(snippet, () => deleteSnippet(snippet.id))} className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors" title={t('deleteAction')}>
                                             <span className="material-symbols-outlined text-[16px]">delete</span>
                                         </button>
                                     </div>
@@ -510,7 +510,7 @@ export const SnippetVaultPopup: React.FC = () => {
                                             <button onClick={() => openEdit(snippet)} className="p-1 rounded-md hover:bg-white/20 text-slate-400 hover:text-slate-200 transition-colors" title={t('edit')}>
                                                 <span className="material-symbols-outlined text-[16px]">edit</span>
                                             </button>
-                                            <button onClick={() => deleteSnippet(snippet.id)} className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors" title={t('deleteAction')}>
+                                            <button onClick={() => checkLock(snippet, () => deleteSnippet(snippet.id))} className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors" title={t('deleteAction')}>
                                                 <span className="material-symbols-outlined text-[16px]">delete</span>
                                             </button>
                                         </div>
