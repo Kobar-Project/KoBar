@@ -31,7 +31,8 @@ if (parentPort) {
                             title: session.media.title || '',
                             artist: session.media.artist || '',
                             albumArt,
-                            isPlaying: session.playback.playbackStatus === 4
+                            isPlaying: session.playback.playbackStatus === 4,
+                            sourceAppId: session.sourceAppId || '',
                         };
                     }
                 } catch (e) {

@@ -383,6 +383,11 @@ interface AppState {
     setKoPlayerAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
     currentMedia: MediaData | null;
     setCurrentMedia: (data: MediaData | null) => void;
+    // Video PiP — cached from SMTC background browser detection
+    activeVideoUrls: string[];
+    setActiveVideoUrls: (urls: string[]) => void;
+    currentMediaSourceApp: string;
+    setCurrentMediaSourceApp: (app: string) => void;
 
     isLicensed: boolean;
     setLicensed: (val: boolean) => void;
@@ -903,6 +908,11 @@ export const useAppStore = create<AppState>()(
             setKoPlayerAnchorRect: (rect) => set({ koPlayerAnchorRect: rect }),
             currentMedia: null,
             setCurrentMedia: (data) => set({ currentMedia: data }),
+            // Video PiP — cached browser video URLs from background SMTC scan
+            activeVideoUrls: [],
+            setActiveVideoUrls: (urls) => set({ activeVideoUrls: urls }),
+            currentMediaSourceApp: '',
+            setCurrentMediaSourceApp: (app) => set({ currentMediaSourceApp: app }),
 
             // License
             isLicensed: false,
