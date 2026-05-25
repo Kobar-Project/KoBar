@@ -8,6 +8,7 @@ import CalculatorPopup from './components/layout/CalculatorPopup';
 import ColorPickerPopup from './components/layout/ColorPickerPopup';
 import TodoListPopup from './components/layout/TodoListPopup';
 import { SnippetVaultPopup } from './components/layout/SnippetVaultPopup';
+import ShortcutsPopup from './components/layout/ShortcutsPopup';
 import { AiHubPopup } from './components/chat/AiHubPopup';
 import LicenseActivationModal from './components/license/LicenseActivationModal';
 import ScreenshotOverlay from './components/screenshot/ScreenshotOverlay';
@@ -38,6 +39,7 @@ const App: React.FC = () => {
   const isColorPickerOpen = useAppStore(state => state.isColorPickerOpen);
   const isTodoListOpen = useAppStore(state => state.isTodoListOpen);
   const isSnippetVaultOpen = useAppStore(state => state.isSnippetVaultOpen);
+  const isShortcutsOpen = useAppStore(state => state.isShortcutsOpen);
   const isAiHubOpen = useAppStore(state => state.isAiHubOpen);
   const isKoPlayerOpen = useAppStore(state => state.isKoPlayerOpen);
   const isKoCalendarOpen = useAppStore(state => state.isKoCalendarOpen);
@@ -325,6 +327,7 @@ const App: React.FC = () => {
               {isColorPickerOpen && isLicensed && <ColorPickerPopup />}
               {isTodoListOpen && isLicensed && <TodoListPopup />}
               {isSnippetVaultOpen && isLicensed && <SnippetVaultPopup />}
+              {isShortcutsOpen && isLicensed && <ShortcutsPopup />}
               {isKoPlayerOpen && isLicensed && <KoPlayerPopup />}
               {isKoCalendarOpen && isLicensed && <KoCalendarPopup />}
               <FocusPopup />

@@ -1746,12 +1746,16 @@ ipcMain.on('launch-file', async (event, filePath) => {
         return;
     }
     try {
-        const errorMessage = await shell.openPath(filePath);
-        if (errorMessage) {
-            console.error('Shell error opening path:', errorMessage);
+        if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+            shell.openExternal(filePath);
+        } else {
+            const errorMessage = await shell.openPath(filePath);
+            if (errorMessage) {
+                console.error('Shell error opening path:', errorMessage);
+            }
         }
     } catch (e) {
-        console.error('Failed to launch application:', e);
+        console.error('Failed to launch application / open link:', e);
     }
 });
 
