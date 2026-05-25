@@ -2057,10 +2057,19 @@ const SettingsPanel: React.FC = () => {
                              <p className="text-xs text-slate-400 leading-relaxed">
                                 {t('aboutContact')}
                                 <button 
-                                    onClick={() => window.api?.openExternal('mailto:contact@ko48.com')}
+                                    onClick={() => window.api?.openExternal('mailto:hello@kobar.org')}
                                     className="text-primary hover:underline ml-1 font-semibold transition-all cursor-pointer"
                                 >
-                                    contact@ko48.com
+                                    hello@kobar.org
+                                </button>
+                            </p>
+                             <p className="text-xs text-slate-400 leading-relaxed">
+                                {t('aboutWebsite')}
+                                <button 
+                                    onClick={() => window.api?.openExternal('https://kobar.org')}
+                                    className="text-primary hover:underline ml-1 font-semibold transition-all cursor-pointer"
+                                >
+                                    kobar.org
                                 </button>
                             </p>
                         </div>
