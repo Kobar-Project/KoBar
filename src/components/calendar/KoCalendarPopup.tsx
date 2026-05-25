@@ -31,6 +31,8 @@ const KoCalendarPopup: React.FC = () => {
     const [editingEventDate, setEditingEventDate] = useState<Date | null>(null);
     const [editingEventId, setEditingEventId] = useState<string | null>(null);
     const [newEventTitle, setNewEventTitle] = useState('');
+    const [newEventDescription, setNewEventDescription] = useState('');
+    const [newEventMeetingLink, setNewEventMeetingLink] = useState('');
     const [newEventHours, setNewEventHours] = useState('12');
     const [newEventMinutes, setNewEventMinutes] = useState('00');
     const [newEventNotification, setNewEventNotification] = useState(true);
@@ -373,6 +375,8 @@ const KoCalendarPopup: React.FC = () => {
                             setEditingEventDate(null); 
                             setEditingEventId(null);
                             setNewEventTitle(''); 
+                            setNewEventDescription('');
+                            setNewEventMeetingLink('');
                         }} className="w-5 h-5 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
                             <span className="material-symbols-outlined text-[12px]">close</span>
                         </button>
@@ -387,6 +391,8 @@ const KoCalendarPopup: React.FC = () => {
                             if (editingEventId) {
                                 updateCalendarEvent(editingEventId, {
                                     title: newEventTitle.trim(),
+                                    description: newEventDescription.trim(),
+                                    meetingLink: newEventMeetingLink.trim(),
                                     startTime: eventStart.toISOString(),
                                     endTime: eventStart.toISOString(),
                                     notificationEnabled: newEventNotification,
@@ -395,6 +401,8 @@ const KoCalendarPopup: React.FC = () => {
                             } else {
                                 addCalendarEvent({
                                     title: newEventTitle.trim(),
+                                    description: newEventDescription.trim(),
+                                    meetingLink: newEventMeetingLink.trim(),
                                     startTime: eventStart.toISOString(),
                                     endTime: eventStart.toISOString(),
                                     notificationEnabled: newEventNotification,
@@ -403,20 +411,43 @@ const KoCalendarPopup: React.FC = () => {
                                 });
                             }
                             setNewEventTitle('');
+                            setNewEventDescription('');
+                            setNewEventMeetingLink('');
                             setEditingEventDate(null);
                             setEditingEventId(null);
                     }} className="flex flex-col gap-2">
-                        <div className="relative">
-                            <input
-                                autoFocus
-                                type="text"
-                                placeholder={t('eventTitle')}
-                                value={newEventTitle}
-                                onChange={(e) => setNewEventTitle(e.target.value)}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-primary no-drag-region pr-10"
+                        <div className="relative flex flex-col gap-2">
+                            <div className="relative">
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder={(t as (k: string) => string)('eventTitle') || 'Event Title'}
+                                    value={newEventTitle}
+                                    onChange={(e) => setNewEventTitle(e.target.value)}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-primary no-drag-region pr-10"
+                                />
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50">
+                                    <span className="material-symbols-outlined text-[14px]">event</span>
+                                </div>
+                            </div>
+                            <textarea
+                                placeholder={(t as (k: string) => string)('eventDescription') || 'Description (optional)'}
+                                value={newEventDescription}
+                                onChange={(e) => setNewEventDescription(e.target.value)}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-primary no-drag-region resize-none custom-scrollbar"
+                                rows={2}
                             />
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50">
-                                <span className="material-symbols-outlined text-[14px]">event</span>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder={(t as (k: string) => string)('meetingLink') || 'Meeting Link (optional)'}
+                                    value={newEventMeetingLink}
+                                    onChange={(e) => setNewEventMeetingLink(e.target.value)}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 pl-8 text-white text-xs focus:outline-none focus:border-primary no-drag-region"
+                                />
+                                <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50">
+                                    <span className="material-symbols-outlined text-[14px]">link</span>
+                                </div>
                             </div>
                         </div>
                         
@@ -514,12 +545,24 @@ const KoCalendarPopup: React.FC = () => {
                                         
                                         return (
                                             <div key={ev.id} className="flex justify-between items-center text-sm group/event hover:bg-white/5 rounded px-2 py-1.5 transition-colors" style={{ backgroundColor: isEvSelected ? `color-mix(in srgb, ${ev.colorId || koCalendarColor} 5%, transparent)` : 'transparent' }}>
-                                                <div className="flex items-center gap-2.5 flex-1 min-w-0 mr-3">
-                                                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: isEvSelected ? (ev.colorId || koCalendarColor) : isEvToday ? 'var(--theme-primary)' : 'var(--theme-text-faded)' }} />
-                                                    <span className="truncate" style={{ color: isEvSelected ? (ev.colorId || koCalendarColor) : '#fff', fontWeight: isEvSelected ? '600' : '400' }}>{ev.title}</span>
-                                                    {ev.notificationEnabled && (
-                                                        <span className="material-symbols-outlined text-xs text-primary/50 shrink-0">notifications_active</span>
-                                                    )}
+                                                <div className="flex items-start gap-2.5 flex-1 min-w-0 mr-3 mt-1">
+                                                    <div className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ backgroundColor: isEvSelected ? (ev.colorId || koCalendarColor) : isEvToday ? 'var(--theme-primary)' : 'var(--theme-text-faded)' }} />
+                                                    <div className="flex flex-col min-w-0 flex-1">
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="truncate" style={{ color: isEvSelected ? (ev.colorId || koCalendarColor) : '#fff', fontWeight: isEvSelected ? '600' : '400' }}>{ev.title}</span>
+                                                            {ev.meetingLink && (
+                                                                <button onClick={(e) => { e.stopPropagation(); window.api?.openExternal?.(ev.meetingLink!); }} className="text-blue-400 hover:text-blue-300 ml-1 shrink-0 bg-blue-400/10 rounded-full w-5 h-5 flex items-center justify-center transition-colors" title={(t as (k: string) => string)('joinMeeting') || 'Join Meeting'}>
+                                                                    <span className="material-symbols-outlined text-[12px]">videocam</span>
+                                                                </button>
+                                                            )}
+                                                            {ev.notificationEnabled && (
+                                                                <span className="material-symbols-outlined text-xs text-primary/50 shrink-0">notifications_active</span>
+                                                            )}
+                                                        </div>
+                                                        {ev.description && (
+                                                            <span className="text-[10px] text-slate-400 truncate mt-0.5" title={ev.description}>{ev.description}</span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0">
                                                     <span className="text-xs group-hover/event:hidden" style={{ color: isEvSelected ? (ev.colorId || koCalendarColor) : '#cbd5e1' }}>
@@ -531,6 +574,8 @@ const KoCalendarPopup: React.FC = () => {
                                                             setEditingEventDate(d);
                                                             setEditingEventId(ev.id);
                                                             setNewEventTitle(ev.title);
+                                                            setNewEventDescription(ev.description || '');
+                                                            setNewEventMeetingLink(ev.meetingLink || '');
                                                             setNewEventHours(format(d, 'HH'));
                                                             setNewEventMinutes(format(d, 'mm'));
                                                             setNewEventNotification(!!ev.notificationEnabled);

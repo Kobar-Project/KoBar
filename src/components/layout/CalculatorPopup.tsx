@@ -145,10 +145,18 @@ const CalculatorPopup: React.FC = () => {
     const handleDigit = (digit: string) => {
         operatorJustPressed.current = false;
         if (waitingForOperand) {
-            setDisplay(digit === '00' ? '0' : digit);
+            if (digit === '.') {
+                setDisplay('0.');
+            } else {
+                setDisplay(digit === '00' ? '0' : digit);
+            }
             setWaitingForOperand(false);
         } else {
-            if (display === '0') {
+            if (digit === '.') {
+                if (!display.includes('.')) {
+                    setDisplay(display + '.');
+                }
+            } else if (display === '0') {
                 setDisplay(digit === '00' ? '0' : digit);
             } else {
                 setDisplay(display + digit);
@@ -348,7 +356,7 @@ const CalculatorPopup: React.FC = () => {
             if (/[0-9]/.test(key)) {
                 handleDigit(key);
             } else if (key === '.' || key === ',') {
-                if (!display.includes('.')) handleDigit('.');
+                handleDigit('.');
             } else if (key === '+') {
                 handleOperator('+');
             } else if (key === '-') {
@@ -518,7 +526,7 @@ const CalculatorPopup: React.FC = () => {
                 ))}
                 <CalcButton onClick={handleEqual} className="row-span-2 h-full bg-primary text-slate-900 hover:opacity-90 font-bold">=</CalcButton>
 
-                <CalcButton onClick={() => !display.includes('.') && handleDigit('.')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">.</CalcButton>
+                <CalcButton onClick={() => handleDigit('.')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">.</CalcButton>
                 <CalcButton onClick={() => handleDigit('0')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">0</CalcButton>
                 <CalcButton onClick={handleBackspace} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700" title="Backspace">
                     <span className="material-symbols-outlined text-[16px]">backspace</span>
