@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS"><img src="https://img.shields.io/badge/Microsoft%20Store-Download-blue?logo=microsoft&logoColor=white" alt="Microsoft Store" /></a>
-  <img src="https://img.shields.io/badge/version-1.0.24-f4a125?style=flat" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.26-f4a125?style=flat" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
@@ -23,6 +23,8 @@
 ## 📖 What is KoBar?
 
 **KoBar** is a frameless, transparent, always-on-top desktop sidebar built with **Electron** and **React**. It docks to either edge of your screen and provides instant access to a rich set of productivity tools, all without leaving your current workflow.
+
+Visit our website: [KoBar.org](https://kobar.org/)
 
 Think of it as a Swiss Army knife that floats on your desktop: clipboard manager, notes, AI assistant, screenshot studio, media controller, and more, all in one sleek, customizable sidebar.
 
@@ -308,7 +310,9 @@ Special thanks to: **Tolunay PARLAK** & **MJ**.
 
 ## ✉️ Contact
 
-For support or inquiries, you can contact us at [contact@ko48.com](mailto:contact@ko48.com).
+For support or inquiries, you can contact us at [hello@kobar.org](mailto:hello@kobar.org).
+
+[KoBar.org](https://kobar.org)
 
 ---
 

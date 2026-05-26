@@ -15,9 +15,11 @@ const Sidebar: React.FC = () => {
     const isMiniMode = useAppStore(state => state.isMiniMode);
     const pinnedApps = useAppStore(state => state.pinnedApps);
     const pinApp = useAppStore(state => state.pinApp);
-    const unpinApp = useAppStore(state => state.unpinApp);
     const t = useAppStore(state => state.t);
     const isShortcutsEnabled = useAppStore(state => state.isShortcutsEnabled);
+    const isShortcutsOpen = useAppStore(state => state.isShortcutsOpen);
+    const setIsShortcutsOpen = useAppStore(state => state.setIsShortcutsOpen);
+    const setShortcutsAnchorRect = useAppStore(state => state.setShortcutsAnchorRect);
     const isCopyPasteEnabled = useAppStore(state => state.isCopyPasteEnabled);
     const isScreenshotEnabled = useAppStore(state => state.isScreenshotEnabled);
     const isFocusModeEnabled = useAppStore(state => state.isFocusModeEnabled);
@@ -452,19 +454,7 @@ const Sidebar: React.FC = () => {
         return () => observer.disconnect();
     }, []);
 
-    // Launcher Delete State
-    const [deletingId, setDeletingId] = React.useState<string | null>(null);
-    const deleteTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    React.useEffect(() => {
-        const handleDocClick = (e: MouseEvent) => {
-            if (!(e.target as HTMLElement).closest('.shortcut-item')) {
-                setDeletingId(null);
-            }
-        };
-        document.addEventListener('mousedown', handleDocClick);
-        return () => document.removeEventListener('mousedown', handleDocClick);
-    }, []);
 
     // Eye icon cursor tracking
     React.useEffect(() => {
@@ -579,78 +569,89 @@ const Sidebar: React.FC = () => {
                     onMouseDown={handleScrollMouseDown}
                     className={`flex ${orientation === 'horizontal' ? 'flex-row h-full w-fit overflow-x-hidden' : 'flex-col w-full h-fit overflow-y-hidden'} items-center custom-scrollbar`} 
                 >
-                    <div className={`${orientation === 'horizontal' ? 'h-full flex-row' : 'w-full flex-col'} flex items-center cursor-default`} style={{ zoom: iconScale, gap: `${featureSpacing}px` }}>
+                    <div className={`${orientation === 'horizontal' ? 'h-full flex-row px-1.5' : 'w-full flex-col py-1.5'} flex items-center cursor-default`} style={{ zoom: iconScale, gap: `${featureSpacing}px` }}>
                     {/* Dynamic Feature Order with Separators */}
                     {(() => {
                         const features = featureOrder.map(featureId => {
                         switch (featureId) {
                             case 'shortcuts':
                                 return isShortcutsEnabled ? (
-                                    <div key="shortcuts" className={`${orientation === 'horizontal' ? 'h-full flex-row py-2' : 'w-full flex-col px-2'} flex items-center gap-3 no-drag-region`}>
+                                    <div key="shortcuts" className="w-full flex justify-center no-drag-region">
                                         <TooltipButton
-                                            as="div"
-                                            label={t('dragDropApp')}
-                                            className="w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center text-slate-500 hover:text-primary hover:border-primary transition-all cursor-pointer group bg-white/5 hover:bg-white/10"
-                                            style={{ borderColor: 'var(--theme-border)' }}
+                                            label={t('shortcuts')}
+                                            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg
+                                                ${isShortcutsOpen ? 'bg-primary/20 text-primary border-primary/50' : 'bg-white/5 text-slate-400 hover:text-primary hover:bg-white/10'}`}
+                                            style={{ borderWidth: isShortcutsOpen ? '1px' : '0px' }}
+                                            onClick={(e) => {
+                                                const rect = sidebarContainerRef.current?.getBoundingClientRect() || e.currentTarget.getBoundingClientRect();
+                                                setShortcutsAnchorRect(rect);
+                                                setIsShortcutsOpen(!isShortcutsOpen);
+                                            }}
                                             onDragOver={(e) => e.preventDefault()}
                                             onDrop={async (e: React.DragEvent) => {
                                                 e.preventDefault();
                                                 if (pinnedApps.length >= maxShortcuts) return;
-                                                const file = e.dataTransfer.files[0];
-                                                if (!file) return;
-                                                const filePath = window.api?.getFilePath(file) || (file as any).path as string;
-                                                if (!filePath) return;
                                                 
-                                                const iconDataUrl = await window.api?.getFileIcon(filePath);
-                                                const name = file.name.replace(/\.[^/.]+$/, "");
-                                                pinApp({ id: Date.now().toString(), name, path: filePath, icon: iconDataUrl || '' });
+                                                let filePath = '';
+                                                let name = '';
+                                                let iconDataUrl = '';
+
+                                                const files = e.dataTransfer.files;
+                                                if (files && files.length > 0) {
+                                                    const file = files[0];
+                                                    filePath = window.api?.getFilePath(file) || (file as any).path as string;
+                                                    if (!filePath) return;
+                                                    
+                                                    iconDataUrl = await window.api?.getFileIcon(filePath) || '';
+                                                    name = file.name.replace(/\.[^/.]+$/, "");
+                                                } else {
+                                                    // Handle browser URL drag and drop
+                                                    let url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('URL');
+                                                    if (!url) {
+                                                        const text = e.dataTransfer.getData('text/plain');
+                                                        if (text && (text.startsWith('http://') || text.startsWith('https://'))) {
+                                                            url = text.trim();
+                                                        }
+                                                    }
+                                                    if (!url) return;
+                                                    filePath = url.trim();
+
+                                                    const html = e.dataTransfer.getData('text/html');
+                                                    if (html) {
+                                                        try {
+                                                            const parser = new DOMParser();
+                                                            const doc = parser.parseFromString(html, 'text/html');
+                                                            const linkEl = doc.querySelector('a');
+                                                            if (linkEl) {
+                                                                name = linkEl.textContent?.trim() || '';
+                                                            }
+                                                        } catch (err) {
+                                                            console.error('Failed to parse dropped HTML:', err);
+                                                        }
+                                                    }
+
+                                                    try {
+                                                        const parsedUrl = new URL(filePath);
+                                                        if (!name || name.trim() === '') {
+                                                            name = parsedUrl.hostname.replace('www.', '');
+                                                            if (!name) name = parsedUrl.pathname.split('/').filter(Boolean).pop() || filePath;
+                                                        }
+                                                        iconDataUrl = `https://www.google.com/s2/favicons?sz=64&domain=${parsedUrl.hostname}`;
+                                                    } catch (err) {
+                                                        if (!name || name.trim() === '') name = filePath;
+                                                    }
+                                                }
+
+                                                if (filePath) {
+                                                    pinApp({ id: Date.now().toString(), name, path: filePath, icon: iconDataUrl });
+                                                    const rect = sidebarContainerRef.current?.getBoundingClientRect();
+                                                    if (rect) setShortcutsAnchorRect(rect);
+                                                    setIsShortcutsOpen(true);
+                                                }
                                             }}
                                         >
-                                            <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">add_to_home_screen</span>
+                                            <span className="material-symbols-outlined text-[24px]">bolt</span>
                                         </TooltipButton>
-
-                                        <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-2.5 w-full`}>
-                                            {pinnedApps.slice(0, maxShortcuts).map(app => {
-                                                const isGenericOrEmpty = !app.icon || app.icon === '' || app.icon.length < 3000;
-                                                const appInitials = app.name ? app.name.substring(0, 2).toUpperCase() : '??';
-
-                                                return (
-                                                    <div key={app.id} className="shortcut-item relative w-12 h-12 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                        <TooltipButton
-                                                            label={app.name}
-                                                            className={`w-full h-full rounded-xl border flex items-center justify-center overflow-hidden transition-all hover:scale-110 active:scale-95 shadow-lg
-                                                                ${design === 'style2' ? 'bg-transparent' : 'bg-[#1e1b17]'}`}
-                                                            style={{ borderColor: design === 'style2' ? 'rgba(255,255,255,0.1)' : 'var(--theme-border)' }}
-                                                            onMouseDown={() => {
-                                                                deleteTimeoutRef.current = setTimeout(() => setDeletingId(app.id), 600);
-                                                            }}
-                                                            onMouseUp={() => { if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current); }}
-                                                            onMouseLeave={() => { if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current); }}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (deletingId !== app.id && app.path) window.api?.launchFile(app.path);
-                                                            }}
-                                                        >
-                                                            {isGenericOrEmpty ? (
-                                                                <div className="w-full h-full flex items-center justify-center font-bold text-[10px] text-primary/70">{appInitials}</div>
-                                                            ) : (
-                                                                <img src={app.icon} className="w-full h-full object-contain p-2" alt={app.name} draggable={false} />
-                                                            )}
-                                                        </TooltipButton>
-
-                                                        {deletingId === app.id && (
-                                                            <button
-                                                                onMouseDown={(e) => e.stopPropagation()}
-                                                                onClick={(e) => { e.stopPropagation(); unpinApp(app.id); setDeletingId(null); }}
-                                                                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white flex items-center justify-center shadow-lg hover:bg-red-600 z-10"
-                                                            >
-                                                                <span className="material-symbols-outlined text-[12px]">close</span>
-                                                            </button>
-                                                            )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
                                     </div>
                                 ) : null;
                             case 'aihub':

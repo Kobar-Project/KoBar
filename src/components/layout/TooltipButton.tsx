@@ -19,6 +19,7 @@ interface TooltipButtonProps {
     onDragOver?: (e: React.DragEvent) => void;
     onDragLeave?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
     buttonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
@@ -39,6 +40,7 @@ const TooltipButton: React.FC<TooltipButtonProps> = ({
     onDragOver,
     onDragLeave,
     onDrop,
+    onContextMenu,
     buttonRef,
 }) => {
     const { edgePosition, showTooltips, isDraggingGlobal, isMiniMode } = useAppStore();
@@ -100,6 +102,7 @@ const TooltipButton: React.FC<TooltipButtonProps> = ({
         onDragOver,
         onDragLeave,
         onDrop,
+        onContextMenu,
     };
 
     if (as === 'div') {

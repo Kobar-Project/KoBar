@@ -90,6 +90,7 @@ export interface CalendarEvent {
     id: string;
     title: string;
     description?: string;
+    meetingLink?: string;
     startTime: string; // ISO string
     endTime: string; // ISO string
     colorId?: string;
@@ -180,6 +181,7 @@ interface AppState {
     pinnedApps: PinnedApp[];
     pinApp: (app: PinnedApp) => void;
     unpinApp: (id: string) => void;
+    reorderPinnedApps: (startIndex: number, endIndex: number) => void;
     // Theme
     theme: ThemeName;
     setTheme: (theme: ThemeName) => void;
@@ -261,6 +263,10 @@ interface AppState {
     setIsSnippetVaultOpen: (val: boolean) => void;
     snippetVaultAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
     setSnippetVaultAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
+    isShortcutsOpen: boolean;
+    setIsShortcutsOpen: (val: boolean) => void;
+    shortcutsAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
+    setShortcutsAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
     isSnippetVaultEnabled: boolean;
     setIsSnippetVaultEnabled: (val: boolean) => void;
     isSnippetVaultCompact: boolean;
@@ -457,7 +463,8 @@ export const useAppStore = create<AppState>()(
                 isSnippetVaultOpen: false, 
                 isFocusPopupOpen: false, 
                 isKoCalendarOpen: false, 
-                isKoPlayerOpen: false 
+                isKoPlayerOpen: false,
+                isShortcutsOpen: false
             }),
             edgePosition: 'right',
             setEdgePosition: (edge) => set({ edgePosition: edge }),
@@ -483,13 +490,18 @@ export const useAppStore = create<AppState>()(
             // App Launcher State
             pinnedApps: [],
             pinApp: (app) => set((state) => {
-                // Max 5 apps
-                if (state.pinnedApps.length >= 5) return state;
+                if (state.pinnedApps.length >= state.maxShortcuts) return state;
                 return { pinnedApps: [...state.pinnedApps, app] };
             }),
             unpinApp: (id) => set((state) => ({
                 pinnedApps: state.pinnedApps.filter((a) => a.id !== id),
             })),
+            reorderPinnedApps: (startIndex, endIndex) => set((state) => {
+                const result = Array.from(state.pinnedApps);
+                const [removed] = result.splice(startIndex, 1);
+                result.splice(endIndex, 0, removed);
+                return { pinnedApps: result };
+            }),
 
             // Theme
             theme: 'midnight',
@@ -602,6 +614,13 @@ export const useAppStore = create<AppState>()(
             },
             snippetVaultAnchorRect: null,
             setSnippetVaultAnchorRect: (rect) => set({ snippetVaultAnchorRect: rect }),
+            isShortcutsOpen: false,
+            setIsShortcutsOpen: (val: boolean) => {
+                if (val) get().closeAllUtilityPopups();
+                set({ isShortcutsOpen: val });
+            },
+            shortcutsAnchorRect: null,
+            setShortcutsAnchorRect: (rect) => set({ shortcutsAnchorRect: rect }),
             isSnippetVaultEnabled: true,
             setIsSnippetVaultEnabled: (val: boolean) => set({ isSnippetVaultEnabled: val }),
             isSnippetVaultCompact: false,

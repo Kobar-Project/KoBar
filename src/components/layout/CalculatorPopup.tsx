@@ -447,10 +447,18 @@ const CalculatorPopup: React.FC = () => {
     const handleDigit = (digit: string) => {
         operatorJustPressed.current = false;
         if (waitingForOperand) {
-            setDisplay(digit === '00' ? '0' : digit);
+            if (digit === '.') {
+                setDisplay('0.');
+            } else {
+                setDisplay(digit === '00' ? '0' : digit);
+            }
             setWaitingForOperand(false);
         } else {
-            if (display === '0') {
+            if (digit === '.') {
+                if (!display.includes('.')) {
+                    setDisplay(display + '.');
+                }
+            } else if (display === '0') {
                 setDisplay(digit === '00' ? '0' : digit);
             } else {
                 setDisplay(display + digit);
@@ -647,41 +655,29 @@ const CalculatorPopup: React.FC = () => {
 
             const { key } = e;
 
-            if (mode !== 'currency') {
-                if (/[0-9]/.test(key)) {
-                    handleDigit(key);
-                } else if (key === '.' || key === ',') {
-                    if (!display.includes('.')) handleDigit('.');
-                } else if (key === '+') {
-                    handleOperator('+');
-                } else if (key === '-') {
-                    handleOperator('-');
-                } else if (key === '*' || key.toLowerCase() === 'x') {
-                    handleOperator('×');
-                } else if (key === '/') {
-                    handleOperator('÷');
-                } else if (key === 'Enter' || key === '=') {
-                    e.preventDefault();
-                    handleEqual();
-                } else if (key === 'Backspace') {
-                    handleBackspace();
-                } else if (key === 'Escape' || key.toLowerCase() === 'c') {
-                    handleClear();
-                } else if (key === '(') {
-                    handleParenOpen();
-                } else if (key === ')') {
-                    handleParenClose();
-                }
-            } else {
-                if (/[0-9]/.test(key)) {
-                    handleCurrencyDigit(key);
-                } else if (key === '.' || key === ',') {
-                    handleCurrencyDot();
-                } else if (key === 'Backspace') {
-                    handleCurrencyBackspace();
-                } else if (key === 'Escape' || key.toLowerCase() === 'c') {
-                    handleCurrencyClear();
-                }
+            if (/[0-9]/.test(key)) {
+                handleDigit(key);
+            } else if (key === '.' || key === ',') {
+                if (!display.includes('.')) handleDigit('.');
+            } else if (key === '+') {
+                handleOperator('+');
+            } else if (key === '-') {
+                handleOperator('-');
+            } else if (key === '*' || key.toLowerCase() === 'x') {
+                handleOperator('×');
+            } else if (key === '/') {
+                handleOperator('÷');
+            } else if (key === 'Enter' || key === '=') {
+                e.preventDefault();
+                handleEqual();
+            } else if (key === 'Backspace') {
+                handleBackspace();
+            } else if (key === 'Escape' || key.toLowerCase() === 'c') {
+                handleClear();
+            } else if (key === '(') {
+                handleParenOpen();
+            } else if (key === ')') {
+                handleParenClose();
             }
         };
 
@@ -991,12 +987,14 @@ const CalculatorPopup: React.FC = () => {
                         ))}
                         <CalcButton onClick={handleEqual} className="row-span-2 h-full bg-primary text-slate-900 hover:opacity-90 font-bold">=</CalcButton>
 
-                        <CalcButton onClick={() => !display.includes('.') && handleDigit('.')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">.</CalcButton>
-                        <CalcButton onClick={() => handleDigit('0')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">0</CalcButton>
-                        <CalcButton onClick={handleBackspace} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700" title="Backspace">
-                            <span className="material-symbols-outlined text-[16px]">backspace</span>
-                        </CalcButton>
-                    </div>
+                <CalcButton onClick={() => !display.includes('.') && handleDigit('.')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">.</CalcButton>
+                <CalcButton onClick={() => handleDigit('0')} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700">0</CalcButton>
+                <CalcButton onClick={handleBackspace} className="bg-slate-700/50 text-slate-200 hover:bg-slate-700" title="Backspace">
+                    <span className="material-symbols-outlined text-[16px]">backspace</span>
+                </CalcButton>
+            </div>
+
+
 
                     {/* History (Scientific only) */}
                     {isScientific && history.length > 0 && (
