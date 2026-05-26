@@ -57,6 +57,8 @@ const Accordion: React.FC<{
     );
 };
 
+const isSystemTab = (note: any) => note.isSettings || note.title === 'Welcome to KoBar!';
+
 const SettingsPanel: React.FC = () => {
     // ─── Granular Selectors (prevents re-render on unrelated store changes) ───
     const theme = useAppStore(state => state.theme);
@@ -1024,7 +1026,7 @@ const SettingsPanel: React.FC = () => {
             };
         } else {
             payload = {
-                notes: state.notes,
+                notes: state.notes.filter(n => !isSystemTab(n)),
                 pinnedApps: state.pinnedApps,
                 todos: state.todos,
                 snippets: state.snippets,
@@ -1071,7 +1073,8 @@ const SettingsPanel: React.FC = () => {
                     const state = useAppStore.getState();
                     
                     let nextId = state.nextNoteId || Math.max(...state.notes.map(n => n.id), 0) + 1;
-                    const importedNotes = (parsed.notes || []).map((n: any) => ({ ...n, id: nextId++ }));
+                    const filteredImportedNotes = (parsed.notes || []).filter((n: any) => !isSystemTab(n));
+                    const importedNotes = filteredImportedNotes.map((n: any) => ({ ...n, id: nextId++ }));
                     
                     const mergedPinnedApps = [...state.pinnedApps];
                     (parsed.pinnedApps || []).forEach((app: any) => {
