@@ -46,6 +46,13 @@ const FloatingEye: React.FC = () => {
     const dragInitRef = useRef({ dragged: false, offsetX: 0, offsetY: 0 });
     const windowPosRef = useRef({ x: 0, y: 0 });
     const localDisplaysRef = useRef<{ primaryDisplay: any, allDisplays: any[] } | null>(null);
+    const [isDev, setIsDev] = useState(false);
+
+    useEffect(() => {
+        if (window.api?.isDev) {
+            window.api.isDev().then(setIsDev);
+        }
+    }, []);
 
     // If teleport is triggered while already in Mini Mode, update pos to the new cursor center
     useEffect(() => {
@@ -253,7 +260,7 @@ const FloatingEye: React.FC = () => {
         >
             <button 
                 ref={eyeButtonRef}
-                className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing group
+                className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing group relative
                     ${design === 'style2' ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-xl') + ' shadow-[0_0_20px_rgba(255,255,255,0.05)]') : 'shadow-[0_0_20px_rgba(244,161,37,0.4)]'}`}
                 style={{
                     backgroundColor: design === 'style2' 
@@ -264,6 +271,11 @@ const FloatingEye: React.FC = () => {
                 <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
                     <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">visibility</span>
                 </span>
+                {isDev && (
+                    <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
+                        dev
+                    </span>
+                )}
             </button>
         </div>
     );

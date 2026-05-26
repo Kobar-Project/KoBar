@@ -116,6 +116,7 @@ declare global {
 
             openExternal: (url: string) => void;
             getAppVersion: () => Promise<string>;
+            isDev: () => Promise<boolean>;
         };
     }
 }

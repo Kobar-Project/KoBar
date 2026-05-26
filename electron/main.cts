@@ -2052,3 +2052,7 @@ ipcMain.on('open-external', (_event, url) => {
 ipcMain.handle('get-app-version', () => {
     return app.getVersion();
 });
+
+ipcMain.handle('is-dev', () => {
+    return isDev;
+});
