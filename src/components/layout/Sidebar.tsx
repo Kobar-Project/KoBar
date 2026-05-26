@@ -89,6 +89,14 @@ const Sidebar: React.FC = () => {
     const eyeButtonRef = React.useRef<HTMLButtonElement>(null);
     const innerEyeRef = React.useRef<HTMLSpanElement>(null);
     const sidebarContainerRef = React.useRef<HTMLDivElement>(null);
+
+    const [isDev, setIsDev] = React.useState(false);
+
+    React.useEffect(() => {
+        if (window.api?.isDev) {
+            window.api.isDev().then(setIsDev);
+        }
+    }, []);
     
     // Drag to scroll logic
     const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -883,12 +891,17 @@ const Sidebar: React.FC = () => {
                             buttonRef={eyeButtonRef}
                             onMouseDown={handleEyeMouseDown}
                             onClick={handleEyeClick}
-                            className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:bg-primary/40 cursor-grab active:cursor-grabbing group ${orientation === 'horizontal' ? '' : 'mt-2'}
+                            className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:bg-primary/40 cursor-grab active:cursor-grabbing group relative ${orientation === 'horizontal' ? '' : 'mt-2'}
                                 ${design === 'style2' ? 'bg-primary/5 backdrop-blur-md' : 'bg-primary/20 shadow-[0_0_20px_rgba(244,161,37,0.2)]'}`}
                         >
                             <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
                                 <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">visibility</span>
                             </span>
+                            {isDev && (
+                                <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
+                                    dev
+                                </span>
+                            )}
                         </TooltipButton>
                     </div>
                 </div>

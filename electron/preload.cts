@@ -208,4 +208,5 @@ contextBridge.exposeInMainWorld('api', {
     // About section support
     openExternal: (url: string) => ipcRenderer.send('open-external', url),
     getAppVersion: () => ipcRenderer.invoke('get-app-version') as Promise<string>,
+    isDev: () => ipcRenderer.invoke('is-dev') as Promise<boolean>,
 });
