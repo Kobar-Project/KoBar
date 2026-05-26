@@ -11,6 +11,12 @@ let smtcWorker: Worker | null = null;
 
 const isMac = process.platform === 'darwin';
 const isWin = process.platform === 'win32';
+const isDev = !app.isPackaged;
+
+if (isDev) {
+    app.setName('KoBarDev');
+    app.setPath('userData', path.join(app.getPath('appData'), 'KoBarDev'));
+}
 
 const systemConfigPath = path.join(app.getPath('userData'), 'kobar-system.json');
 
@@ -61,10 +67,9 @@ let lastSmtcAlbumArt: string | null = null;
 // Set these flags for feature toggling (managed by kobar-build.js)
 const IS_STORE_BUILD = true;
 const ENABLE_AUTO_UPDATE = false;
-const isDev = !app.isPackaged;
 
 // Set Application User Model ID to fix Windows Taskbar, Notifications, and Task Manager Startup icons
-const AUMID = 'com.eedali.kobar';
+const AUMID = isDev ? 'com.eedali.kobar.dev' : 'com.eedali.kobar';
 app.setAppUserModelId(AUMID);
 
 // Single Instance Lock
