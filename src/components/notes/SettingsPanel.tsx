@@ -57,6 +57,8 @@ const Accordion: React.FC<{
     );
 };
 
+const isSystemTab = (note: any) => note.isSettings || note.title === 'Welcome to KoBar!';
+
 const SettingsPanel: React.FC = () => {
     // ─── Granular Selectors (prevents re-render on unrelated store changes) ───
     const theme = useAppStore(state => state.theme);
@@ -1024,7 +1026,7 @@ const SettingsPanel: React.FC = () => {
             };
         } else {
             payload = {
-                notes: state.notes,
+                notes: state.notes.filter(n => !isSystemTab(n)),
                 pinnedApps: state.pinnedApps,
                 todos: state.todos,
                 snippets: state.snippets,
@@ -1071,7 +1073,8 @@ const SettingsPanel: React.FC = () => {
                     const state = useAppStore.getState();
                     
                     let nextId = state.nextNoteId || Math.max(...state.notes.map(n => n.id), 0) + 1;
-                    const importedNotes = (parsed.notes || []).map((n: any) => ({ ...n, id: nextId++ }));
+                    const filteredImportedNotes = (parsed.notes || []).filter((n: any) => !isSystemTab(n));
+                    const importedNotes = filteredImportedNotes.map((n: any) => ({ ...n, id: nextId++ }));
                     
                     const mergedPinnedApps = [...state.pinnedApps];
                     (parsed.pinnedApps || []).forEach((app: any) => {
@@ -1441,6 +1444,20 @@ const SettingsPanel: React.FC = () => {
                         <Accordion title={t('layoutAndSpacing')} icon="grid_view" defaultOpen={true}>
                             <div className="flex flex-col gap-6">
                                 <div className="flex flex-col gap-3">
+                                    <label className="text-sm text-slate-400 font-medium">{t('orientation') || 'Orientation'}</label>
+                                    <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 no-drag-region">
+                                        <button onClick={() => setOrientation('vertical')}
+                                            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${orientation === 'vertical' ? 'bg-primary text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                                            {t('vertical') || 'Vertical'}
+                                        </button>
+                                        <button onClick={() => setOrientation('horizontal')}
+                                            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${orientation === 'horizontal' ? 'bg-primary text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                                            {t('horizontal') || 'Horizontal'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-3">
                                     <div className="flex justify-between items-center">
                                         <label className="text-sm text-slate-400 font-medium">{t('toggleWidthConfig')}</label>
                                         <span className="text-base font-bold text-primary">{toggleWidth}px</span>
@@ -1771,24 +1788,7 @@ const SettingsPanel: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="w-full h-px opacity-50" style={{ backgroundColor: 'var(--theme-border)' }}></div>
 
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-slate-400 text-[20px]">view_agenda</span>
-                                <span className="text-sm text-slate-300">{t('orientation') || 'Orientation'}</span>
-                            </div>
-                            <div className="flex bg-black/20 p-0.5 rounded-lg border border-white/5 no-drag-region w-32 shrink-0">
-                                <button onClick={() => setOrientation('vertical')}
-                                    className={`flex-1 py-1 text-[11px] font-semibold rounded-md transition-all ${orientation === 'vertical' ? 'bg-primary text-slate-900 shadow-md font-bold' : 'text-slate-400 hover:text-slate-200'}`}>
-                                    {t('vertical') || 'Vertical'}
-                                </button>
-                                <button onClick={() => setOrientation('horizontal')}
-                                    className={`flex-1 py-1 text-[11px] font-semibold rounded-md transition-all ${orientation === 'horizontal' ? 'bg-primary text-slate-900 shadow-md font-bold' : 'text-slate-400 hover:text-slate-200'}`}>
-                                    {t('horizontal') || 'Horizontal'}
-                                </button>
-                            </div>
-                        </div>
                         
                     </div>
                   </Accordion>
