@@ -87,6 +87,7 @@
     "express": "^5.2.1",
     "googleapis": "^171.4.0",
     "konva": "^10.2.3",
+    "material-symbols": "^0.44.9",
     "node-machine-id": "^1.1.12",
     "pdf-parse": "^2.4.5",
     "react": "^19.2.0",
