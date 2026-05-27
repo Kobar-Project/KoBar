@@ -798,6 +798,48 @@ function stopWindowTracking() {
     mainWindow?.webContents.send('pinned-window-changed', null);
 }
 
+function resolvePhysicalPath(p: string): string {
+    if (process.windowsStore && isWin && p) {
+        try {
+            let packageFullName = '';
+            let current = process.execPath;
+            while (true) {
+                const parent = path.dirname(current);
+                if (!parent || parent === current) break;
+                if (path.basename(parent).toLowerCase() === 'windowsapps') {
+                    packageFullName = path.basename(current);
+                    break;
+                }
+                current = parent;
+            }
+            if (!packageFullName) {
+                packageFullName = path.basename(path.dirname(process.execPath));
+            }
+            const match = packageFullName.match(/^([a-zA-Z0-9.-]+)_(\d+(?:\.\d+)+)_(?:.*_)?([a-zA-Z0-9]{13})$/);
+            if (match) {
+                const name = match[1];
+                const publisherId = match[3];
+                const packageFamilyName = `${name}_${publisherId}`;
+                const localAppData = process.env.LOCALAPPDATA;
+                if (localAppData) {
+                    const appDataRoaming = process.env.APPDATA || path.join(process.env.USERPROFILE || '', 'AppData', 'Roaming');
+                    const relativePath = path.relative(appDataRoaming, p);
+                    if (!relativePath.startsWith('..') && !path.isAbsolute(relativePath)) {
+                        return path.join(localAppData, 'Packages', packageFamilyName, 'LocalCache', 'Roaming', relativePath);
+                    }
+                    const relativeLocalPath = path.relative(localAppData, p);
+                    if (!relativeLocalPath.startsWith('..') && !path.isAbsolute(relativeLocalPath) && !relativeLocalPath.startsWith('Packages')) {
+                        return path.join(localAppData, 'Packages', packageFamilyName, 'LocalState', relativeLocalPath);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Failed to resolve physical path for AppX container:', err);
+        }
+    }
+    return p;
+}
+
 const koBoxPath = path.join(app.getPath('userData'), 'KoBox');
 
 function cleanKoBox(mode: '24h' | 'quit') {
@@ -842,7 +884,8 @@ ipcMain.on('kobox-open', () => {
     if (!fs.existsSync(koBoxPath)) {
         fs.mkdirSync(koBoxPath, { recursive: true });
     }
-    shell.openPath(koBoxPath);
+    const targetPath = resolvePhysicalPath(koBoxPath);
+    shell.openPath(targetPath);
 });
 ipcMain.on('kobox-clean', (event, mode: '24h' | 'quit') => cleanKoBox(mode));
 
