@@ -9,11 +9,12 @@ const ShortcutsPopup: React.FC = () => {
     const design = useAppStore(state => state.design);
     const isMac = useAppStore(state => state.isMac);
     const glassOpacity = useAppStore(state => state.glassOpacity);
+    const iconScale = useAppStore(state => state.iconScale);
     const pinnedApps = useAppStore(state => state.pinnedApps);
-    const maxShortcuts = useAppStore(state => state.maxShortcuts);
     const pinApp = useAppStore(state => state.pinApp);
     const unpinApp = useAppStore(state => state.unpinApp);
     const reorderPinnedApps = useAppStore(state => state.reorderPinnedApps);
+    const updateAppTag = useAppStore(state => state.updateAppTag);
     const t = useAppStore(state => state.t);
     const screenBounds = useAppStore(state => state.screenBounds);
     const isSmartPositioning = useAppStore(state => state.isPopupSmartPositioning);
@@ -22,6 +23,8 @@ const ShortcutsPopup: React.FC = () => {
 
     const popupRef = useRef<HTMLDivElement>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [editingTagId, setEditingTagId] = useState<string | null>(null);
+    const [tagInputVal, setTagInputVal] = useState('');
     const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
@@ -33,10 +36,7 @@ const ShortcutsPopup: React.FC = () => {
     const prevPositions = useRef<Record<string, { left: number; top: number }>>({});
 
     useLayoutEffect(() => {
-        const ids = [...pinnedApps.map(a => a.id)];
-        if (pinnedApps.length < maxShortcuts) {
-            ids.push('dropzone');
-        }
+        const ids = [...pinnedApps.map(a => a.id), 'dropzone'];
 
         for (const id of ids) {
             const domNode = itemRefs.current[id];
@@ -77,7 +77,7 @@ const ShortcutsPopup: React.FC = () => {
             }
         }
         prevPositions.current = newPositions;
-    }, [pinnedApps, maxShortcuts]);
+    }, [pinnedApps]);
 
     const handleDragStart = (e: React.DragEvent, index: number) => {
         setDraggedItemIndex(index);
@@ -112,7 +112,7 @@ const ShortcutsPopup: React.FC = () => {
         if (!shortcutsAnchorRect) return { display: 'none' };
         
         const popupHeight = 220; // Expected approximate height
-        const popupWidth = 260; // w-[260px]
+        const popupWidth = 320; // w-[320px]
         const screenHeight = screenBounds?.height ?? 800;
         const screenWidth = screenBounds?.width ?? 1200;
         const offsetTop = sidebarPosition ? sidebarPosition.y : 0;
@@ -189,7 +189,7 @@ const ShortcutsPopup: React.FC = () => {
             const newX = e.detail.x;
             const newY = e.detail.y;
             const popupHeight = 220;
-            const popupWidth = 260;
+            const popupWidth = 320;
             
             const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
             const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
@@ -222,7 +222,7 @@ const ShortcutsPopup: React.FC = () => {
             // Internal drag, do nothing since handleDragEnter has already reordered it dynamically
             return;
         }
-        if (pinnedApps.length >= maxShortcuts) return;
+        // Limit removed
 
         let filePath = '';
         let name = '';
@@ -267,7 +267,7 @@ const ShortcutsPopup: React.FC = () => {
                     name = parsedUrl.hostname.replace('www.', '');
                     if (!name) name = parsedUrl.pathname.split('/').filter(Boolean).pop() || filePath;
                 }
-                iconDataUrl = `https://www.google.com/s2/favicons?sz=64&domain=${parsedUrl.hostname}`;
+                iconDataUrl = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(filePath)}&size=64`;
             } catch (err) {
                 if (!name || name.trim() === '') name = filePath;
             }
@@ -281,7 +281,7 @@ const ShortcutsPopup: React.FC = () => {
     return (
         <div
             ref={popupRef}
-            className="w-[260px] border shadow-2xl pointer-events-auto animate-in fade-in zoom-in duration-200 overflow-hidden flex flex-col rounded-xl"
+            className="w-[320px] border shadow-2xl pointer-events-auto animate-in fade-in zoom-in duration-200 overflow-hidden flex flex-col rounded-xl"
             style={getPopupStyle()}
         >
             <div className="flex justify-between items-center p-4 pb-3">
@@ -297,11 +297,11 @@ const ShortcutsPopup: React.FC = () => {
             </div>
 
             <div 
-                className="flex-1 p-4 grid grid-cols-3 gap-3 justify-items-center max-h-80 overflow-y-auto custom-scrollbar"
+                className="flex-1 p-4 flex flex-wrap gap-3 justify-center content-start max-h-80 overflow-y-auto custom-scrollbar"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
             >
-                {pinnedApps.slice(0, maxShortcuts).map((app, index) => {
+                {pinnedApps.map((app, index) => {
                     const isWebUrlIcon = app.icon && (app.icon.startsWith('http://') || app.icon.startsWith('https://'));
                     const isGenericOrEmpty = failedImageIds[app.id] || (!isWebUrlIcon && (!app.icon || app.icon === '' || app.icon.length < 3000));
                     let finalName = app.name;
@@ -332,64 +332,122 @@ const ShortcutsPopup: React.FC = () => {
                                 }
                             }}
                             onMouseUp={() => setDragEnabled(false)}
-                            className={`shortcut-card relative w-16 h-16 animate-in fade-in slide-in-from-top-2 duration-300 transition-all ${
+                            className={`shortcut-card group relative animate-in fade-in slide-in-from-top-2 duration-300 transition-all ${
                                 draggedItemIndex === index ? 'opacity-40 scale-95 border-dashed border-2 border-primary/50 rounded-xl' : ''
                             }`}
+                            style={{ width: 64 * iconScale, height: 64 * iconScale }}
                         >
-                            <TooltipButton
-                                label={app.name}
-                                className={`w-full h-full rounded-xl border flex items-center justify-center overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-lg cursor-pointer
-                                    ${design === 'style2' ? 'bg-transparent' : 'bg-[#1e1b17]'}`}
-                                style={{ borderColor: design === 'style2' ? 'rgba(255,255,255,0.1)' : 'var(--theme-border)' }}
-                                onMouseDown={(e) => {
-                                    if (e.shiftKey) return;
-                                    deleteTimeoutRef.current = setTimeout(() => setDeletingId(app.id), 600);
-                                }}
-                                onMouseUp={() => { if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current); }}
-                                onMouseLeave={() => { if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current); }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (e.shiftKey) return;
-                                    if (deletingId !== app.id && app.path) window.api?.launchFile(app.path);
-                                }}
-                            >
-                                {isGenericOrEmpty ? (
-                                    <div className="w-full h-full flex items-center justify-center font-bold text-xs text-primary/70">{appInitials}</div>
-                                ) : (
-                                    <img 
-                                        src={app.icon} 
-                                        className="w-full h-full object-contain p-3" 
-                                        alt={app.name} 
-                                        draggable={false} 
-                                        onError={() => setFailedImageIds(prev => ({ ...prev, [app.id]: true }))}
+                            {editingTagId === app.id ? (
+                                <div 
+                                    className={`w-full h-full rounded-xl border flex flex-col items-center justify-center bg-[#1e1b17] border-primary`} 
+                                    style={{ borderColor: 'var(--theme-primary)', padding: `${4 * iconScale}px` }}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                >
+                                    <input
+                                        type="text"
+                                        value={tagInputVal}
+                                        onChange={(e) => setTagInputVal(e.target.value)}
+                                        placeholder="Tag..."
+                                        maxLength={10}
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                updateAppTag(app.id, tagInputVal);
+                                                setEditingTagId(null);
+                                            } else if (e.key === 'Escape') {
+                                                setEditingTagId(null);
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            updateAppTag(app.id, tagInputVal);
+                                            setEditingTagId(null);
+                                        }}
+                                        className="w-full bg-white/5 border border-white/10 rounded text-center text-white focus:outline-none focus:border-primary no-drag-region"
+                                        style={{ fontSize: `${Math.max(8, 10 * iconScale)}px`, padding: `${2 * iconScale}px ${4 * iconScale}px` }}
                                     />
-                                )}
-                            </TooltipButton>
+                                    <span className="text-slate-500 mt-1 pointer-events-none" style={{ fontSize: `${Math.max(6, 7 * iconScale)}px` }}>Enter to save</span>
+                                </div>
+                            ) : (
+                                <TooltipButton
+                                    label={app.tag ? `[${app.tag}] ${app.name}` : app.name}
+                                    className={`w-full h-full rounded-xl border flex items-center justify-center overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-lg cursor-pointer
+                                        ${design === 'style2' ? 'bg-transparent' : 'bg-[#1e1b17]'}`}
+                                    style={{ borderColor: design === 'style2' ? 'rgba(255,255,255,0.1)' : 'var(--theme-border)' }}
+                                    onMouseDown={(e) => {
+                                        if (e.shiftKey) return;
+                                        deleteTimeoutRef.current = setTimeout(() => setDeletingId(app.id), 600);
+                                    }}
+                                    onMouseUp={() => { if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current); }}
+                                    onMouseLeave={() => { if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current); }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (e.shiftKey) return;
+                                        if (deletingId !== app.id && app.path) window.api?.launchFile(app.path);
+                                    }}
+                                >
+                                    {isGenericOrEmpty ? (
+                                        <div className="w-full h-full flex items-center justify-center font-bold text-primary/70" style={{ fontSize: `${Math.max(10, 12 * iconScale)}px` }}>{appInitials}</div>
+                                    ) : (
+                                        <img 
+                                            src={app.icon} 
+                                            className="w-full h-full object-contain" 
+                                            style={{ padding: `${12 * iconScale}px` }}
+                                            alt={app.name} 
+                                            draggable={false} 
+                                            onError={() => setFailedImageIds(prev => ({ ...prev, [app.id]: true }))}
+                                        />
+                                    )}
+
+                                </TooltipButton>
+                            )}
+
+                            {editingTagId !== app.id && app.tag && (
+                                <span className="absolute bottom-0 right-0 font-bold rounded-tl-lg rounded-br-xl uppercase tracking-wider pointer-events-none select-none z-20 transition-all duration-300 group-hover:scale-120 group-active:scale-95" style={{ backgroundColor: 'var(--theme-primary)', fontSize: `${Math.max(6, 8 * iconScale)}px`, padding: `${2 * iconScale}px ${4 * iconScale}px` }}>
+                                    {app.tag}
+                                </span>
+                            )}
 
                             {deletingId === app.id && (
-                                <button
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => { e.stopPropagation(); unpinApp(app.id); setDeletingId(null); }}
-                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white flex items-center justify-center shadow-lg hover:bg-red-600 z-10 cursor-pointer"
-                                >
-                                    <span className="material-symbols-outlined text-[12px]">close</span>
-                                </button>
+                                <>
+                                    {/* Delete Button */}
+                                    <button
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => { e.stopPropagation(); unpinApp(app.id); setDeletingId(null); }}
+                                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white flex items-center justify-center shadow-lg hover:bg-red-600 z-10 cursor-pointer"
+                                        title="Delete Shortcut"
+                                    >
+                                        <span className="material-symbols-outlined text-[12px]">close</span>
+                                    </button>
+                                    
+                                    {/* Tag Button */}
+                                    <button
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            setEditingTagId(app.id); 
+                                            setTagInputVal(app.tag || '');
+                                            setDeletingId(null); 
+                                        }}
+                                        className="absolute -top-1 -left-1 w-5 h-5 bg-black/60 hover:bg-black/80 text-slate-300 hover:text-white rounded-full border border-white/10 flex items-center justify-center shadow-lg z-10 cursor-pointer transition-colors"
+                                        title="Edit Tag"
+                                    >
+                                        <span className="material-symbols-outlined text-[12px]">label</span>
+                                    </button>
+                                </>
                             )}
                         </div>
                     );
                 })}
 
-                {pinnedApps.length < maxShortcuts && (
-                    <div
-                        ref={el => { itemRefs.current['dropzone'] = el; }}
-                        className="w-16 h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-slate-500 hover:text-primary hover:border-primary transition-all cursor-default bg-white/5 p-1"
-                        style={{ borderColor: 'var(--theme-border)' }}
-                    >
-                        <span className="text-[10px] font-bold text-center leading-tight pointer-events-none">
-                            Drop an URL or file address
-                        </span>
-                    </div>
-                )}
+                <div
+                    ref={el => { itemRefs.current['dropzone'] = el; }}
+                    className="rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-slate-500 hover:text-primary hover:border-primary transition-all cursor-default bg-white/5 p-1"
+                    style={{ borderColor: 'var(--theme-border)', width: 64 * iconScale, height: 64 * iconScale }}
+                >
+                    <span className="font-bold text-center leading-tight pointer-events-none" style={{ fontSize: `${Math.max(8, 10 * iconScale)}px` }}>
+                        Drop an URL or file address
+                    </span>
+                </div>
             </div>
         </div>
     );

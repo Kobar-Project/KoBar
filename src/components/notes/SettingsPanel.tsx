@@ -96,8 +96,6 @@ const SettingsPanel: React.FC = () => {
     const setLaunchAtStartup = useAppStore(state => state.setLaunchAtStartup);
     const isShortcutsEnabled = useAppStore(state => state.isShortcutsEnabled);
     const setIsShortcutsEnabled = useAppStore(state => state.setIsShortcutsEnabled);
-    const maxShortcuts = useAppStore(state => state.maxShortcuts);
-    const setMaxShortcuts = useAppStore(state => state.setMaxShortcuts);
     const isCopyPasteEnabled = useAppStore(state => state.isCopyPasteEnabled);
     const setIsCopyPasteEnabled = useAppStore(state => state.setIsCopyPasteEnabled);
     const isScreenshotEnabled = useAppStore(state => state.isScreenshotEnabled);
@@ -380,12 +378,7 @@ const SettingsPanel: React.FC = () => {
         }
     };
     
-    const handleMaxShortcutsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseInt(e.target.value, 10);
-        if (!isNaN(val)) {
-            setMaxShortcuts(Math.min(6, Math.max(1, val)));
-        }
-    };
+    // maxShortcuts handler removed
 
     const handleToggleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = parseInt(e.target.value, 10);
@@ -490,17 +483,10 @@ const SettingsPanel: React.FC = () => {
         switch (id) {
             case 'shortcuts':
                 return (
-                    <div className="flex flex-col gap-3">
-                        <div className="flex justify-between items-center">
-                            <label className="text-sm text-slate-400 font-medium">{t('maxShortcuts')}</label>
-                            <span className="text-lg font-bold text-primary">{maxShortcuts}</span>
-                        </div>
-                        <input type="range" min="1" max="6" value={maxShortcuts} onChange={handleMaxShortcutsChange}
-                            onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
-                            onDragStart={(e) => e.stopPropagation()} draggable={false}
-                            className={`w-full h-2 rounded-lg appearance-none cursor-pointer mt-1 no-drag-region ${design === 'style2' ? 'bg-white/10' : 'bg-slate-700'}`}
-                            style={{ accentColor: 'var(--theme-primary)' }}
-                        />
+                    <div className="text-sm text-slate-400">
+                        {language === 'tr' 
+                            ? 'Kısayollar menüsüne sürükleyip bırakarak favori uygulamalarınızı, klasörlerinizi veya web bağlantılarınızı ekleyebilirsiniz. Kısayol ekleme sınırı yoktur.' 
+                            : 'Drag and drop files, folders, apps, or links into the shortcut menu for instant access. There is no limit to how many shortcuts you can pin.'}
                     </div>
                 );
             case 'copypaste':
@@ -694,24 +680,10 @@ const SettingsPanel: React.FC = () => {
                         defaultOpen={false}
                         masterToggle={{ isOn: isShortcutsEnabled, onToggle: () => setIsShortcutsEnabled(!isShortcutsEnabled) }}
                     >
-                        <div className="flex flex-col gap-3">
-                            <div className="flex justify-between items-center">
-                                <label className="text-sm text-slate-400 font-medium">{t('maxShortcuts')}</label>
-                                <span className="text-lg font-bold text-primary">{maxShortcuts}</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="1"
-                                max="6"
-                                value={maxShortcuts}
-                                onChange={handleMaxShortcutsChange}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onTouchStart={(e) => e.stopPropagation()}
-                                onDragStart={(e) => e.stopPropagation()}
-                                draggable={false}
-                                className={`w-full h-2 rounded-lg appearance-none cursor-pointer mt-1 no-drag-region ${design === 'style2' ? 'bg-white/10' : 'bg-slate-700'}`}
-                                style={{ accentColor: 'var(--theme-primary)' }}
-                            />
+                        <div className="text-sm text-slate-400 px-1">
+                            {language === 'tr' 
+                                ? 'Kısayollar menüsüne sürükleyip bırakarak favori uygulamalarınızı, klasörlerinizi veya web bağlantılarınızı ekleyebilirsiniz. Kısayol ekleme sınırı yoktur.' 
+                                : 'Drag and drop files, folders, apps, or links into the shortcut menu for instant access. There is no limit to how many shortcuts you can pin.'}
                         </div>
                     </Accordion>
                 );

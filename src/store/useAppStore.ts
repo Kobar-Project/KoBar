@@ -70,6 +70,7 @@ export interface PinnedApp {
     name: string;
     path: string;
     icon: string;
+    tag?: string;
 }
 
 export interface FocusSettings {
@@ -182,6 +183,7 @@ interface AppState {
     pinApp: (app: PinnedApp) => void;
     unpinApp: (id: string) => void;
     reorderPinnedApps: (startIndex: number, endIndex: number) => void;
+    updateAppTag: (id: string, tag: string | undefined) => void;
     // Theme
     theme: ThemeName;
     setTheme: (theme: ThemeName) => void;
@@ -489,10 +491,9 @@ export const useAppStore = create<AppState>()(
 
             // App Launcher State
             pinnedApps: [],
-            pinApp: (app) => set((state) => {
-                if (state.pinnedApps.length >= state.maxShortcuts) return state;
-                return { pinnedApps: [...state.pinnedApps, app] };
-            }),
+            pinApp: (app) => set((state) => ({
+                pinnedApps: [...state.pinnedApps, app]
+            })),
             unpinApp: (id) => set((state) => ({
                 pinnedApps: state.pinnedApps.filter((a) => a.id !== id),
             })),
@@ -502,6 +503,11 @@ export const useAppStore = create<AppState>()(
                 result.splice(endIndex, 0, removed);
                 return { pinnedApps: result };
             }),
+            updateAppTag: (id, tag) => set((state) => ({
+                pinnedApps: state.pinnedApps.map((a) =>
+                    a.id === id ? { ...a, tag: tag && tag.trim() !== '' ? tag.trim() : undefined } : a
+                ),
+            })),
 
             // Theme
             theme: 'midnight',

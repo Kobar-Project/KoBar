@@ -13,7 +13,6 @@ const Sidebar: React.FC = () => {
     const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
     const setMiniMode = useAppStore(state => state.setMiniMode);
     const isMiniMode = useAppStore(state => state.isMiniMode);
-    const pinnedApps = useAppStore(state => state.pinnedApps);
     const pinApp = useAppStore(state => state.pinApp);
     const t = useAppStore(state => state.t);
     const isShortcutsEnabled = useAppStore(state => state.isShortcutsEnabled);
@@ -68,7 +67,6 @@ const Sidebar: React.FC = () => {
     const isKoCalendarEnabled = useAppStore(state => state.isKoCalendarEnabled);
     const isKoCalendarOpen = useAppStore(state => state.isKoCalendarOpen);
 
-    const maxShortcuts = useAppStore(state => state.maxShortcuts);
     const featureOrder = useAppStore(state => state.featureOrder);
     const featureSpacing = useAppStore(state => state.featureSpacing);
 
@@ -598,7 +596,7 @@ const Sidebar: React.FC = () => {
                                             onDragOver={(e) => e.preventDefault()}
                                             onDrop={async (e: React.DragEvent) => {
                                                 e.preventDefault();
-                                                if (pinnedApps.length >= maxShortcuts) return;
+                                                // Limit removed
                                                 
                                                 let filePath = '';
                                                 let name = '';
@@ -644,7 +642,7 @@ const Sidebar: React.FC = () => {
                                                             name = parsedUrl.hostname.replace('www.', '');
                                                             if (!name) name = parsedUrl.pathname.split('/').filter(Boolean).pop() || filePath;
                                                         }
-                                                        iconDataUrl = `https://www.google.com/s2/favicons?sz=64&domain=${parsedUrl.hostname}`;
+                                                        iconDataUrl = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(filePath)}&size=64`;
                                                     } catch (err) {
                                                         if (!name || name.trim() === '') name = filePath;
                                                     }
