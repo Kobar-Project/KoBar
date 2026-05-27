@@ -9,6 +9,7 @@ const ShortcutsPopup: React.FC = () => {
     const design = useAppStore(state => state.design);
     const isMac = useAppStore(state => state.isMac);
     const glassOpacity = useAppStore(state => state.glassOpacity);
+    const iconScale = useAppStore(state => state.iconScale);
     const pinnedApps = useAppStore(state => state.pinnedApps);
     const pinApp = useAppStore(state => state.pinApp);
     const unpinApp = useAppStore(state => state.unpinApp);
@@ -296,7 +297,7 @@ const ShortcutsPopup: React.FC = () => {
             </div>
 
             <div 
-                className="flex-1 p-4 grid grid-cols-4 gap-3 justify-items-center max-h-80 overflow-y-auto custom-scrollbar"
+                className="flex-1 p-4 flex flex-wrap gap-3 justify-center content-start max-h-80 overflow-y-auto custom-scrollbar"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
             >
@@ -331,14 +332,15 @@ const ShortcutsPopup: React.FC = () => {
                                 }
                             }}
                             onMouseUp={() => setDragEnabled(false)}
-                            className={`shortcut-card group relative w-16 h-16 animate-in fade-in slide-in-from-top-2 duration-300 transition-all ${
+                            className={`shortcut-card group relative animate-in fade-in slide-in-from-top-2 duration-300 transition-all ${
                                 draggedItemIndex === index ? 'opacity-40 scale-95 border-dashed border-2 border-primary/50 rounded-xl' : ''
                             }`}
+                            style={{ width: 64 * iconScale, height: 64 * iconScale }}
                         >
                             {editingTagId === app.id ? (
                                 <div 
-                                    className={`w-full h-full rounded-xl border flex flex-col items-center justify-center p-1 bg-[#1e1b17] border-primary`} 
-                                    style={{ borderColor: 'var(--theme-primary)' }}
+                                    className={`w-full h-full rounded-xl border flex flex-col items-center justify-center bg-[#1e1b17] border-primary`} 
+                                    style={{ borderColor: 'var(--theme-primary)', padding: `${4 * iconScale}px` }}
                                     onMouseDown={(e) => e.stopPropagation()}
                                 >
                                     <input
@@ -360,9 +362,10 @@ const ShortcutsPopup: React.FC = () => {
                                             updateAppTag(app.id, tagInputVal);
                                             setEditingTagId(null);
                                         }}
-                                        className="w-full text-[10px] bg-white/5 border border-white/10 rounded px-1 py-0.5 text-center text-white focus:outline-none focus:border-primary no-drag-region"
+                                        className="w-full bg-white/5 border border-white/10 rounded text-center text-white focus:outline-none focus:border-primary no-drag-region"
+                                        style={{ fontSize: `${Math.max(8, 10 * iconScale)}px`, padding: `${2 * iconScale}px ${4 * iconScale}px` }}
                                     />
-                                    <span className="text-[7px] text-slate-500 mt-1 pointer-events-none">Enter to save</span>
+                                    <span className="text-slate-500 mt-1 pointer-events-none" style={{ fontSize: `${Math.max(6, 7 * iconScale)}px` }}>Enter to save</span>
                                 </div>
                             ) : (
                                 <TooltipButton
@@ -383,11 +386,12 @@ const ShortcutsPopup: React.FC = () => {
                                     }}
                                 >
                                     {isGenericOrEmpty ? (
-                                        <div className="w-full h-full flex items-center justify-center font-bold text-xs text-primary/70">{appInitials}</div>
+                                        <div className="w-full h-full flex items-center justify-center font-bold text-primary/70" style={{ fontSize: `${Math.max(10, 12 * iconScale)}px` }}>{appInitials}</div>
                                     ) : (
                                         <img 
                                             src={app.icon} 
-                                            className="w-full h-full object-contain p-3" 
+                                            className="w-full h-full object-contain" 
+                                            style={{ padding: `${12 * iconScale}px` }}
                                             alt={app.name} 
                                             draggable={false} 
                                             onError={() => setFailedImageIds(prev => ({ ...prev, [app.id]: true }))}
@@ -398,7 +402,7 @@ const ShortcutsPopup: React.FC = () => {
                             )}
 
                             {editingTagId !== app.id && app.tag && (
-                                <span className="absolute bottom-0 right-0 px-1 py-0.5 text-slate-900 text-[8px] font-bold rounded-tl-lg rounded-br-xl uppercase tracking-wider pointer-events-none select-none z-20 transition-all duration-300 group-hover:scale-120 group-active:scale-95" style={{ backgroundColor: 'var(--theme-primary)' }}>
+                                <span className="absolute bottom-0 right-0 font-bold rounded-tl-lg rounded-br-xl uppercase tracking-wider pointer-events-none select-none z-20 transition-all duration-300 group-hover:scale-120 group-active:scale-95" style={{ backgroundColor: 'var(--theme-primary)', fontSize: `${Math.max(6, 8 * iconScale)}px`, padding: `${2 * iconScale}px ${4 * iconScale}px` }}>
                                     {app.tag}
                                 </span>
                             )}
@@ -437,10 +441,10 @@ const ShortcutsPopup: React.FC = () => {
 
                 <div
                     ref={el => { itemRefs.current['dropzone'] = el; }}
-                    className="w-16 h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-slate-500 hover:text-primary hover:border-primary transition-all cursor-default bg-white/5 p-1"
-                    style={{ borderColor: 'var(--theme-border)' }}
+                    className="rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-slate-500 hover:text-primary hover:border-primary transition-all cursor-default bg-white/5 p-1"
+                    style={{ borderColor: 'var(--theme-border)', width: 64 * iconScale, height: 64 * iconScale }}
                 >
-                    <span className="text-[10px] font-bold text-center leading-tight pointer-events-none">
+                    <span className="font-bold text-center leading-tight pointer-events-none" style={{ fontSize: `${Math.max(8, 10 * iconScale)}px` }}>
                         Drop an URL or file address
                     </span>
                 </div>
