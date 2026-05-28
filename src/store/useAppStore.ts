@@ -62,6 +62,8 @@ export interface Note {
     icon: string;
     emoji: string | null;
     content: string;
+    editorType: 'tiptap' | 'editorjs';
+    editorjsData?: string;
     isSettings?: boolean;
 }
 
@@ -175,9 +177,13 @@ interface AppState {
     addNote: () => void;
     deleteNote: (id: number) => void;
     updateNoteContent: (id: number, content: string) => void;
+    updateNoteEditorjsData: (id: number, data: string) => void;
     updateNoteTitle: (id: number, title: string) => void;
     updateNoteEmoji: (id: number, emoji: string) => void;
     openSettingsTab: () => void;
+    // Note Editor Engine Preference
+    preferredNoteEditor: 'tiptap' | 'editorjs';
+    setPreferredNoteEditor: (editor: 'tiptap' | 'editorjs') => void;
     // App Launcher
     pinnedApps: PinnedApp[];
     pinApp: (app: PinnedApp) => void;
@@ -420,6 +426,7 @@ const defaultNotes: Note[] = [
         title: 'Welcome to KoBar!',
         icon: 'waving_hand',
         emoji: '👋',
+        editorType: 'tiptap',
         content: `
 <p><strong>Your modular, always-on-top desktop utility sidebar.</strong></p>
 <p>A multi-threaded creative assistant that lives on the edge of your screen.</p>
@@ -852,6 +859,9 @@ export const useAppStore = create<AppState>()(
             activeNoteId: 1,
             nextNoteId: 2,
             setActiveNoteId: (id) => set({ activeNoteId: id }),
+            // Note Editor Engine Preference
+            preferredNoteEditor: 'tiptap',
+            setPreferredNoteEditor: (editor) => set({ preferredNoteEditor: editor }),
             addNote: () => set((state) => {
                 const newNote: Note = {
                     id: state.nextNoteId,
@@ -859,6 +869,7 @@ export const useAppStore = create<AppState>()(
                     icon: 'note',
                     emoji: null,
                     content: '',
+                    editorType: state.preferredNoteEditor,
                 };
                 return {
                     notes: [...state.notes, newNote],
@@ -876,6 +887,9 @@ export const useAppStore = create<AppState>()(
             }),
             updateNoteContent: (id, content) => set((state) => ({
                 notes: state.notes.map(n => n.id === id ? { ...n, content } : n),
+            })),
+            updateNoteEditorjsData: (id, data) => set((state) => ({
+                notes: state.notes.map(n => n.id === id ? { ...n, editorjsData: data } : n),
             })),
             updateNoteTitle: (id, title) => set((state) => ({
                 notes: state.notes.map(n => n.id === id ? { ...n, title } : n),
@@ -895,6 +909,7 @@ export const useAppStore = create<AppState>()(
                         icon: 'settings',
                         emoji: null,
                         content: '',
+                        editorType: 'tiptap',
                         isSettings: true,
                     };
                     nextNotes = [...state.notes, settingsNote];
@@ -1080,7 +1095,7 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'kobar-storage',
-            version: 18,
+            version: 19,
             migrate: (persistedState: any, version: number) => {
                 // version 18 migration for orientation
                 if (version <= 17) {
@@ -1252,6 +1267,20 @@ export const useAppStore = create<AppState>()(
                     }
                 }
 
+                // version 19 migration for Editor.js support
+                if (version <= 18) {
+                    // Add editorType to all existing notes that lack it
+                    if (persistedState.notes) {
+                        persistedState.notes = persistedState.notes.map((n: any) => ({
+                            ...n,
+                            editorType: n.editorType || 'tiptap',
+                        }));
+                    }
+                    if (persistedState.preferredNoteEditor === undefined) {
+                        persistedState.preferredNoteEditor = 'tiptap';
+                    }
+                }
+
                 return persistedState;
             },
             partialize: (state) => ({
@@ -1305,6 +1334,7 @@ export const useAppStore = create<AppState>()(
                 settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
                 orientation: state.orientation,
                 edgePosition: state.edgePosition,
+                preferredNoteEditor: state.preferredNoteEditor,
             }),
             onRehydrateStorage: (_) => {
                 console.log('[Store] Hydration starting...');
