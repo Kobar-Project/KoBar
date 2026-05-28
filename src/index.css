@@ -344,6 +344,10 @@ body {
 }
 
 /* Base Popovers and Toolbars */
+.ce-toolbar {
+    z-index: 9999 !important;
+}
+
 .ce-inline-toolbar,
 .ce-conversion-toolbar,
 .ce-settings,
@@ -355,6 +359,7 @@ body {
     color: #cbd5e1 !important;
     -webkit-app-region: no-drag !important;
     pointer-events: auto !important;
+    z-index: 9999 !important;
 }
 
 /* Popover Search/Filter */
@@ -410,6 +415,15 @@ body {
 /* Hide native plus button */
 .ce-toolbar__plus {
     display: none !important;
+}
+
+/* Custom plus trigger button hover */
+.editorjs-plus-trigger-btn {
+    transition: transform 0.1s ease, background-color 0.1s ease;
+}
+.editorjs-plus-trigger-btn:hover {
+    background-color: var(--theme-bg-base) !important;
+    transform: scale(1.15);
 }
 
 /* Block Selection (prevent white left border) */

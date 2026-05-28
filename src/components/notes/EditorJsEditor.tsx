@@ -13,11 +13,7 @@ import { validateEditorJsData } from './editorConverters';
 import type { EditorJsOutputData } from './editorConverters';
 import BlockInsertionPanel from './BlockInsertionPanel';
 
-interface PlusTrigger {
-    x: number;
-    y: number;
-    blockIndex: number;
-}
+
 
 const EditorJsEditor: React.FC = React.memo(() => {
     const activeNoteId = useAppStore((state) => state.activeNoteId);
@@ -37,7 +33,20 @@ const EditorJsEditor: React.FC = React.memo(() => {
     // Block insertion panel state
     const [showInsertPanel, setShowInsertPanel] = useState(false);
     const [insertPanelPos, setInsertPanelPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-    const [plusTrigger, setPlusTrigger] = useState<PlusTrigger | null>(null);
+    // Ref-based plus button management (avoids re-renders that cause flickering)
+    const plusBtnRef = useRef<HTMLButtonElement>(null);
+    const plusBlockIndexRef = useRef<number | null>(null);
+    const lastHoveredBlockRef = useRef<Element | null>(null);
+    const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Helper: hide plus button via direct DOM manipulation (no state → no re-render)
+    const hidePlusButton = useCallback(() => {
+        const btn = plusBtnRef.current;
+        if (!btn) return;
+        btn.style.display = 'none';
+        plusBlockIndexRef.current = null;
+        lastHoveredBlockRef.current = null;
+    }, []);
     const [slashBlockIndex, setSlashBlockIndex] = useState<number | null>(null);
 
     // Parse stored Editor.js data for a note
@@ -268,74 +277,160 @@ const EditorJsEditor: React.FC = React.memo(() => {
         return () => holder.removeEventListener('keydown', handleKeyDown);
     }, [showInsertPanel]);
 
-    // Update plus trigger position on mouse move over blocks
+    // Update plus trigger position on mouse move over blocks (ref-based — zero re-renders)
     useEffect(() => {
         const holder = holderRef.current;
+        const container = containerRef.current;
         if (!holder) return;
 
         const handleMouseMove = (e: MouseEvent) => {
             if (showInsertPanel) return; // Don't show + while panel is open
-            
+
             const target = e.target as HTMLElement;
-            const blockEl = target.closest?.('.ce-block');
-            
+
+            // If hovering the plus button itself, skip processing
+            if (target.closest('.editorjs-plus-trigger-btn')) return;
+
+            const blockEl = target.closest('.ce-block');
+
             if (!blockEl) {
-                setPlusTrigger(null);
+                if (lastHoveredBlockRef.current !== null) {
+                    lastHoveredBlockRef.current = null;
+                    hidePlusButton();
+                }
                 return;
             }
+
+            // Same block as before → skip recalculation entirely
+            if (blockEl === lastHoveredBlockRef.current) return;
 
             // Check if this block is empty
             const contentEl = blockEl.querySelector('.ce-paragraph, [contenteditable]');
             const textContent = contentEl?.textContent || '';
-            
+
             if (textContent.trim() !== '') {
-                setPlusTrigger(null);
+                if (lastHoveredBlockRef.current !== null) {
+                    lastHoveredBlockRef.current = null;
+                    hidePlusButton();
+                }
                 return;
             }
 
-            const rect = blockEl.getBoundingClientRect();
+            lastHoveredBlockRef.current = blockEl;
+
+            // Cancel any pending hide from mouseleave
+            if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current);
+                hideTimeoutRef.current = null;
+            }
+
+            // Find block index
             const allBlocks = holder.querySelectorAll('.ce-block');
             let blockIndex = 0;
             allBlocks.forEach((b, i) => { if (b === blockEl) blockIndex = i; });
 
-            setPlusTrigger({
-                x: rect.left + 4, // Shifted to right to avoid overlap with native drag handle
-                y: rect.top + rect.height / 2 - 12,
-                blockIndex,
-            });
+            // Position the button directly via DOM — no setState, no re-render
+            const rect = blockEl.getBoundingClientRect();
+            const btn = plusBtnRef.current;
+            if (btn) {
+                btn.style.left = `${rect.left + 4}px`;
+                btn.style.top = `${rect.top + rect.height / 2 - 12}px`;
+                btn.style.display = 'flex';
+            }
+            plusBlockIndexRef.current = blockIndex;
         };
 
-        const handleMouseLeave = () => {
-            setPlusTrigger(null);
+        const handleMouseLeave = (e: MouseEvent) => {
+            const relatedTarget = e.relatedTarget as HTMLElement | null;
+            // If mouse is moving to the plus button, don't hide
+            if (relatedTarget?.closest('.editorjs-plus-trigger-btn')) return;
+
+            // Small delay to prevent flicker during fast mouse movements
+            if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = setTimeout(() => {
+                lastHoveredBlockRef.current = null;
+                hidePlusButton();
+            }, 80);
+        };
+
+        // Hide plus button when container scrolls (stale position)
+        const handleScroll = () => {
+            hidePlusButton();
         };
 
         holder.addEventListener('mousemove', handleMouseMove);
         holder.addEventListener('mouseleave', handleMouseLeave);
+        if (container) {
+            container.addEventListener('scroll', handleScroll, { passive: true });
+        }
         return () => {
             holder.removeEventListener('mousemove', handleMouseMove);
             holder.removeEventListener('mouseleave', handleMouseLeave);
+            if (container) {
+                container.removeEventListener('scroll', handleScroll);
+            }
+            if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
         };
-    }, [showInsertPanel]);
+    }, [showInsertPanel, hidePlusButton]);
+
+    // Plus button mouse events — prevent hide when hovering the button itself
+    useEffect(() => {
+        const btn = plusBtnRef.current;
+        if (!btn) return;
+
+        const handleBtnEnter = () => {
+            // Cancel any pending hide from mouseleave
+            if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current);
+                hideTimeoutRef.current = null;
+            }
+        };
+
+        const handleBtnLeave = (e: MouseEvent) => {
+            const relatedTarget = e.relatedTarget as HTMLElement | null;
+            // If going back to the editor, let mousemove re-evaluate
+            if (relatedTarget?.closest('.editorjs-holder')) return;
+            hidePlusButton();
+        };
+
+        btn.addEventListener('mouseenter', handleBtnEnter);
+        btn.addEventListener('mouseleave', handleBtnLeave as EventListener);
+        return () => {
+            btn.removeEventListener('mouseenter', handleBtnEnter);
+            btn.removeEventListener('mouseleave', handleBtnLeave as EventListener);
+        };
+    }, [hidePlusButton]);
+
+    // Hide plus button when switching notes (stale position from previous note)
+    useEffect(() => {
+        hidePlusButton();
+    }, [activeNoteId, hidePlusButton]);
+
+    // Hide plus button when insert panel opens
+    useEffect(() => {
+        if (showInsertPanel) hidePlusButton();
+    }, [showInsertPanel, hidePlusButton]);
 
     // Handle plus button click
     const handlePlusClick = useCallback(() => {
-        if (!plusTrigger) return;
+        const blockIndex = plusBlockIndexRef.current;
+        if (blockIndex === null) return;
 
         const holder = holderRef.current;
         if (!holder) return;
 
-        const blockEl = holder.querySelectorAll('.ce-block')[plusTrigger.blockIndex];
+        const blockEl = holder.querySelectorAll('.ce-block')[blockIndex];
         if (!blockEl) return;
 
         const rect = blockEl.getBoundingClientRect();
-        setSlashBlockIndex(plusTrigger.blockIndex);
+        setSlashBlockIndex(blockIndex);
         setInsertPanelPos({
             x: rect.left,
             y: rect.bottom + 4,
         });
         setShowInsertPanel(true);
-        setPlusTrigger(null);
-    }, [plusTrigger]);
+        hidePlusButton();
+    }, [hidePlusButton]);
 
     // Handle block type selection from the insertion panel
     const handleBlockSelect = useCallback(async (blockType: string) => {
@@ -458,25 +553,23 @@ const EditorJsEditor: React.FC = React.memo(() => {
                 id={`editorjs-holder-${activeNoteId}`}
             />
 
-            {/* Plus trigger button (appears on empty block hover) */}
-            {plusTrigger && !showInsertPanel && createPortal(
+            {/* Plus trigger button — always mounted, visibility controlled via refs (prevents flickering) */}
+            {createPortal(
                 <button
+                    ref={plusBtnRef}
                     onClick={handlePlusClick}
                     className="editorjs-plus-trigger-btn fixed z-[200] no-drag-region pointer-events-auto"
                     style={{
-                        left: `${plusTrigger.x}px`,
-                        top: `${plusTrigger.y}px`,
+                        display: 'none',
                         width: '24px',
                         height: '24px',
                         borderRadius: '6px',
-                        display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
                         color: 'var(--theme-primary)',
                         background: 'var(--theme-bg-dark)',
                         border: '1px solid var(--theme-border)',
-                        transition: 'all 0.15s ease',
                     }}
                     title="Add block"
                 >
