@@ -209,4 +209,11 @@ contextBridge.exposeInMainWorld('api', {
     openExternal: (url: string) => ipcRenderer.send('open-external', url),
     getAppVersion: () => ipcRenderer.invoke('get-app-version') as Promise<string>,
     isDev: () => ipcRenderer.invoke('is-dev') as Promise<boolean>,
+
+    // Extensions API Support
+    getInstalledExtensions: () => ipcRenderer.invoke('get-installed-extensions'),
+    getAvailableExtensions: () => ipcRenderer.invoke('get-available-extensions'),
+    installExtension: (id: string) => ipcRenderer.invoke('install-extension', id),
+    uninstallExtension: (id: string) => ipcRenderer.invoke('uninstall-extension', id),
+    toggleExtensionEnabled: (id: string, enabled: boolean) => ipcRenderer.invoke('toggle-extension-enabled', id, enabled),
 });

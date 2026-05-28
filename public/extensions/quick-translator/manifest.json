@@ -1,0 +1,9 @@
+{
+  "id": "quick-translator",
+  "name": "Quick Translator",
+  "version": "1.0.0",
+  "description": "Instantly translate text between multiple languages with language swapping and clipboard copy.",
+  "icon": "translate",
+  "entry": "index.js",
+  "author": "KoBar Contributor"
+}
