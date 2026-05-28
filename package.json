@@ -5,6 +5,14 @@
   "description": "Modular utility sidebar for desktop. Your multi-threaded creative assistant.",
   "author": "Ekrem Edali",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kobar-Project/KoBar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Kobar-Project/KoBar/issues"
+  },
+  "homepage": "https://github.com/Kobar-Project/KoBar#readme",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
@@ -19,7 +27,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "eedali",
+        "owner": "Kobar-Project",
         "repo": "KoBar"
       }
     ],
@@ -39,6 +47,17 @@
       "target": [
         "appx"
       ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "category": "Utility",
+      "icon": "build/icon.png",
+      "maintainer": "Kobar Project <noreply@github.com>",
+      "artifactName": "KoBar.${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,

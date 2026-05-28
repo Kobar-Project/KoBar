@@ -12,11 +12,12 @@
 <p align="center">
   <a href="https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS"><img src="https://img.shields.io/badge/Microsoft%20Store-Download-blue?logo=microsoft&logoColor=white" alt="Microsoft Store" /></a>
   <img src="https://img.shields.io/badge/version-1.0.26-f4a125?style=flat" alt="Version" />
-  <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platform" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
 
 > 🍎 **macOS support is currently under active development.** Some features may be limited or unavailable on macOS.
+> 🐧 **Linux support is available for AppImage, DEB, and RPM builds.** Some OS-level integrations may be limited depending on the desktop environment.
 
 ---
 
@@ -217,13 +218,13 @@ KoBar/
 
 - **Node.js** ≥ 18
 - **npm** ≥ 9
-- **Windows 10/11**
+- **Windows 10/11**, **macOS**, or a modern **Linux** desktop environment
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/eedali/KoBar.git
+git clone https://github.com/Kobar-Project/KoBar.git
 cd KoBar
 
 # Install dependencies
@@ -248,9 +249,11 @@ This will:
 # Compile TypeScript & bundle for production
 npm run build
 
-# Package distributable (AppX for Microsoft Store, EXE for Standalone)
+# Package distributable for the current OS
 npm run kobar-build
 ```
+
+On Linux, `npm run kobar-build` creates AppImage, DEB, and RPM packages in `release/`. AppX packaging is skipped automatically outside Windows.
 
 ---
 
@@ -276,6 +279,7 @@ KoBar follows strict Electron security practices:
 | Windows | AppX | [Microsoft Store](https://apps.microsoft.com/store/detail/9P2KPFF3G9L9?cid=DevShareMCLPCS) |
 | Windows (Standalone) | EXE | [GitHub Releases](https://github.com/Kobar-Project/KoBar/releases) |
 | macOS | DMG / ZIP | [GitHub Releases](https://github.com/Kobar-Project/KoBar/releases) |
+| Linux | AppImage / DEB / RPM | [GitHub Releases](https://github.com/Kobar-Project/KoBar/releases) |
 
 ---
 

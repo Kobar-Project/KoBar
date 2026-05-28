@@ -78,6 +78,7 @@ declare global {
 
             // Platform
             getPlatform: () => string;
+            usesGhostWindow: () => boolean;
             sendNotification: (title: string, body: string) => void;
 
             // KoPlayer Media Controller

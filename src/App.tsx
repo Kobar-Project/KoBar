@@ -47,7 +47,7 @@ const App: React.FC = () => {
   const design = useAppStore(state => state.design);
   const sidebarWidth = useAppStore(state => state.sidebarWidth);
   const setPinnedWindowHwnd = useAppStore(state => state.setPinnedWindowHwnd);
-  const isMac = useAppStore(state => state.isMac);
+  const usesGhostWindow = useAppStore(state => state.usesGhostWindow);
   const orientation = useAppStore(state => state.orientation);
   const screenBounds = useAppStore(state => state.screenBounds);
 
@@ -185,9 +185,9 @@ const App: React.FC = () => {
       unsubs.push(window.api.onForceCenterMiniMode(() => {
         const screenBounds = useAppStore.getState().screenBounds;
         const visibleHeight = screenBounds?.height ?? 800;
-        const isMac = useAppStore.getState().isMac;
+        const usesGhostWindow = useAppStore.getState().usesGhostWindow;
         // Vertically center it inside the visible screen bounds (Y=0 is top of screen)
-        useAppStore.getState().setMiniMode(true, { x: isMac ? Math.floor(window.innerWidth / 2) : 3000, y: Math.floor(visibleHeight / 2) });
+        useAppStore.getState().setMiniMode(true, { x: usesGhostWindow ? 3000 : Math.floor(window.innerWidth / 2), y: Math.floor(visibleHeight / 2) });
       }));
     }
     if (window.api?.onOpenSettings) {
@@ -274,7 +274,7 @@ const App: React.FC = () => {
           ? 'items-start pt-[20px]' /* Free floating: default placement */
           : (orientation === 'horizontal'
               ? (edgePosition === 'top' ? 'items-start justify-center pt-0' : 'items-end justify-center pb-0')
-              : (isMac 
+              : (!usesGhostWindow
                   ? (edgePosition === 'left' ? 'items-start justify-start pt-[20px]' : 'items-start justify-end pt-[20px]')
                   : 'items-start justify-center pt-[20px]'))
       }`}>

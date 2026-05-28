@@ -137,6 +137,7 @@ contextBridge.exposeInMainWorld('api', {
 
     // OS Context
     getPlatform: () => process.platform,
+    usesGhostWindow: () => process.platform === 'win32',
     sendNotification: (title: string, body: string) => ipcRenderer.send('send-notification', { title, body }),
 
     // KoPlayer Media Controller

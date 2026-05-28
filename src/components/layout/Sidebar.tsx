@@ -28,6 +28,7 @@ const Sidebar: React.FC = () => {
     const isColorPickerOpen = useAppStore(state => state.isColorPickerOpen);
     const setColorPickerAnchorRect = useAppStore(state => state.setColorPickerAnchorRect);
     const isMac = useAppStore(state => state.isMac);
+    const usesGhostWindow = useAppStore(state => state.usesGhostWindow);
     
     // Todo List
     const isTodoListEnabled = useAppStore(state => state.isTodoListEnabled);
@@ -211,7 +212,7 @@ const Sidebar: React.FC = () => {
             const physicalCursorY = windowPosRef.current.y + mouseY;
 
             // Find if we crossed display boundary
-            if (localDisplaysRef.current && !isMac) {
+            if (localDisplaysRef.current && usesGhostWindow) {
                 const allDisplays = localDisplaysRef.current.allDisplays;
                 const activeDisplay = allDisplays.find(d => 
                     physicalCursorX >= d.bounds.x && physicalCursorX < (d.bounds.x + d.bounds.width) &&
@@ -268,7 +269,7 @@ const Sidebar: React.FC = () => {
             let activeScreenCenter = 0;
             let activeScreenCenterY = 0;
 
-            if (isMac) {
+            if (!usesGhostWindow) {
                 const visibleW = screenBounds?.width ?? window.innerWidth;
                 const visibleH = screenBounds?.height ?? window.innerHeight;
                 activeScreenCenter = visibleW / 2;
@@ -340,7 +341,7 @@ const Sidebar: React.FC = () => {
                 let pos = { x: sidebarDragRef.current.lastX, y: sidebarDragRef.current.lastY };
                 let displayBounds = null;
 
-                if (window.api?.recenterWindowOnWidget && !isMac) {
+                if (window.api?.recenterWindowOnWidget && usesGhostWindow) {
                     const result = await window.api.recenterWindowOnWidget(pos.x, pos.y, sidebarWidth, 20);
                     if (result) {
                         pos = { x: result.x, y: result.y };
@@ -355,7 +356,7 @@ const Sidebar: React.FC = () => {
                 let visibleTop = 0;
                 let visibleBottom = 0;
 
-                if (isMac) {
+                if (!usesGhostWindow) {
                     const visibleW = screenBounds?.width ?? window.innerWidth;
                     const visibleH = screenBounds?.height ?? window.innerHeight;
                     visibleLeft = 0;

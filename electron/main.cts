@@ -11,6 +11,8 @@ let smtcWorker: Worker | null = null;
 
 const isMac = process.platform === 'darwin';
 const isWin = process.platform === 'win32';
+const isLinux = process.platform === 'linux';
+const usesGhostWindow = isWin;
 const isDev = !app.isPackaged;
 
 if (isDev) {
@@ -19,6 +21,14 @@ if (isDev) {
 }
 
 const systemConfigPath = path.join(app.getPath('userData'), 'kobar-system.json');
+
+function getAlwaysOnTopLevel(): 'floating' | 'screen-saver' {
+    return isWin ? 'screen-saver' : 'floating';
+}
+
+function keepWindowOnTop(win: BrowserWindow | null = mainWindow, relativeLevel = 1) {
+    win?.setAlwaysOnTop(true, getAlwaysOnTopLevel(), relativeLevel);
+}
 
 // GPU is MANDATORY for transparent windows in modern Electron.
 // Any attempt to disable it results in an invisible (black) window.
@@ -137,11 +147,11 @@ function createWindow() {
 
     // Mac: use `bounds` (full screen incl. menu bar + Dock area) instead of `workArea`.
     // This prevents macOS from clipping the transparent window at the Dock boundary.
-    const macScreen = isMac ? primary.bounds : primary.workArea;
-    const winWidth = isWin ? 6000 : macScreen.width;
-    const winHeight = isWin ? 4000 : macScreen.height;
-    const winX = isWin ? x : macScreen.x;
-    const winY = isWin ? y : macScreen.y;
+    const screenArea = isMac ? primary.bounds : primary.workArea;
+    const winWidth = usesGhostWindow ? 6000 : screenArea.width;
+    const winHeight = usesGhostWindow ? 4000 : screenArea.height;
+    const winX = usesGhostWindow ? x : screenArea.x;
+    const winY = usesGhostWindow ? y : screenArea.y;
 
     mainWindow = new BrowserWindow({
         x: winX,
@@ -155,10 +165,10 @@ function createWindow() {
         backgroundColor: '#00000000', // Explicit transparent alpha channel to fix Windows DWM occlusion blurring
         alwaysOnTop: true,
         skipTaskbar: true,
-        type: (isWin ? 'toolbar' : 'panel') as 'toolbar', // Win: toolbar (DWM throttle fix) | Mac: panel (NSPanel, floats above Dock)
+        type: (isWin ? 'toolbar' : (isMac ? 'panel' : undefined)) as any, // Win: toolbar (DWM throttle fix) | Mac: panel (NSPanel, floats above Dock)
         resizable: false,
         maximizable: false,
-        enableLargerThanScreen: isWin,
+        enableLargerThanScreen: usesGhostWindow,
         hasShadow: isMac ? false : true, // Mac: prevent native shadow being cast on invisible transparent divs (ghost stroke)
         icon: path.join(__dirname, '../build/icon.png'),
         webPreferences: {
@@ -172,16 +182,16 @@ function createWindow() {
         mainWindow.setMinimumSize(6000, 4000);
         mainWindow.setMaximumSize(12000, 12000);
         mainWindow.setSize(6000, 4000);
-    } else if (isMac) {
+    } else if (!usesGhostWindow) {
         mainWindow.setMinimumSize(winWidth, winHeight);
         mainWindow.setSize(winWidth, winHeight);
     }
     // Win: screen-saver (highest DWM level) | Mac: floating (above Dock, below TCC prompts)
-    mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+    keepWindowOnTop(mainWindow);
     if (isMac) {
         // Ensure KoBar stays above Dock, Mission Control overlays, and full-screen apps on macOS
         mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-        mainWindow.setAlwaysOnTop(true, 'floating', 1); // re-enforce after workspace registration
+        keepWindowOnTop(mainWindow); // re-enforce after workspace registration
     }
     mainWindow.setIgnoreMouseEvents(true, { forward: true });
 
@@ -205,11 +215,11 @@ function createWindow() {
             if (!isHidden) {
                 mainWindow.show();
             }
-            mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+            keepWindowOnTop(mainWindow);
             if (isMac) {
                 // Re-enforce workspace visibility after window is fully loaded
                 mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-                mainWindow.setAlwaysOnTop(true, 'floating', 1);
+                keepWindowOnTop(mainWindow);
             }
             handleWindowMove(true);
 
@@ -235,7 +245,7 @@ function createWindow() {
     // Re-enforce Always on Top when losing focus to taskbar
     mainWindow.on('blur', () => {
         if (!isAwaitingPinTarget && mainWindow) {
-            mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+            keepWindowOnTop(mainWindow);
         }
     });
 }
@@ -284,7 +294,7 @@ function calculatePrimaryCenterPosition(): { x: number; y: number } {
     const primary = screen.getPrimaryDisplay();
     const wa = primary.workArea; // { x, y, width, height } in OS coords
 
-    if (isMac) {
+    if (!usesGhostWindow) {
         return { x: wa.x, y: wa.y };
     }
 
@@ -306,7 +316,7 @@ function teleportToPrimaryCenter(showWindow = true) {
     if (showWindow) {
         mainWindow.show();
         if (mainWindow.isMinimized()) mainWindow.restore();
-        mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+        keepWindowOnTop(mainWindow);
         mainWindow.focus();
     }
 
@@ -359,7 +369,7 @@ function startClipboardPolling() {
                         mainWindow.show();
                     }
                     if (mainWindow.isMinimized()) mainWindow.restore();
-                    mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                    keepWindowOnTop(mainWindow);
                     mainWindow.focus();
 
                     mainWindow.webContents.send('clipboard-updated', { type: 'image', content: currentDataUrl });
@@ -535,10 +545,10 @@ app.whenReady().then(() => {
                         });
                         psProcess.stdin!.write(psPinScript + '\n');
                     }
-                } else if (isMac) {
+                } else if (isMac || isLinux) {
                     if (mainWindow) {
-                        mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-                        mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+                        keepWindowOnTop(mainWindow);
+                        if (isMac) mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
                         pinnedHwnd = 1; // Fake truthy value for macOS to signify pinned status
                         mainWindow.webContents.send('pin-targeting-complete');
                     }
@@ -648,12 +658,12 @@ ipcMain.handle('check-for-updates-manual', async () => {
 });
 
 ipcMain.on('enter-pin-targeting', () => {
-    if (isMac) {
+    if (isMac || isLinux) {
         // macOS: Panel windows don't fire blur events reliably.
         // Implement pseudo-pin: immediately elevate KoBar to screen-saver level.
         if (mainWindow) {
-            mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-            mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+            keepWindowOnTop(mainWindow);
+            if (isMac) mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
             pinnedHwnd = 1;
             mainWindow.webContents.send('pinned-window-changed', 1);
             mainWindow.webContents.send('pin-targeting-complete');
@@ -676,8 +686,8 @@ ipcMain.on('unpin-current-window', () => {
         }
         allPinnedHwnds.delete(hwndToUnpin);
         stopWindowTracking();
-    } else if (isMac && mainWindow) {
-        mainWindow.setAlwaysOnTop(true, 'floating', 1);
+    } else if ((isMac || isLinux) && mainWindow) {
+        keepWindowOnTop(mainWindow);
         pinnedHwnd = null;
         mainWindow.webContents.send('pinned-window-changed', null);
     }
@@ -1279,7 +1289,7 @@ if (-not $isDown) { [K]::keybd_event(0x11, 0, 2, 0) }
                 // Restore KoBar
                 if (mainWindow) {
                     mainWindow.show();
-                    mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+                    keepWindowOnTop(mainWindow);
                 }
 
                 // Re-register shortcut ONLY AFTER osascript keystroke has fully resolved
@@ -1332,7 +1342,7 @@ ipcMain.on('take-screenshot', (event, hideApp) => {
             exec('screencapture -i -c', () => {
                 if (hideApp && mainWindow) {
                     mainWindow.show();
-                    mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                    keepWindowOnTop(mainWindow);
                 }
             });
         }
@@ -1436,7 +1446,7 @@ ipcMain.handle('start-screenshot-capture', async () => {
     // 7. Show KoBar back so the overlay React component becomes visible
     if (mainWindow) {
         mainWindow.show();
-        mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+        keepWindowOnTop(mainWindow);
     }
 
     return {
@@ -1450,7 +1460,7 @@ ipcMain.on('cancel-screenshot', () => {
     if (mainWindow) {
         if (preScreenshotBounds) mainWindow.setBounds(preScreenshotBounds);
         mainWindow.show();
-        mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+        keepWindowOnTop(mainWindow);
     }
 });
 
@@ -1478,7 +1488,7 @@ ipcMain.handle('save-screenshot', async (_event, data: { buffer: string; format:
         });
 
         // Restore alwaysOnTop
-        if (mainWindow) mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+        if (mainWindow) keepWindowOnTop(mainWindow);
 
         if (result.canceled || !result.filePath) return { success: false, reason: 'cancelled' };
         savePath = result.filePath;
@@ -1507,7 +1517,7 @@ ipcMain.on('screenshot-session-complete', () => {
     if (mainWindow) {
         if (preScreenshotBounds) mainWindow.setBounds(preScreenshotBounds);
         mainWindow.show();
-        mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+        keepWindowOnTop(mainWindow);
     }
 });
 
@@ -1621,7 +1631,7 @@ function createPipWindow(videoUrl: string, title: string, albumArt?: string | nu
     pipWindow.webContents.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
     pipWindow.setAspectRatio(16 / 9);
-    pipWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 2);
+    keepWindowOnTop(pipWindow, 2);
 
     const encodedUrl = encodeURIComponent(videoUrl);
     const encodedTitle = encodeURIComponent(title);
