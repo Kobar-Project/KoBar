@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import EditorJS from '@editorjs/editorjs';
 import Header from '@editorjs/header';
 import List from '@editorjs/list';
+// @ts-expect-error No types available for @editorjs/checklist
 import Checklist from '@editorjs/checklist';
 import CustomCodeTool from './CustomCodeTool';
 import Quote from '@editorjs/quote';
@@ -461,7 +462,7 @@ const EditorJsEditor: React.FC = React.memo(() => {
             {plusTrigger && !showInsertPanel && createPortal(
                 <button
                     onClick={handlePlusClick}
-                    className="editorjs-plus-trigger-btn fixed z-[200] no-drag-region"
+                    className="editorjs-plus-trigger-btn fixed z-[200] no-drag-region pointer-events-auto"
                     style={{
                         left: `${plusTrigger.x}px`,
                         top: `${plusTrigger.y}px`,

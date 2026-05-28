@@ -102,7 +102,6 @@ const BlockInsertionPanel: React.FC<BlockInsertionPanelProps> = ({
         }
 
         const panelRect = panelRef.current.getBoundingClientRect();
-        const containerRect = containerRef.current?.getBoundingClientRect();
         const notePanel = containerRef.current?.closest('.relative') as HTMLElement | null;
         const notePanelRect = notePanel?.getBoundingClientRect();
 
@@ -140,7 +139,7 @@ const BlockInsertionPanel: React.FC<BlockInsertionPanelProps> = ({
     const panelContent = (
         <div
             ref={panelRef}
-            className="fixed z-[300] no-drag-region block-insertion-panel"
+            className="fixed z-[300] no-drag-region pointer-events-auto block-insertion-panel"
             style={{
                 left: `${adjustedPos.x}px`,
                 top: `${adjustedPos.y}px`,

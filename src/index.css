@@ -398,15 +398,18 @@ body {
 }
 
 /* Toolbar Buttons (Drag Handle, Plus) */
-.ce-toolbar__settings-btn,
-.ce-toolbar__plus {
+.ce-toolbar__settings-btn {
     color: #94a3b8 !important;
     background-color: transparent !important;
 }
-.ce-toolbar__settings-btn:hover,
-.ce-toolbar__plus:hover {
+.ce-toolbar__settings-btn:hover {
     color: var(--theme-primary) !important;
     background-color: var(--theme-bg-base) !important;
+}
+
+/* Hide native plus button */
+.ce-toolbar__plus {
+    display: none !important;
 }
 
 /* Block Selection (prevent white left border) */
