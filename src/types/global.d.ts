@@ -1,5 +1,7 @@
 export { };
 
+declare module '@editorjs/checklist';
+
 declare global {
     interface MediaData {
         title: string;

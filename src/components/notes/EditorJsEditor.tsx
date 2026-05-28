@@ -4,7 +4,7 @@ import EditorJS from '@editorjs/editorjs';
 import Header from '@editorjs/header';
 import List from '@editorjs/list';
 import Checklist from '@editorjs/checklist';
-import CodeTool from '@editorjs/code';
+import CustomCodeTool from './CustomCodeTool';
 import Quote from '@editorjs/quote';
 import Delimiter from '@editorjs/delimiter';
 import { useAppStore } from '../../store/useAppStore';
@@ -132,7 +132,7 @@ const EditorJsEditor: React.FC = React.memo(() => {
                         inlineToolbar: true,
                     },
                     code: {
-                        class: CodeTool as any,
+                        class: CustomCodeTool as any,
                     },
                     quote: {
                         class: Quote as any,
@@ -298,7 +298,7 @@ const EditorJsEditor: React.FC = React.memo(() => {
             allBlocks.forEach((b, i) => { if (b === blockEl) blockIndex = i; });
 
             setPlusTrigger({
-                x: rect.left - 36,
+                x: rect.left + 4, // Shifted to right to avoid overlap with native drag handle
                 y: rect.top + rect.height / 2 - 12,
                 blockIndex,
             });
