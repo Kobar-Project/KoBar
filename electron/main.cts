@@ -100,6 +100,18 @@ function setPointerPassthrough(ignore: boolean) {
     }
 }
 
+function applyInteractiveWindowShape() {
+    if (!mainWindow || !isLinux) return;
+    const shape = interactiveRegions.map(region => ({
+        x: Math.max(0, Math.floor(region.x) - 2),
+        y: Math.max(0, Math.floor(region.y) - 2),
+        width: Math.ceil(region.width) + 4,
+        height: Math.ceil(region.height) + 4
+    }));
+
+    mainWindow.setShape(shape);
+}
+
 function startPointerPassthroughPolling() {
     if (usesGhostWindow || pointerPassthroughInterval) return;
 
@@ -1330,6 +1342,7 @@ ipcMain.on('update-interactive-regions', (_event, regions: Array<{ x: number; y:
         region.width > 0 &&
         region.height > 0
     );
+    applyInteractiveWindowShape();
 });
 
 ipcMain.on('set-global-paste-mode', (event, isActive) => {
