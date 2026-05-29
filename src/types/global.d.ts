@@ -126,6 +126,8 @@ declare global {
             toggleExtensionEnabled: (id: string, enabled: boolean) => Promise<boolean>;
             installExtensionFromFile: () => Promise<{ success: boolean; reason?: string }>;
             installExtensionFromPath: (filePath: string) => Promise<{ success: boolean; reason?: string }>;
+            installExtensionFromGithub: (id: string, repo: string) => Promise<{ success: boolean; reason?: string }>;
+            onPluginInstallProgress: (callback: (id: string, percent: number) => void) => () => void;
         };
     }
 }

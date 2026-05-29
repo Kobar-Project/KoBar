@@ -10,6 +10,24 @@ const PluginDetail: React.FC = () => {
     
     const [githubStats, setGithubStats] = useState<{ stars: number | string; forks: number | string; contributors: number | string } | null>(null);
     const [loadingStats, setLoadingStats] = useState(false);
+    const [installProgress, setInstallProgress] = useState<number | null>(null);
+    const [isLocalInstalled, setIsLocalInstalled] = useState(false);
+
+    useEffect(() => {
+        if (plugin) {
+            setIsLocalInstalled(plugin.tags.includes('Installed'));
+        }
+    }, [plugin]);
+
+    useEffect(() => {
+        if (!plugin) return;
+        const cleanup = window.api.onPluginInstallProgress((id, percent) => {
+            if (id === plugin.id) {
+                setInstallProgress(percent);
+            }
+        });
+        return cleanup;
+    }, [plugin]);
 
     useEffect(() => {
         if (plugin?.repo) {
@@ -22,7 +40,7 @@ const PluginDetail: React.FC = () => {
                         ...prev,
                         stars: data.stargazers_count,
                         forks: data.forks_count,
-                        contributors: prev?.contributors || '10+' // Mocked contributors, fetching contributors properly requires link header parsing
+                        contributors: prev?.contributors || '10+' // Mocked contributors
                     }));
                     setLoadingStats(false);
                 })
@@ -34,6 +52,26 @@ const PluginDetail: React.FC = () => {
     }, [plugin]);
 
     if (!plugin) return null;
+
+    const handleInstall = async () => {
+        if (!plugin) return;
+        setInstallProgress(0);
+        
+        try {
+            const result = await window.api.installExtensionFromGithub(plugin.id, plugin.repo);
+            if (result.success) {
+                setIsLocalInstalled(true);
+            } else {
+                console.error('Install failed:', result.reason);
+                alert(`Installation failed: ${result.reason}`);
+            }
+        } catch (e) {
+            console.error('Install error:', e);
+            alert('An error occurred during installation.');
+        } finally {
+            setInstallProgress(null);
+        }
+    };
 
     const getColorClasses = (color: string) => {
         if (color === 'primary') {
@@ -51,7 +89,6 @@ const PluginDetail: React.FC = () => {
     };
 
     const colors = getColorClasses(plugin.color);
-    const isInstalled = plugin.tags.includes('Installed');
     const isApproved = plugin.tags.includes('Approved');
 
     return (
@@ -92,7 +129,12 @@ const PluginDetail: React.FC = () => {
                     <span className="text-sm text-slate-400 italic mb-2">by {plugin.author} • {plugin.version}</span>
                     
                     <div className="flex flex-wrap gap-2">
-                        {plugin.tags.map(tag => (
+                        {isLocalInstalled && (
+                            <span className="px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 text-[10px] text-green-400 font-semibold">
+                                Installed
+                            </span>
+                        )}
+                        {plugin.tags.filter(t => t !== 'Installed' && t !== 'Not Installed').map(tag => (
                             <span key={tag} className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-slate-400">
                                 {tag}
                             </span>
@@ -103,7 +145,7 @@ const PluginDetail: React.FC = () => {
 
             {/* Actions Bar */}
             <div className="flex items-center gap-3 mb-8 p-3 rounded-xl bg-black/20 border border-white/5">
-                {isInstalled ? (
+                {isLocalInstalled ? (
                     <>
                         <button className="flex-1 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors text-sm font-semibold flex items-center justify-center gap-2">
                             <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -114,8 +156,22 @@ const PluginDetail: React.FC = () => {
                             Disable
                         </button>
                     </>
+                ) : installProgress !== null ? (
+                    <div className="w-full relative overflow-hidden rounded-lg bg-black/40 h-[42px] border border-primary/30 flex items-center justify-center">
+                        <div 
+                            className="absolute left-0 top-0 bottom-0 bg-primary/20 transition-all duration-300"
+                            style={{ width: `${installProgress}%` }}
+                        />
+                        <span className="relative z-10 text-sm font-semibold text-primary flex items-center gap-2">
+                            <span className="material-symbols-outlined animate-spin text-[16px]">sync</span>
+                            Installing... {installProgress}%
+                        </span>
+                    </div>
                 ) : (
-                    <button className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-slate-900 transition-colors text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                    <button 
+                        onClick={handleInstall} 
+                        className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-slate-900 transition-colors text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                    >
                         <span className="material-symbols-outlined text-[18px]">download</span>
                         Install Plugin
                     </button>

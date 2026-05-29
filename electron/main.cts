@@ -2396,6 +2396,81 @@ ipcMain.handle('install-extension-from-path', async (_event, filePath: string) =
     }
 });
 
+ipcMain.handle('install-extension-from-github', async (_event, id: string, repo: string) => {
+    try {
+        if (!repo || !repo.includes('/')) {
+            return { success: false, reason: 'Invalid GitHub repository format.' };
+        }
+
+        // 1. Fetch latest release metadata
+        const releaseRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+            headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'KoBar-App'
+            }
+        });
+
+        if (!releaseRes.ok) {
+            return { success: false, reason: `Failed to fetch latest release metadata (${releaseRes.status}).` };
+        }
+
+        const releaseData = await releaseRes.json() as any;
+        const asset = releaseData.assets?.find((a: any) => a.name.endsWith('.zip'));
+
+        if (!asset) {
+            return { success: false, reason: 'No .zip asset found in the latest release.' };
+        }
+
+        // 2. Download the asset stream
+        const assetRes = await fetch(asset.url, {
+            headers: {
+                'Accept': 'application/octet-stream',
+                'User-Agent': 'KoBar-App'
+            }
+        });
+
+        if (!assetRes.ok || !assetRes.body) {
+            return { success: false, reason: `Failed to download asset (${assetRes.status}).` };
+        }
+
+        const totalBytes = Number(assetRes.headers.get('content-length') || 0);
+        let loadedBytes = 0;
+        
+        // 3. Pipe stream to temporary file and emit progress
+        const tempZipPath = path.join(app.getPath('temp'), `plugin_${id}_${Date.now()}.zip`);
+        const { Readable } = require('stream');
+        const readableStream = Readable.fromWeb(assetRes.body as any);
+        const writeStream = fs.createWriteStream(tempZipPath);
+
+        readableStream.on('data', (chunk: Buffer) => {
+            loadedBytes += chunk.length;
+            if (totalBytes > 0 && mainWindow) {
+                const percent = Math.round((loadedBytes / totalBytes) * 100);
+                mainWindow.webContents.send('plugin-install-progress', { id, percent });
+            }
+        });
+
+        await new Promise((resolve, reject) => {
+            readableStream.pipe(writeStream)
+                .on('finish', resolve)
+                .on('error', reject);
+        });
+
+        // 4. Pass to existing installer
+        const result = await installExtensionFromZipPath(tempZipPath);
+        
+        // 5. Cleanup
+        if (fs.existsSync(tempZipPath)) {
+            fs.unlinkSync(tempZipPath);
+        }
+
+        return result;
+    } catch (e: any) {
+        console.error('Failed to install from GitHub:', e);
+        return { success: false, reason: e.message || 'Unknown error occurred.' };
+    }
+});
+
 ipcMain.handle('get-app-version', () => {
     return app.getVersion();
 });
