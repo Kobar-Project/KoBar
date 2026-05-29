@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import EditorJS from '@editorjs/editorjs';
 import Header from '@editorjs/header';
 import List from '@editorjs/list';
-// @ts-expect-error No types available for @editorjs/checklist
-import Checklist from '@editorjs/checklist';
 import CustomCodeTool from './CustomCodeTool';
 import Quote from '@editorjs/quote';
 import Delimiter from '@editorjs/delimiter';
@@ -56,6 +54,28 @@ const EditorJsEditor: React.FC = React.memo(() => {
         }
         try {
             const parsed = JSON.parse(note.editorjsData);
+            
+            // Migration: Convert old type: 'checklist' blocks to type: 'list' with style: 'checklist'
+            if (parsed.blocks && Array.isArray(parsed.blocks)) {
+                parsed.blocks = parsed.blocks.map((block: any) => {
+                    if (block.type === 'checklist' && block.data && Array.isArray(block.data.items)) {
+                        return {
+                            ...block,
+                            type: 'list',
+                            data: {
+                                style: 'checklist',
+                                items: block.data.items.map((item: any) => ({
+                                    content: item.text || '',
+                                    meta: { checked: !!item.checked },
+                                    items: []
+                                }))
+                            }
+                        };
+                    }
+                    return block;
+                });
+            }
+
             if (validateEditorJsData(parsed)) {
                 return parsed;
             }
@@ -136,10 +156,6 @@ const EditorJsEditor: React.FC = React.memo(() => {
                         config: {
                             defaultStyle: 'unordered'
                         }
-                    },
-                    checklist: {
-                        class: Checklist as any,
-                        inlineToolbar: true,
                     },
                     code: {
                         class: CustomCodeTool as any,
@@ -455,7 +471,7 @@ const EditorJsEditor: React.FC = React.memo(() => {
                     await editor.blocks.insert('list', { style: 'ordered', items: [''] }, undefined, currentIndex, true);
                     break;
                 case 'checklist':
-                    await editor.blocks.insert('checklist', { items: [{ text: '', checked: false }] }, undefined, currentIndex, true);
+                    await editor.blocks.insert('list', { style: 'checklist', items: [{ content: '', meta: { checked: false }, items: [] }] }, undefined, currentIndex, true);
                     break;
                 case 'code':
                     await editor.blocks.insert('code', { code: '' }, undefined, currentIndex, true);

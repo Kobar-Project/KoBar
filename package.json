@@ -71,7 +71,6 @@
     }
   },
   "dependencies": {
-    "@editorjs/checklist": "^1.6.0",
     "@editorjs/code": "^2.9.4",
     "@editorjs/delimiter": "^1.4.2",
     "@editorjs/editorjs": "^2.31.6",

@@ -164,14 +164,26 @@ export function editorJsToTiptapHtml(data: EditorJsOutputData): string {
             }
 
             case 'list': {
-                const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
-                const items = (block.data.items as string[]) || [];
-                const lis = items.map(item => `<li>${item}</li>`).join('');
-                parts.push(`<${tag}>${lis}</${tag}>`);
+                if (block.data.style === 'checklist') {
+                    const items = (block.data.items as Array<{ content: string; meta: { checked: boolean } }>) || [];
+                    const lis = items.map(item =>
+                        `<li>${item.meta?.checked ? '☑ ' : '☐ '}${item.content}</li>`
+                    ).join('');
+                    parts.push(`<ul>${lis}</ul>`);
+                } else {
+                    const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+                    const items = (block.data.items as any[]) || [];
+                    const lis = items.map(item => {
+                        const content = typeof item === 'string' ? item : (item.content || '');
+                        return `<li>${content}</li>`;
+                    }).join('');
+                    parts.push(`<${tag}>${lis}</${tag}>`);
+                }
                 break;
             }
 
             case 'checklist': {
+                // Keep this case for safety, though blocks should be migrated by getEditorData
                 const checkItems = (block.data.items as Array<{ text: string; checked: boolean }>) || [];
                 const lis = checkItems.map(item =>
                     `<li>${item.checked ? '☑ ' : '☐ '}${item.text}</li>`
