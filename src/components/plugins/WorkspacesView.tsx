@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import Accordion from '../notes/Accordion';
-
 const WorkspacesView: React.FC = () => {
     const language = useAppStore(state => state.language);
     const design = useAppStore(state => state.design);

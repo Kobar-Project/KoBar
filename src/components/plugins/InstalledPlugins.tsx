@@ -3,8 +3,6 @@ import { useAppStore } from '../../store/useAppStore';
 
 const InstalledPlugins: React.FC = () => {
     const t = useAppStore(state => state.t);
-    const design = useAppStore(state => state.design);
-    
     // We mock the state from the previous Extensions Manager here for now to avoid breaking App.tsx dependencies.
     // In Phase 4, we will hook this up to the real window.KoBarExtensions API properly.
     const [installedExtensions, setInstalledExtensions] = useState<any[]>([]);

@@ -42,20 +42,6 @@ const SettingsPanel: React.FC = () => {
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const setEnableEyeAnimation = useAppStore(state => state.setEnableEyeAnimation);
     const setLaunchAtStartup = useAppStore(state => state.setLaunchAtStartup);
-    const isShortcutsEnabled = useAppStore(state => state.isShortcutsEnabled);
-    const setIsShortcutsEnabled = useAppStore(state => state.setIsShortcutsEnabled);
-    const isCopyPasteEnabled = useAppStore(state => state.isCopyPasteEnabled);
-    const setIsCopyPasteEnabled = useAppStore(state => state.setIsCopyPasteEnabled);
-    const isScreenshotEnabled = useAppStore(state => state.isScreenshotEnabled);
-    const setIsScreenshotEnabled = useAppStore(state => state.setIsScreenshotEnabled);
-    const isFocusModeEnabled = useAppStore(state => state.isFocusModeEnabled);
-    const setIsFocusModeEnabled = useAppStore(state => state.setIsFocusModeEnabled);
-    const isCalculatorEnabled = useAppStore(state => state.isCalculatorEnabled);
-    const setIsCalculatorEnabled = useAppStore(state => state.setIsCalculatorEnabled);
-    const isColorPickerEnabled = useAppStore(state => state.isColorPickerEnabled);
-    const setIsColorPickerEnabled = useAppStore(state => state.setIsColorPickerEnabled);
-    const featureOrder = useAppStore(state => state.featureOrder);
-    const setFeatureOrder = useAppStore(state => state.setFeatureOrder);
     const toggleWidth = useAppStore(state => state.toggleWidth);
     const setToggleWidth = useAppStore(state => state.setToggleWidth);
     const sidebarWidth = useAppStore(state => state.sidebarWidth);
@@ -64,32 +50,10 @@ const SettingsPanel: React.FC = () => {
     const setIconScale = useAppStore(state => state.setIconScale);
     const featureSpacing = useAppStore(state => state.featureSpacing);
     const setFeatureSpacing = useAppStore(state => state.setFeatureSpacing);
-    const hideOnScreenshot = useAppStore(state => state.hideOnScreenshot);
-    const setHideOnScreenshot = useAppStore(state => state.setHideOnScreenshot);
     const design = useAppStore(state => state.design);
     const setDesign = useAppStore(state => state.setDesign);
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const setGlassOpacity = useAppStore(state => state.setGlassOpacity);
-    const slotCount = useAppStore(state => state.slotCount);
-    const setSlotCount = useAppStore(state => state.setSlotCount);
-    const autoCopyColor = useAppStore(state => state.autoCopyColor);
-    const setAutoCopyColor = useAppStore(state => state.setAutoCopyColor);
-    const isTodoListEnabled = useAppStore(state => state.isTodoListEnabled);
-    const setIsTodoListEnabled = useAppStore(state => state.setIsTodoListEnabled);
-    const isPinInjectorEnabled = useAppStore(state => state.isPinInjectorEnabled);
-    const setIsPinInjectorEnabled = useAppStore(state => state.setIsPinInjectorEnabled);
-    const isKoBoxEnabled = useAppStore(state => state.isKoBoxEnabled);
-    const setIsKoBoxEnabled = useAppStore(state => state.setIsKoBoxEnabled);
-    const koBoxCleanupMode = useAppStore(state => state.koBoxCleanupMode);
-    const setKoBoxCleanupMode = useAppStore(state => state.setKoBoxCleanupMode);
-    const isSnippetVaultEnabled = useAppStore(state => state.isSnippetVaultEnabled);
-    const setIsSnippetVaultEnabled = useAppStore(state => state.setIsSnippetVaultEnabled);
-    const isAiHubEnabled = useAppStore(state => state.isAiHubEnabled);
-    const setIsAiHubEnabled = useAppStore(state => state.setIsAiHubEnabled);
-    const isKoPlayerEnabled = useAppStore(state => state.isKoPlayerEnabled);
-    const setIsKoPlayerEnabled = useAppStore(state => state.setIsKoPlayerEnabled);
-    const isKoCalendarEnabled = useAppStore(state => state.isKoCalendarEnabled);
-    const setIsKoCalendarEnabled = useAppStore(state => state.setIsKoCalendarEnabled);
 
     const isPopupSmartPositioning = useAppStore(state => state.isPopupSmartPositioning);
     const setIsPopupSmartPositioning = useAppStore(state => state.setIsPopupSmartPositioning);
@@ -300,13 +264,6 @@ const SettingsPanel: React.FC = () => {
         setLaunchAtStartup(!launchAtStartup);
     };
 
-    const handleSlotCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseInt(e.target.value, 10);
-        if (!isNaN(val)) {
-            setSlotCount(Math.min(20, Math.max(4, val)));
-        }
-    };
-    
     // maxShortcuts handler removed
 
     const handleToggleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
