@@ -48,6 +48,30 @@ function stopAlwaysOnTopEnforcement() {
     alwaysOnTopInterval = null;
 }
 
+function getVirtualWorkArea() {
+    const displays = screen.getAllDisplays();
+    const areas = displays.map(display => isMac ? display.bounds : display.workArea);
+    const minX = Math.min(...areas.map(area => area.x));
+    const minY = Math.min(...areas.map(area => area.y));
+    const maxX = Math.max(...areas.map(area => area.x + area.width));
+    const maxY = Math.max(...areas.map(area => area.y + area.height));
+
+    return {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY
+    };
+}
+
+function applyNonGhostWindowBounds() {
+    if (!mainWindow || usesGhostWindow) return;
+    const bounds = getVirtualWorkArea();
+    mainWindow.setMinimumSize(1, 1);
+    mainWindow.setBounds(bounds);
+    mainWindow.setMinimumSize(bounds.width, bounds.height);
+}
+
 function pointInInteractiveRegions(point: Electron.Point) {
     if (!mainWindow) return false;
     const bounds = mainWindow.getBounds();
@@ -67,7 +91,13 @@ function pointInInteractiveRegions(point: Electron.Point) {
 function setPointerPassthrough(ignore: boolean) {
     if (!mainWindow || isPointerPassthroughActive === ignore) return;
     isPointerPassthroughActive = ignore;
+    if (isLinux) {
+        mainWindow.setFocusable(!ignore);
+    }
     mainWindow.setIgnoreMouseEvents(ignore, { forward: true });
+    if (!ignore) {
+        keepWindowOnTop(mainWindow);
+    }
 }
 
 function startPointerPassthroughPolling() {
@@ -116,7 +146,7 @@ let borderWindow: BrowserWindow | null = null;
 let pipWindow: BrowserWindow | null = null;
 let pointerPassthroughInterval: ReturnType<typeof setInterval> | null = null;
 let alwaysOnTopInterval: ReturnType<typeof setInterval> | null = null;
-let isPointerPassthroughActive = true;
+let isPointerPassthroughActive = false;
 let interactiveRegions: Array<{ x: number; y: number; width: number; height: number }> = [];
 
 let trackingInterval: NodeJS.Timeout | null = null;
@@ -207,7 +237,9 @@ function createWindow() {
 
     // Mac: use `bounds` (full screen incl. menu bar + Dock area) instead of `workArea`.
     // This prevents macOS from clipping the transparent window at the Dock boundary.
-    const screenArea = isMac ? primary.bounds : primary.workArea;
+    const screenArea = usesGhostWindow
+        ? primary.workArea
+        : getVirtualWorkArea();
     const winWidth = usesGhostWindow ? 6000 : screenArea.width;
     const winHeight = usesGhostWindow ? 4000 : screenArea.height;
     const winX = usesGhostWindow ? x : screenArea.x;
@@ -243,8 +275,7 @@ function createWindow() {
         mainWindow.setMaximumSize(12000, 12000);
         mainWindow.setSize(6000, 4000);
     } else if (!usesGhostWindow) {
-        mainWindow.setMinimumSize(winWidth, winHeight);
-        mainWindow.setSize(winWidth, winHeight);
+        applyNonGhostWindowBounds();
     }
     // Win: screen-saver (highest DWM level) | Mac: floating (above Dock, below TCC prompts)
     keepWindowOnTop(mainWindow);
@@ -253,7 +284,7 @@ function createWindow() {
         mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
         keepWindowOnTop(mainWindow); // re-enforce after workspace registration
     }
-    mainWindow.setIgnoreMouseEvents(true, { forward: true });
+    setPointerPassthrough(true);
 
     if (isDev) {
         mainWindow.loadURL('http://localhost:5173');
@@ -561,6 +592,10 @@ app.whenReady().then(() => {
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
+
+    screen.on('display-added', applyNonGhostWindowBounds);
+    screen.on('display-removed', applyNonGhostWindowBounds);
+    screen.on('display-metrics-changed', applyNonGhostWindowBounds);
 
     app.on('will-quit', () => {
         globalShortcut.unregisterAll();
