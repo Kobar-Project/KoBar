@@ -238,25 +238,38 @@ export default class CustomCodeTool implements BlockTool {
         // Escape HTML
         let html = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         
+        // Tokenize to prevent regex overlapping and HTML corruption
+        const tokens: string[] = [];
+        const saveToken = (str: string) => {
+            const id = `__TOKEN_${tokens.length}__`;
+            tokens.push(str);
+            return id;
+        };
+
         const lang = this.data.language;
         if (lang === 'javascript' || lang === 'typescript' || lang === 'json') {
-            html = html.replace(/\b(const|let|var|function|return|if|else|for|while|class|import|export|from|new|true|false|null|undefined|await|async|interface|type)\b/g, '<span style="color: #c678dd;">$1</span>');
-            html = html.replace(/(["'`].*?["'`])/g, '<span style="color: #98c379;">$1</span>');
-            html = html.replace(/\b(\d+)\b/g, '<span style="color: #d19a66;">$1</span>');
-            html = html.replace(/(\/\/.*)/g, '<span style="color: #5c6370; font-style: italic;">$1</span>');
+            html = html.replace(/(\/\/.*)/g, match => saveToken(`<span style="color: #5c6370; font-style: italic;">${match}</span>`));
+            html = html.replace(/(["'`].*?["'`])/g, match => saveToken(`<span style="color: #98c379;">${match}</span>`));
+            html = html.replace(/\b(const|let|var|function|return|if|else|for|while|class|import|export|from|new|true|false|null|undefined|await|async|interface|type)\b/g, match => saveToken(`<span style="color: #c678dd;">${match}</span>`));
+            html = html.replace(/\b(\d+)\b/g, match => saveToken(`<span style="color: #d19a66;">${match}</span>`));
         } else if (lang === 'html') {
-            html = html.replace(/(&lt;\/?)([a-zA-Z0-9]+)/g, '$1<span style="color: #e06c75;">$2</span>');
-            html = html.replace(/([a-zA-Z0-9-]+)(=)/g, '<span style="color: #d19a66;">$1</span>$2');
-            html = html.replace(/(["'].*?["'])/g, '<span style="color: #98c379;">$1</span>');
+            html = html.replace(/(["'].*?["'])/g, match => saveToken(`<span style="color: #98c379;">${match}</span>`));
+            html = html.replace(/(&lt;\/?)([a-zA-Z0-9]+)/g, (m, p1, p2) => `${p1}${saveToken(`<span style="color: #e06c75;">${p2}</span>`)}`);
+            html = html.replace(/([a-zA-Z0-9-]+)(=)/g, (m, p1, p2) => `${saveToken(`<span style="color: #d19a66;">${p1}</span>`)}${p2}`);
         } else if (lang === 'css') {
-            html = html.replace(/([a-zA-Z0-9-]+)(\s*:)/g, '<span style="color: #56b6c2;">$1</span>$2');
-            html = html.replace(/(#[0-9a-fA-F]+|\b\d+(px|em|rem|%)\b)/g, '<span style="color: #d19a66;">$1</span>');
+            html = html.replace(/([a-zA-Z0-9-]+)(\s*:)/g, (m, p1, p2) => `${saveToken(`<span style="color: #56b6c2;">${p1}</span>`)}${p2}`);
+            html = html.replace(/(#[0-9a-fA-F]+|\b\d+(px|em|rem|%)\b)/g, match => saveToken(`<span style="color: #d19a66;">${match}</span>`));
         } else if (lang === 'python') {
-            html = html.replace(/\b(def|return|if|elif|else|for|while|class|import|from|True|False|None|await|async|in|and|or|not)\b/g, '<span style="color: #c678dd;">$1</span>');
-            html = html.replace(/(["'`].*?["'`])/g, '<span style="color: #98c379;">$1</span>');
-            html = html.replace(/\b(\d+)\b/g, '<span style="color: #d19a66;">$1</span>');
-            html = html.replace(/(#.*)/g, '<span style="color: #5c6370; font-style: italic;">$1</span>');
+            html = html.replace(/(#.*)/g, match => saveToken(`<span style="color: #5c6370; font-style: italic;">${match}</span>`));
+            html = html.replace(/(["'`].*?["'`])/g, match => saveToken(`<span style="color: #98c379;">${match}</span>`));
+            html = html.replace(/\b(def|return|if|elif|else|for|while|class|import|from|True|False|None|await|async|in|and|or|not)\b/g, match => saveToken(`<span style="color: #c678dd;">${match}</span>`));
+            html = html.replace(/\b(\d+)\b/g, match => saveToken(`<span style="color: #d19a66;">${match}</span>`));
         }
+
+        // Restore tokens
+        tokens.forEach((token, i) => {
+            html = html.replace(`__TOKEN_${i}__`, token);
+        });
 
         this.codeContainer.innerHTML = html + (html.endsWith('\n') ? '<br/>' : '');
     }

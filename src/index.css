@@ -338,6 +338,19 @@ body {
     max-width: 100%;
 }
 
+/* Editor.js Typography Fixes (Tailwind resets headings) */
+.ce-header {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #f8fafc;
+}
+h1.ce-header { font-size: 2.25rem; line-height: 2.5rem; }
+h2.ce-header { font-size: 1.875rem; line-height: 2.25rem; }
+h3.ce-header { font-size: 1.5rem; line-height: 2rem; }
+h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
+h5.ce-header { font-size: 1.125rem; line-height: 1.75rem; }
+h6.ce-header { font-size: 1rem; line-height: 1.5rem; }
+
 /* Adjust block spacing to prevent overlapping with plus button */
 .ce-block__content {
     padding-left: 36px !important;
