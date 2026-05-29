@@ -147,6 +147,7 @@ export interface WorkspaceConfig {
 
 interface AppState {
     isMac: boolean;
+    usesGhostWindow: boolean;
     edgePosition: 'left' | 'right' | 'top' | 'bottom';
     setEdgePosition: (edge: 'left' | 'right' | 'top' | 'bottom') => void;
     orientation: 'vertical' | 'horizontal';
@@ -466,6 +467,7 @@ export const useAppStore = create<AppState>()(
     persist(
         (set, get) => ({
             isMac: window.api?.getPlatform ? window.api.getPlatform() === 'darwin' : false,
+            usesGhostWindow: window.api?.usesGhostWindow ? window.api.usesGhostWindow() : false,
             closeAllUtilityPopups: () => set({ 
                 isCalculatorOpen: false, 
                 isColorPickerOpen: false, 
@@ -851,8 +853,7 @@ export const useAppStore = create<AppState>()(
 
                             // Recalculate edgePosition so NotePanel/SettingsPanel opens on the correct side
                             const screenW = state.screenBounds?.width ?? 1920;
-                            const isMacPlatform = state.isMac;
-                            const screenCenter = isMacPlatform ? (screenW / 2) : 3000;
+                            const screenCenter = state.usesGhostWindow ? 3000 : (screenW / 2);
                             const sidebarCenterX = sidebarX + (state.sidebarWidth / 2);
                             updates.edgePosition = sidebarCenterX < screenCenter ? 'left' : 'right';
                         }
@@ -1345,4 +1346,3 @@ export const useAppStore = create<AppState>()(
         }
     )
 );
-

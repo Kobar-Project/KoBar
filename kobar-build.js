@@ -11,6 +11,7 @@ const settingsPath = './kobar-settings.json';
 const packagePath = './package.json';
 const mainPath = './electron/main.cts';
 const appPath = './src/App.tsx';
+const linuxTargets = ["AppImage", "deb", "rpm"];
 
 function log(msg) {
     console.log(`\n[KoBar Build] 🚀 ${msg}`);
@@ -22,9 +23,29 @@ function updateFile(filePath, regex, replacement) {
     fs.writeFileSync(filePath, content, 'utf8');
 }
 
+function getPlatformFlag() {
+    if (process.platform === 'darwin') return '--mac';
+    if (process.platform === 'linux') return '--linux';
+    return '--win';
+}
+
+function commandExists(command) {
+    try {
+        execSync(`command -v ${command}`, { stdio: 'ignore' });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 async function runBuildSequence(isStore) {
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
     const mode = isStore ? "STORE (AppX)" : "STANDARD (Standalone)";
+
+    if (isStore && process.platform !== 'win32') {
+        log(`Skipping ${mode}; AppX packaging is only supported on Windows.`);
+        return;
+    }
     
     // Determine feature flags
     // If it's a store build, we generally disable these, but we'll follow settings if they are global.
@@ -36,8 +57,18 @@ async function runBuildSequence(isStore) {
 
     // 1. Update package.json
     const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+    let shouldRestoreLinuxTargets = false;
     pkg.version = settings.version;
     pkg.build.win.target = isStore ? ["appx"] : ["nsis"];
+    if (process.platform === 'linux') {
+        pkg.build.linux.target = commandExists('rpmbuild')
+            ? linuxTargets
+            : linuxTargets.filter(target => target !== 'rpm');
+        if (!pkg.build.linux.target.includes('rpm')) {
+            shouldRestoreLinuxTargets = true;
+            log('Skipping RPM target because rpmbuild is not installed on this system.');
+        }
+    }
     
     // Inject Microsoft Store Secrets if available and building for Store
     const secretsPath = './kobar-secrets.json';
@@ -77,8 +108,14 @@ async function runBuildSequence(isStore) {
     execSync('npm run build', { stdio: 'inherit' });
 
     log(`Packaging ${mode} binary...`);
-    const platformFlag = process.platform === 'darwin' ? '--mac' : '--win';
+    const platformFlag = getPlatformFlag();
     execSync(`npx electron-builder ${platformFlag}`, { stdio: 'inherit' });
+
+    if (shouldRestoreLinuxTargets) {
+        const restorePkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+        restorePkg.build.linux.target = linuxTargets;
+        fs.writeFileSync(packagePath, JSON.stringify(restorePkg, null, 2), 'utf8');
+    }
     
     // Cleanup secure credentials from package.json after build
     if (injectedSecrets) {
@@ -114,6 +151,7 @@ async function start() {
 
     } catch (err) {
         console.error("\n❌ Build failed:", err.message);
+        process.exitCode = 1;
     }
 }
 

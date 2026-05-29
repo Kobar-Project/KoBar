@@ -10,9 +10,10 @@ const FloatingEye: React.FC = () => {
     const iconScale = useAppStore(state => state.iconScale);
     const screenBounds = useAppStore(state => state.screenBounds);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
+    const isMac = useAppStore(state => state.isMac);
 
     // Calculate safe fallback coordinates using actual monitor dimensions.
-    // The ghost window is 6000×4000, but the visible area matches `screenBounds`.
+    // On Windows the ghost window is 6000x4000, but the visible area matches `screenBounds`.
     // Using window.innerWidth/Height (6000/4000) would place the Eye at Y=2000,
     // far off-screen on most monitors. Instead, use screenBounds as the sizing reference.
     const visibleH = screenBounds?.height ?? 800;
@@ -24,8 +25,8 @@ const FloatingEye: React.FC = () => {
     // For the fallback, stay near the sidebar's edge:
     // left edge → slightly inward from the sidebar's expected CSS position
     // right edge → slightly inward from the other side
-    const isMac = useAppStore(state => state.isMac);
-    const centerX = isMac ? Math.floor(window.innerWidth / 2) : 3000;
+    const usesGhostWindow = useAppStore(state => state.usesGhostWindow);
+    const centerX = usesGhostWindow ? 3000 : Math.floor(window.innerWidth / 2);
     const safeDefaultX = edgePosition === 'left'
         ? (centerX - visibleW / 2 + 60)   // Near left edge of visible area within ghost window
         : (centerX + visibleW / 2 - 60);  // Near right edge of visible area within ghost window
@@ -100,7 +101,7 @@ const FloatingEye: React.FC = () => {
             const physicalCursorY = windowPosRef.current.y + mouseY;
 
             // Find if we crossed display boundary
-            if (localDisplaysRef.current && !isMac) {
+            if (localDisplaysRef.current && usesGhostWindow) {
                 const allDisplays = localDisplaysRef.current.allDisplays;
                 const activeDisplay = allDisplays.find(d => 
                     physicalCursorX >= d.bounds.x && physicalCursorX < (d.bounds.x + d.bounds.width) &&
@@ -165,7 +166,7 @@ const FloatingEye: React.FC = () => {
 
                 if (dragInitRef.current.dragged) {
                     let finalPos = { x: posRef.current.x, y: posRef.current.y };
-                    if (window.api?.recenterWindowOnWidget && !isMac) {
+                    if (window.api?.recenterWindowOnWidget && usesGhostWindow) {
                         const result = await window.api.recenterWindowOnWidget(finalPos.x, finalPos.y, 48, 48);
                         if (result) {
                             finalPos = { x: result.x, y: result.y };
