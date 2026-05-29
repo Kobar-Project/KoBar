@@ -27,6 +27,7 @@ declare global {
             writeToClipboard: (data: { type: string; content: string }) => void;
             // Mouse click-through
             setIgnoreMouseEvents: (ignore: boolean) => void;
+            updateInteractiveRegions: (regions: Array<{ x: number; y: number; width: number; height: number }>) => void;
             onOpenSettings: (callback: () => void) => (() => void);
             // Global Paste Support
             setGlobalPasteMode: (isActive: boolean) => void;

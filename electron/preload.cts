@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('api', {
     },
     // Mouse click-through for transparent window
     setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('set-ignore-mouse-events', ignore),
+    updateInteractiveRegions: (regions: Array<{ x: number; y: number; width: number; height: number }>) => ipcRenderer.send('update-interactive-regions', regions),
     onOpenSettings: (callback: () => void) => {
         const handler = () => callback();
         ipcRenderer.on('open-settings', handler);

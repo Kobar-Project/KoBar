@@ -30,6 +30,44 @@ function keepWindowOnTop(win: BrowserWindow | null = mainWindow, relativeLevel =
     win?.setAlwaysOnTop(true, getAlwaysOnTopLevel(), relativeLevel);
 }
 
+function pointInInteractiveRegions(point: Electron.Point) {
+    if (!mainWindow) return false;
+    const bounds = mainWindow.getBounds();
+    const localPoint = {
+        x: point.x - bounds.x,
+        y: point.y - bounds.y
+    };
+
+    return interactiveRegions.some(region =>
+        localPoint.x >= region.x &&
+        localPoint.x <= region.x + region.width &&
+        localPoint.y >= region.y &&
+        localPoint.y <= region.y + region.height
+    );
+}
+
+function setPointerPassthrough(ignore: boolean) {
+    if (!mainWindow || isPointerPassthroughActive === ignore) return;
+    isPointerPassthroughActive = ignore;
+    mainWindow.setIgnoreMouseEvents(ignore, { forward: true });
+}
+
+function startPointerPassthroughPolling() {
+    if (usesGhostWindow || pointerPassthroughInterval) return;
+
+    pointerPassthroughInterval = setInterval(() => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        const cursor = screen.getCursorScreenPoint();
+        setPointerPassthrough(!pointInInteractiveRegions(cursor));
+    }, 50);
+}
+
+function stopPointerPassthroughPolling() {
+    if (!pointerPassthroughInterval) return;
+    clearInterval(pointerPassthroughInterval);
+    pointerPassthroughInterval = null;
+}
+
 // GPU is MANDATORY for transparent windows in modern Electron.
 // Any attempt to disable it results in an invisible (black) window.
 function getSystemConfig() {
@@ -58,6 +96,9 @@ let sidebarRect = { width: 80, height: 600, offsetX: 1660, offsetY: 20 };
 let teleportShortcutKey = '';
 let borderWindow: BrowserWindow | null = null;
 let pipWindow: BrowserWindow | null = null;
+let pointerPassthroughInterval: ReturnType<typeof setInterval> | null = null;
+let isPointerPassthroughActive = true;
+let interactiveRegions: Array<{ x: number; y: number; width: number; height: number }> = [];
 
 let trackingInterval: NodeJS.Timeout | null = null;
 let pinnedHwnd: number | null = null;
@@ -478,6 +519,7 @@ app.whenReady().then(() => {
 
     createWindow();
     createTray();
+    startPointerPassthroughPolling();
 
     // Handle microphone permissions explicitly for voice-to-text
     session.defaultSession.setPermissionCheckHandler((_webContents: WebContents | null, permission: string) => {
@@ -503,6 +545,7 @@ app.whenReady().then(() => {
     app.on('will-quit', () => {
         globalShortcut.unregisterAll();
         if (psProcess) psProcess.kill();
+        stopPointerPassthroughPolling();
         stopMediaPolling();
     });
 
@@ -1217,8 +1260,20 @@ ipcMain.on('write-to-clipboard', (_event, data: { type: string; content: string 
 ipcMain.on('set-ignore-mouse-events', (event, ignore: boolean) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win) {
+        if (win === mainWindow) isPointerPassthroughActive = ignore;
         win.setIgnoreMouseEvents(ignore, { forward: true });
     }
+});
+
+ipcMain.on('update-interactive-regions', (_event, regions: Array<{ x: number; y: number; width: number; height: number }>) => {
+    interactiveRegions = regions.filter(region =>
+        Number.isFinite(region.x) &&
+        Number.isFinite(region.y) &&
+        Number.isFinite(region.width) &&
+        Number.isFinite(region.height) &&
+        region.width > 0 &&
+        region.height > 0
+    );
 });
 
 ipcMain.on('set-global-paste-mode', (event, isActive) => {

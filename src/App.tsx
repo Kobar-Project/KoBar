@@ -265,6 +265,42 @@ const App: React.FC = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  useEffect(() => {
+    if (usesGhostWindow || !window.api?.updateInteractiveRegions) return;
+
+    const collectInteractiveRegions = () => {
+      const regions = Array.from(document.querySelectorAll<HTMLElement>('.pointer-events-auto'))
+        .map((element) => element.getBoundingClientRect())
+        .filter((rect) => rect.width > 0 && rect.height > 0)
+        .filter((rect) =>
+          rect.right >= 0 &&
+          rect.bottom >= 0 &&
+          rect.left <= window.innerWidth &&
+          rect.top <= window.innerHeight
+        )
+        .map((rect) => ({
+          x: Math.max(0, rect.left),
+          y: Math.max(0, rect.top),
+          width: Math.min(window.innerWidth, rect.right) - Math.max(0, rect.left),
+          height: Math.min(window.innerHeight, rect.bottom) - Math.max(0, rect.top)
+        }));
+
+      window.api.updateInteractiveRegions(regions);
+    };
+
+    collectInteractiveRegions();
+    const interval = window.setInterval(collectInteractiveRegions, 100);
+    window.addEventListener('resize', collectInteractiveRegions);
+    window.addEventListener('scroll', collectInteractiveRegions, true);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('resize', collectInteractiveRegions);
+      window.removeEventListener('scroll', collectInteractiveRegions, true);
+      window.api?.updateInteractiveRegions?.([]);
+    };
+  }, [usesGhostWindow]);
+
   const sidebarPosition = useAppStore(state => state.sidebarPosition);
 
   return (
