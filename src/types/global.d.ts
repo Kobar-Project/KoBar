@@ -117,6 +117,15 @@ declare global {
             openExternal: (url: string) => void;
             getAppVersion: () => Promise<string>;
             isDev: () => Promise<boolean>;
+
+            // Extensions API
+            getInstalledExtensions: () => Promise<Array<{ id: string; name: string; version: string; description: string; icon: string; enabled: boolean; code?: string }>>;
+            getAvailableExtensions: () => Promise<Array<{ id: string; name: string; version: string; description: string; icon: string; downloadUrl: string }>>;
+            installExtension: (id: string) => Promise<boolean>;
+            uninstallExtension: (id: string) => Promise<boolean>;
+            toggleExtensionEnabled: (id: string, enabled: boolean) => Promise<boolean>;
+            installExtensionFromFile: () => Promise<{ success: boolean; reason?: string }>;
+            installExtensionFromPath: (filePath: string) => Promise<{ success: boolean; reason?: string }>;
         };
     }
 }

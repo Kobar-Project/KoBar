@@ -405,6 +405,14 @@ interface AppState {
     // Helper to enforce exclusivity
     closeAllUtilityPopups: () => void;
 
+    // Dynamic Extensions State
+    activeExtensionPanelId: string | null;
+    activeExtensionAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
+    extensionReloadTrigger: number;
+    triggerExtensionReload: () => void;
+    extensionsSubTab: 'installed' | 'marketplace';
+    setExtensionsSubTab: (tab: 'installed' | 'marketplace') => void;
+
     // Workspaces
     workspaces: WorkspaceConfig[];
     saveCurrentAsWorkspace: (name: string) => void;
@@ -466,8 +474,15 @@ export const useAppStore = create<AppState>()(
                 isFocusPopupOpen: false, 
                 isKoCalendarOpen: false, 
                 isKoPlayerOpen: false,
-                isShortcutsOpen: false
+                isShortcutsOpen: false,
+                activeExtensionPanelId: null
             }),
+            activeExtensionPanelId: null,
+            activeExtensionAnchorRect: null,
+            extensionReloadTrigger: 0,
+            triggerExtensionReload: () => set((state) => ({ extensionReloadTrigger: state.extensionReloadTrigger + 1 })),
+            extensionsSubTab: 'installed',
+            setExtensionsSubTab: (tab) => set({ extensionsSubTab: tab }),
             edgePosition: 'right',
             setEdgePosition: (edge) => set({ edgePosition: edge }),
             orientation: 'vertical',
@@ -944,7 +959,7 @@ export const useAppStore = create<AppState>()(
 
             // Scroll Memory
             scrollPositions: {},
-            setScrollPosition: (key, pos) => set((state) => ({ 
+            setScrollPosition: (key: string, pos: number) => set((state) => ({ 
                 scrollPositions: { ...state.scrollPositions, [key]: pos } 
             })),
 

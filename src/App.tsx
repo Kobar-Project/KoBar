@@ -17,6 +17,7 @@ import { FocusPopup } from './components/layout/FocusPopup';
 import KoPlayerPopup from './components/layout/KoPlayerPopup';
 import KoCalendarPopup from './components/calendar/KoCalendarPopup';
 import { useScreenshotStore } from './store/useScreenshotStore';
+import { useExtensionRegistry } from './components/extensions/extensionRegistry';
 
 // Global flag: when true, the ghost-window logic won't steal focus
 // Exported so ResizerHandle can set it during drags
@@ -54,6 +55,11 @@ const App: React.FC = () => {
   const customThemeColor = useAppStore(state => state.customThemeColor);
 
   const isHydrated = useAppStore(state => state.isHydrated);
+
+  const activeExtensionPanelId = useAppStore(state => state.activeExtensionPanelId);
+  const activeExtensionAnchorRect = useAppStore(state => state.activeExtensionAnchorRect);
+  const extensionReloadTrigger = useAppStore(state => state.extensionReloadTrigger);
+  const extensionsRegistry = useExtensionRegistry();
 
   // Apply persisted theme/design on mount
   useEffect(() => {
@@ -109,6 +115,43 @@ const App: React.FC = () => {
       root.style.setProperty('--theme-marker', color);
     }
   }, [theme, design, customThemeColor, isHydrated]);
+
+  // Load dynamic extensions
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    // Clear old extensions state
+    window.KoBarExtensions?.clear();
+    const oldScripts = document.querySelectorAll('script[data-extension-id]');
+    oldScripts.forEach(s => s.remove());
+
+    if (window.api?.getInstalledExtensions) {
+      window.api.getInstalledExtensions().then(exts => {
+        exts.forEach(ext => {
+          if (ext.enabled && ext.code) {
+            try {
+              const blob = new Blob([ext.code], { type: 'application/javascript' });
+              const url = URL.createObjectURL(blob);
+              const script = document.createElement('script');
+              script.src = url;
+              script.dataset.extensionId = ext.id;
+              script.onload = () => {
+                URL.revokeObjectURL(url);
+              };
+              document.head.appendChild(script);
+            } catch (err) {
+              console.error(`Failed to load extension ${ext.id}:`, err);
+            }
+          }
+        });
+      }).catch(err => console.error('Failed to query extensions:', err));
+    }
+
+    return () => {
+      const scripts = document.querySelectorAll('script[data-extension-id]');
+      scripts.forEach(s => s.remove());
+    };
+  }, [isHydrated, extensionReloadTrigger]);
 
   // Focus Tracker Interval
   useEffect(() => {
@@ -330,6 +373,17 @@ const App: React.FC = () => {
               {isShortcutsOpen && isLicensed && <ShortcutsPopup />}
               {isKoPlayerOpen && isLicensed && <KoPlayerPopup />}
               {isKoCalendarOpen && isLicensed && <KoCalendarPopup />}
+              
+              {/* Dynamic Extensions Popups */}
+              {activeExtensionPanelId && isLicensed && (() => {
+                const panel = extensionsRegistry.getPanel(activeExtensionPanelId);
+                if (!panel) return null;
+                return panel.render({
+                  onClose: () => useAppStore.setState({ activeExtensionPanelId: null }),
+                  anchorRect: activeExtensionAnchorRect
+                });
+              })()}
+
               <FocusPopup />
             </>
           )}
