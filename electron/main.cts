@@ -23,11 +23,29 @@ if (isDev) {
 const systemConfigPath = path.join(app.getPath('userData'), 'kobar-system.json');
 
 function getAlwaysOnTopLevel(): 'floating' | 'screen-saver' {
-    return isWin ? 'screen-saver' : 'floating';
+    return isMac ? 'floating' : 'screen-saver';
 }
 
 function keepWindowOnTop(win: BrowserWindow | null = mainWindow, relativeLevel = 1) {
-    win?.setAlwaysOnTop(true, getAlwaysOnTopLevel(), relativeLevel);
+    if (!win || win.isDestroyed()) return;
+    win.setAlwaysOnTop(true, getAlwaysOnTopLevel(), relativeLevel);
+    if (isLinux && win.isVisible()) {
+        win.moveTop();
+    }
+}
+
+function startAlwaysOnTopEnforcement() {
+    if (alwaysOnTopInterval) return;
+    alwaysOnTopInterval = setInterval(() => {
+        if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) return;
+        keepWindowOnTop(mainWindow);
+    }, isLinux ? 250 : 1000);
+}
+
+function stopAlwaysOnTopEnforcement() {
+    if (!alwaysOnTopInterval) return;
+    clearInterval(alwaysOnTopInterval);
+    alwaysOnTopInterval = null;
 }
 
 function pointInInteractiveRegions(point: Electron.Point) {
@@ -97,6 +115,7 @@ let teleportShortcutKey = '';
 let borderWindow: BrowserWindow | null = null;
 let pipWindow: BrowserWindow | null = null;
 let pointerPassthroughInterval: ReturnType<typeof setInterval> | null = null;
+let alwaysOnTopInterval: ReturnType<typeof setInterval> | null = null;
 let isPointerPassthroughActive = true;
 let interactiveRegions: Array<{ x: number; y: number; width: number; height: number }> = [];
 
@@ -206,7 +225,7 @@ function createWindow() {
         backgroundColor: '#00000000', // Explicit transparent alpha channel to fix Windows DWM occlusion blurring
         alwaysOnTop: true,
         skipTaskbar: true,
-        type: (isWin ? 'toolbar' : (isMac ? 'panel' : undefined)) as any, // Win: toolbar (DWM throttle fix) | Mac: panel (NSPanel, floats above Dock)
+        type: (isMac ? 'panel' : 'toolbar') as any, // Win/Linux: toolbar improves top-level stacking | Mac: NSPanel floats above Dock
         resizable: false,
         maximizable: false,
         enableLargerThanScreen: usesGhostWindow,
@@ -519,6 +538,7 @@ app.whenReady().then(() => {
 
     createWindow();
     createTray();
+    startAlwaysOnTopEnforcement();
     startPointerPassthroughPolling();
 
     // Handle microphone permissions explicitly for voice-to-text
@@ -545,6 +565,7 @@ app.whenReady().then(() => {
     app.on('will-quit', () => {
         globalShortcut.unregisterAll();
         if (psProcess) psProcess.kill();
+        stopAlwaysOnTopEnforcement();
         stopPointerPassthroughPolling();
         stopMediaPolling();
     });
@@ -1814,7 +1835,7 @@ ipcMain.on('register-teleport-shortcut', (event, shortcut) => {
                 mainWindow.webContents.send('teleport-triggered', { x: targetVisualX, y: targetVisualY });
                 
                 if (!mainWindow.isVisible()) mainWindow.show();
-                mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                keepWindowOnTop(mainWindow);
             });
         } catch (e) {
             console.error('Failed to register teleport shortcut', e);
