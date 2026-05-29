@@ -4,10 +4,12 @@ import PluginStore from './PluginStore';
 import InstalledPlugins from './InstalledPlugins';
 import WorkspacesView from './WorkspacesView';
 import FeaturesView from './FeaturesView';
+import PluginDetail from './PluginDetail';
 
 const PluginsPanel: React.FC = () => {
     const pluginsTabSubMenu = useAppStore(state => state.pluginsTabSubMenu);
     const setPluginsTabSubMenu = useAppStore(state => state.setPluginsTabSubMenu);
+    const selectedPluginId = useAppStore(state => state.selectedPluginId);
     const design = useAppStore(state => state.design);
     const t = useAppStore(state => state.t);
 
@@ -17,6 +19,17 @@ const PluginsPanel: React.FC = () => {
         { id: 'workspaces', icon: 'dashboard_customize', label: (t as any)('workspaces') || 'Workspaces' },
         { id: 'features', icon: 'toggle_on', label: (t as any)('kobarFeatures') || 'KoBar Features' },
     ];
+
+    if (selectedPluginId) {
+        return (
+            <div 
+                className="flex-1 overflow-hidden p-8 pl-10 pb-4 relative flex flex-col" 
+                style={{ backgroundColor: design === 'style2' ? 'transparent' : 'var(--theme-bg-base)' }}
+            >
+                <PluginDetail />
+            </div>
+        );
+    }
 
     return (
         <div 

@@ -416,6 +416,8 @@ interface AppState {
     setPluginsTabSubMenu: (tab: 'store' | 'installed' | 'workspaces' | 'features') => void;
     pluginsViewMode: 'grid' | 'list';
     setPluginsViewMode: (mode: 'grid' | 'list') => void;
+    selectedPluginId: string | null;
+    setSelectedPluginId: (id: string | null) => void;
     pluginsSearchQuery: string;
     setPluginsSearchQuery: (query: string) => void;
     pluginsSelectedTags: string[];
@@ -493,6 +495,8 @@ export const useAppStore = create<AppState>()(
             setPluginsTabSubMenu: (tab) => set({ pluginsTabSubMenu: tab }),
             pluginsViewMode: 'grid',
             setPluginsViewMode: (mode) => set({ pluginsViewMode: mode }),
+            selectedPluginId: null,
+            setSelectedPluginId: (id) => set({ selectedPluginId: id }),
             pluginsSearchQuery: '',
             setPluginsSearchQuery: (query) => set({ pluginsSearchQuery: query }),
             pluginsSelectedTags: [],
