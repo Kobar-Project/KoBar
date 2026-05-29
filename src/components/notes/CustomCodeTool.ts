@@ -254,10 +254,10 @@ export default class CustomCodeTool implements BlockTool {
             html = html.replace(/\b(\d+)\b/g, match => saveToken(`<span style="color: #d19a66;">${match}</span>`));
         } else if (lang === 'html') {
             html = html.replace(/(["'].*?["'])/g, match => saveToken(`<span style="color: #98c379;">${match}</span>`));
-            html = html.replace(/(&lt;\/?)([a-zA-Z0-9]+)/g, (m, p1, p2) => `${p1}${saveToken(`<span style="color: #e06c75;">${p2}</span>`)}`);
-            html = html.replace(/([a-zA-Z0-9-]+)(=)/g, (m, p1, p2) => `${saveToken(`<span style="color: #d19a66;">${p1}</span>`)}${p2}`);
+            html = html.replace(/(&lt;\/?)([a-zA-Z0-9]+)/g, (_, p1, p2) => `${p1}${saveToken(`<span style="color: #e06c75;">${p2}</span>`)}`);
+            html = html.replace(/([a-zA-Z0-9-]+)(=)/g, (_, p1, p2) => `${saveToken(`<span style="color: #d19a66;">${p1}</span>`)}${p2}`);
         } else if (lang === 'css') {
-            html = html.replace(/([a-zA-Z0-9-]+)(\s*:)/g, (m, p1, p2) => `${saveToken(`<span style="color: #56b6c2;">${p1}</span>`)}${p2}`);
+            html = html.replace(/([a-zA-Z0-9-]+)(\s*:)/g, (_, p1, p2) => `${saveToken(`<span style="color: #56b6c2;">${p1}</span>`)}${p2}`);
             html = html.replace(/(#[0-9a-fA-F]+|\b\d+(px|em|rem|%)\b)/g, match => saveToken(`<span style="color: #d19a66;">${match}</span>`));
         } else if (lang === 'python') {
             html = html.replace(/(#.*)/g, match => saveToken(`<span style="color: #5c6370; font-style: italic;">${match}</span>`));
