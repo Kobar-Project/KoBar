@@ -11,7 +11,24 @@ import { validateEditorJsData } from './editorConverters';
 import type { EditorJsOutputData } from './editorConverters';
 import BlockInsertionPanel from './BlockInsertionPanel';
 
-
+// Fix Editor.js duplicate checklist bug by overriding the static toolbox getter
+// The `@editorjs/list` plugin might be rendered twice by Editor.js Convert-to menu due to overlapping definitions
+const OriginalList = List as any;
+class CustomList extends OriginalList {
+    static get toolbox() {
+        const items = OriginalList.toolbox;
+        if (Array.isArray(items)) {
+            const seen = new Set();
+            return items.filter((item: any) => {
+                const key = item.data?.style || item.title;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+        return items;
+    }
+}
 
 const EditorJsEditor: React.FC = React.memo(() => {
     const activeNoteId = useAppStore((state) => state.activeNoteId);
@@ -151,7 +168,7 @@ const EditorJsEditor: React.FC = React.memo(() => {
                         inlineToolbar: true,
                     },
                     list: {
-                        class: List as any,
+                        class: CustomList as any,
                         inlineToolbar: true,
                         config: {
                             defaultStyle: 'unordered'

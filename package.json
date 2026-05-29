@@ -1,7 +1,7 @@
 {
   "name": "kobar",
   "productName": "KoBar",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "Modular utility sidebar for desktop. Your multi-threaded creative assistant.",
   "author": "Ekrem Edali",
   "private": true,
@@ -93,6 +93,7 @@
     "emoji-picker-react": "^4.18.0",
     "express": "^5.2.1",
     "googleapis": "^171.4.0",
+    "jsdom": "^29.1.1",
     "konva": "^10.2.3",
     "material-symbols": "^0.44.9",
     "node-machine-id": "^1.1.12",
