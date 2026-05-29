@@ -49,6 +49,8 @@ let sidebarRect = { width: 80, height: 600, offsetX: 1660, offsetY: 20 };
 let teleportShortcutKey = '';
 let borderWindow: BrowserWindow | null = null;
 let pipWindow: BrowserWindow | null = null;
+let preEyeDropperBounds: { x: number; y: number; width: number; height: number; } | null = null;
+let isEyeDropperActive = false;
 
 let trackingInterval: NodeJS.Timeout | null = null;
 let pinnedHwnd: number | null = null;
@@ -193,7 +195,10 @@ function createWindow() {
     }
 
     // Edge detection — fires during drag for smooth real-time updates
-    mainWindow.on('move', () => handleWindowMove());
+    mainWindow.on('move', () => {
+        if (isEyeDropperActive) return;
+        handleWindowMove();
+    });
 
     mainWindow.once('ready-to-show', () => {
         if (mainWindow) {
@@ -221,6 +226,7 @@ function createWindow() {
 
     let saveBoundsTimeout: ReturnType<typeof setTimeout>;
     mainWindow.on('move', () => {
+        if (isEyeDropperActive) return;
         clearTimeout(saveBoundsTimeout);
         saveBoundsTimeout = setTimeout(async () => {
             if (!mainWindow) return;
@@ -2402,4 +2408,46 @@ ipcMain.handle('get-app-version', () => {
 
 ipcMain.handle('is-dev', () => {
     return isDev;
+});
+
+ipcMain.handle('start-eyedropper', async () => {
+    if (!mainWindow) return { x: 0, y: 0 };
+    
+    isEyeDropperActive = true;
+    preEyeDropperBounds = mainWindow.getBounds();
+    
+    const displays = screen.getAllDisplays();
+    let minX = displays[0].bounds.x, minY = displays[0].bounds.y;
+    let maxX = displays[0].bounds.x + displays[0].bounds.width;
+    let maxY = displays[0].bounds.y + displays[0].bounds.height;
+
+    displays.forEach(d => {
+        if (d.bounds.x < minX) minX = d.bounds.x;
+        if (d.bounds.y < minY) minY = d.bounds.y;
+        if (d.bounds.x + d.bounds.width > maxX) maxX = d.bounds.x + d.bounds.width;
+        if (d.bounds.y + d.bounds.height > maxY) maxY = d.bounds.y + d.bounds.height;
+    });
+
+    mainWindow.setBounds({
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY
+    });
+
+    const actualBounds = mainWindow.getBounds();
+    const offset = {
+        x: preEyeDropperBounds.x - actualBounds.x,
+        y: preEyeDropperBounds.y - actualBounds.y
+    };
+
+    return offset;
+});
+
+ipcMain.handle('stop-eyedropper', async () => {
+    isEyeDropperActive = false;
+    if (mainWindow && preEyeDropperBounds) {
+        mainWindow.setBounds(preEyeDropperBounds);
+        preEyeDropperBounds = null;
+    }
 });
