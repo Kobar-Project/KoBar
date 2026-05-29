@@ -59,6 +59,8 @@ const Accordion: React.FC<{
 
 const isSystemTab = (note: any) => note.isSettings || note.title === 'Welcome to KoBar!';
 
+let globalExtensionsSubTab: 'installed' | 'marketplace' = 'installed';
+
 const SettingsPanel: React.FC = () => {
     // ─── Granular Selectors (prevents re-render on unrelated store changes) ───
     const theme = useAppStore(state => state.theme);
@@ -234,7 +236,11 @@ const SettingsPanel: React.FC = () => {
 
     // Dynamic Extensions State & Handlers
     const [installedExtensions, setInstalledExtensions] = useState<any[]>([]);
-    const [extensionsSubTab, setExtensionsSubTab] = useState<'installed' | 'marketplace'>('installed');
+    const [extensionsSubTab, setExtensionsSubTabState] = useState<'installed' | 'marketplace'>(globalExtensionsSubTab);
+    const setExtensionsSubTab = (tab: 'installed' | 'marketplace') => {
+        globalExtensionsSubTab = tab;
+        setExtensionsSubTabState(tab);
+    };
     const [extsLoading, setExtsLoading] = useState(false);
     const [installMessage, setInstallMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -278,9 +284,18 @@ const SettingsPanel: React.FC = () => {
     const handleUninstallExtension = async (id: string) => {
         if (window.api?.uninstallExtension) {
             setExtsLoading(true);
-            await window.api.uninstallExtension(id);
-            triggerExtensionReload();
-            await loadExtensionsData();
+            const startTime = Date.now();
+            try {
+                await window.api.uninstallExtension(id);
+                triggerExtensionReload();
+                await loadExtensionsData();
+            } finally {
+                const elapsed = Date.now() - startTime;
+                if (elapsed < 500) {
+                    await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+                }
+                setExtsLoading(false);
+            }
         }
     };
 
@@ -332,6 +347,7 @@ const SettingsPanel: React.FC = () => {
         if (window.api?.installExtensionFromPath) {
             setExtsLoading(true);
             setInstallMessage(null);
+            const startTime = Date.now();
             try {
                 const res = await window.api.installExtensionFromPath(filePath);
                 if (res.success) {
@@ -344,6 +360,10 @@ const SettingsPanel: React.FC = () => {
             } catch (err: any) {
                 setInstallMessage({ type: 'error', text: `Error during installation: ${err.message || err}` });
             } finally {
+                const elapsed = Date.now() - startTime;
+                if (elapsed < 500) {
+                    await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+                }
                 setExtsLoading(false);
             }
         }
@@ -353,18 +373,30 @@ const SettingsPanel: React.FC = () => {
         if (window.api?.installExtensionFromFile) {
             setExtsLoading(true);
             setInstallMessage(null);
+            const startTime = Date.now();
+            let isCanceled = false;
             try {
                 const res = await window.api.installExtensionFromFile();
                 if (res.success) {
                     setInstallMessage({ type: 'success', text: 'Extension installed successfully!' });
                     triggerExtensionReload();
                     await loadExtensionsData();
-                } else if (res.reason !== 'Canceled by user') {
-                    setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+                } else {
+                    if (res.reason === 'Canceled by user') {
+                        isCanceled = true;
+                    } else {
+                        setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+                    }
                 }
             } catch (e: any) {
                 setInstallMessage({ type: 'error', text: `Error during installation: ${e.message || e}` });
             } finally {
+                if (!isCanceled) {
+                    const elapsed = Date.now() - startTime;
+                    if (elapsed < 500) {
+                        await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+                    }
+                }
                 setExtsLoading(false);
             }
         }
@@ -1598,15 +1630,8 @@ const SettingsPanel: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Extensions Loading Indicator */}
-                            {extsLoading && (
-                                <div className="flex items-center justify-center p-8">
-                                    <span className="material-symbols-outlined text-primary text-[24px] animate-spin">sync</span>
-                                </div>
-                            )}
-
                             {/* Installed Extensions Sub-tab */}
-                            {!extsLoading && extensionsSubTab === 'installed' && (
+                            {extensionsSubTab === 'installed' && (
                                 <div 
                                     className="relative min-h-[120px]"
                                     onDragEnter={handleExtensionDragEnter}
@@ -1689,12 +1714,19 @@ const SettingsPanel: React.FC = () => {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Loading overlay */}
+                                    {extsLoading && (
+                                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20 animate-in fade-in duration-200">
+                                            <span className="material-symbols-outlined text-primary text-[28px] animate-spin">sync</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             {/* Install Extensions Sub-tab */}
-                            {!extsLoading && extensionsSubTab === 'marketplace' && (
-                                <div className="space-y-4">
+                            {extensionsSubTab === 'marketplace' && (
+                                <div className="space-y-4 relative">
                                     <div 
                                         onClick={handleInstallExtensionFromFile}
                                         onDragEnter={handleExtensionDragEnter}
@@ -1720,6 +1752,13 @@ const SettingsPanel: React.FC = () => {
                                             </span>
                                         </div>
                                     </div>
+
+                                    {/* Loading overlay */}
+                                    {extsLoading && (
+                                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20 animate-in fade-in duration-200">
+                                            <span className="material-symbols-outlined text-primary text-[28px] animate-spin">sync</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
