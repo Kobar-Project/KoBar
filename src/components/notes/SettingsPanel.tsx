@@ -238,8 +238,15 @@ const SettingsPanel: React.FC = () => {
     const setExtensionsSubTab = useAppStore(state => state.setExtensionsSubTab);
     const [extsLoading, setExtsLoading] = useState(false);
     const [installMessage, setInstallMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-    const [isDragOver, setIsDragOver] = useState(false);
+    const [isDraggingFile, setIsDraggingFile] = useState(false);
+    const dragCounter = useRef(0);
     const triggerExtensionReload = useAppStore(state => state.triggerExtensionReload);
+
+    // Reset drag-and-drop state on tab switch to prevent leaks
+    useEffect(() => {
+        dragCounter.current = 0;
+        setIsDraggingFile(false);
+    }, [extensionsSubTab]);
 
     const loadExtensionsData = async () => {
         setExtsLoading(true);
@@ -272,9 +279,18 @@ const SettingsPanel: React.FC = () => {
     const handleUninstallExtension = async (id: string) => {
         if (window.api?.uninstallExtension) {
             setExtsLoading(true);
-            await window.api.uninstallExtension(id);
-            triggerExtensionReload();
-            await loadExtensionsData();
+            const startTime = Date.now();
+            try {
+                await window.api.uninstallExtension(id);
+                triggerExtensionReload();
+                await loadExtensionsData();
+            } finally {
+                const elapsed = Date.now() - startTime;
+                if (elapsed < 500) {
+                    await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+                }
+                setExtsLoading(false);
+            }
         }
     };
 
@@ -282,60 +298,102 @@ const SettingsPanel: React.FC = () => {
         if (window.api?.installExtensionFromFile) {
             setExtsLoading(true);
             setInstallMessage(null);
+            const startTime = Date.now();
+            let isCanceled = false;
             try {
                 const res = await window.api.installExtensionFromFile();
                 if (res.success) {
                     setInstallMessage({ type: 'success', text: 'Extension installed successfully!' });
                     triggerExtensionReload();
                     await loadExtensionsData();
-                } else if (res.reason !== 'Canceled by user') {
-                    setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+                } else {
+                    if (res.reason === 'Canceled by user') {
+                        isCanceled = true;
+                    } else {
+                        setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+                    }
                 }
             } catch (e: any) {
                 setInstallMessage({ type: 'error', text: `Error during installation: ${e.message || e}` });
             } finally {
+                if (!isCanceled) {
+                    const elapsed = Date.now() - startTime;
+                    if (elapsed < 500) {
+                        await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+                    }
+                }
                 setExtsLoading(false);
             }
         }
     };
 
-    const handleDropExtension = async (e: React.DragEvent<HTMLDivElement>) => {
+    const handleExtensionDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
-        setIsDragOver(false);
+        dragCounter.current++;
+        if (dragCounter.current === 1) {
+            setIsDraggingFile(true);
+        }
+    };
 
-        const files = e.dataTransfer?.files;
-        if (!files || files.length === 0) return;
+    const handleExtensionDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleExtensionDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current--;
+        if (dragCounter.current === 0) {
+            setIsDraggingFile(false);
+        }
+    };
+
+    const handleExtensionDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current = 0;
+        setIsDraggingFile(false);
+
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length === 0) return;
 
         const file = files[0];
-        if (!file.name.toLowerCase().endsWith('.zip')) {
-            setInstallMessage({ type: 'error', text: 'Only .zip files are supported.' });
+        const filePath = window.api?.getFilePath?.(file) || (file as any).path;
+        
+        if (!filePath) {
+            setInstallMessage({ type: 'error', text: 'Could not resolve file path.' });
             return;
         }
 
-        // Use Electron's webUtils to get the native file path
-        const filePath = window.api?.getFilePath?.(file);
-        if (!filePath || !window.api?.installExtensionFromPath) {
-            setInstallMessage({ type: 'error', text: 'Drag & drop is not supported in this environment.' });
+        if (!filePath.toLowerCase().endsWith('.zip')) {
+            setInstallMessage({ type: 'error', text: 'Please drop a valid .zip extension package.' });
             return;
         }
 
-        setExtsLoading(true);
-        setInstallMessage(null);
-        try {
-            const res = await window.api.installExtensionFromPath(filePath);
-            if (res.success) {
-                setInstallMessage({ type: 'success', text: 'Extension installed successfully!' });
-                triggerExtensionReload();
-                await loadExtensionsData();
-            } else {
-                setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+        if (window.api?.installExtensionFromPath) {
+            setExtsLoading(true);
+            setInstallMessage(null);
+            const startTime = Date.now();
+            try {
+                const res = await window.api.installExtensionFromPath(filePath);
+                if (res.success) {
+                    setInstallMessage({ type: 'success', text: 'Extension installed successfully!' });
+                    triggerExtensionReload();
+                    await loadExtensionsData();
+                } else {
+                    setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+                }
+            } catch (err: any) {
+                setInstallMessage({ type: 'error', text: `Error during installation: ${err.message || err}` });
+            } finally {
+                const elapsed = Date.now() - startTime;
+                if (elapsed < 500) {
+                    await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+                }
+                setExtsLoading(false);
             }
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            setInstallMessage({ type: 'error', text: `Error during installation: ${message}` });
-        } finally {
-            setExtsLoading(false);
         }
     };
     const [appVersion, setAppVersion] = useState('');
@@ -1567,91 +1625,135 @@ const SettingsPanel: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Extensions Loading Indicator */}
-                            {extsLoading && (
-                                <div className="flex items-center justify-center p-8">
-                                    <span className="material-symbols-outlined text-primary text-[24px] animate-spin">sync</span>
-                                </div>
-                            )}
-
                             {/* Installed Extensions Sub-tab */}
-                            {!extsLoading && extensionsSubTab === 'installed' && (
-                                <div className="space-y-4">
+                            {extensionsSubTab === 'installed' && (
+                                <div 
+                                    className="relative min-h-[120px]"
+                                    onDragEnter={handleExtensionDragEnter}
+                                    onDragOver={handleExtensionDragOver}
+                                    onDragLeave={handleExtensionDragLeave}
+                                    onDrop={handleExtensionDrop}
+                                >
                                     {installedExtensions.length === 0 ? (
-                                        <div className="p-6 border border-dashed border-white/10 rounded-xl text-center text-slate-500 text-sm">
-                                            No extensions installed yet. Click "Install Extensions" to add one!
+                                        <div 
+                                            onClick={handleInstallExtensionFromFile}
+                                            className={`p-8 border border-dashed rounded-xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 group
+                                                ${isDraggingFile 
+                                                    ? 'border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-primary/10' 
+                                                    : 'border-[#2a241c] hover:border-primary/50 bg-black/20 hover:bg-black/30'}`}
+                                            title="Click to select or Drag & Drop Extension ZIP"
+                                        >
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all
+                                                ${isDraggingFile ? 'bg-primary/20 scale-110' : 'bg-primary/10 group-hover:scale-110'}`}>
+                                                <span className={`material-symbols-outlined text-primary text-[28px] transition-all
+                                                    ${isDraggingFile ? 'animate-bounce' : ''}`}>folder_zip</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-sm font-semibold text-slate-200">
+                                                    {isDraggingFile ? 'Drop to Install!' : 'No extensions installed yet.'}
+                                                </span>
+                                                <span className="text-xs text-slate-400">
+                                                    {isDraggingFile ? 'Release the ZIP file to automatically install' : 'Drag & drop an extension ZIP file here or click to browse'}
+                                                </span>
+                                            </div>
                                         </div>
                                     ) : (
-                                        installedExtensions.map((ext) => (
-                                            <div key={ext.id} className="flex items-center justify-between p-4 rounded-xl border border-[#2a241c] bg-black/20 hover:border-primary/30 transition-all">
-                                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                                                        <span className="material-symbols-outlined text-primary text-[20px]">{ext.icon || 'extension'}</span>
-                                                    </div>
-                                                    <div className="flex flex-col min-w-0">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-sm font-semibold text-slate-200 truncate">{ext.name}</span>
-                                                            <span className="text-[10px] font-mono text-slate-500 shrink-0">v{ext.version}</span>
+                                        <div className="space-y-4">
+                                            {installedExtensions.map((ext) => (
+                                                <div key={ext.id} className="flex items-center justify-between p-4 rounded-xl border border-[#2a241c] bg-black/20 hover:border-primary/30 transition-all">
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                                            <span className="material-symbols-outlined text-primary text-[20px]">{ext.icon || 'extension'}</span>
                                                         </div>
-                                                        <span className="text-xs text-slate-400 leading-normal truncate max-w-xs">{ext.description}</span>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-semibold text-slate-200 truncate">{ext.name}</span>
+                                                                <span className="text-[10px] font-mono text-slate-500 shrink-0">v{ext.version}</span>
+                                                            </div>
+                                                            <span className="text-xs text-slate-400 leading-normal truncate max-w-xs">{ext.description}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        {/* Enable/Disable Toggle */}
+                                                        <button
+                                                            onClick={() => handleToggleExtension(ext.id, !ext.enabled)}
+                                                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${ext.enabled ? 'bg-green-500' : 'bg-slate-600'}`}
+                                                        >
+                                                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${ext.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                        </button>
+
+                                                        {/* Uninstall Button */}
+                                                        <button
+                                                            onClick={() => handleUninstallExtension(ext.id)}
+                                                            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                            title="Uninstall"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                        </button>
                                                     </div>
                                                 </div>
+                                            ))}
+                                        </div>
+                                    )}
 
-                                                <div className="flex items-center gap-3 shrink-0">
-                                                    {/* Enable/Disable Toggle */}
-                                                    <button
-                                                        onClick={() => handleToggleExtension(ext.id, !ext.enabled)}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${ext.enabled ? 'bg-green-500' : 'bg-slate-600'}`}
-                                                    >
-                                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${ext.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                                                    </button>
-
-                                                    {/* Uninstall Button */}
-                                                    <button
-                                                        onClick={() => handleUninstallExtension(ext.id)}
-                                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                                                        title="Uninstall"
-                                                    >
-                                                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                                                    </button>
-                                                </div>
+                                    {/* Drag over overlay when there are extensions installed */}
+                                    {isDraggingFile && installedExtensions.length > 0 && (
+                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm border border-dashed border-primary rounded-xl flex flex-col items-center justify-center gap-2 pointer-events-none z-10 animate-in fade-in duration-200">
+                                            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center animate-bounce">
+                                                <span className="material-symbols-outlined text-primary text-[24px]">folder_zip</span>
                                             </div>
-                                        ))
+                                            <div className="flex flex-col items-center gap-1 text-center">
+                                                <span className="text-sm font-semibold text-slate-200">Drop to Install!</span>
+                                                <span className="text-xs text-slate-400">Release the ZIP file to automatically install</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Loading overlay */}
+                                    {extsLoading && (
+                                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20 animate-in fade-in duration-200">
+                                            <span className="material-symbols-outlined text-primary text-[28px] animate-spin">sync</span>
+                                        </div>
                                     )}
                                 </div>
                             )}
 
                             {/* Install Extensions Sub-tab */}
-                            {!extsLoading && extensionsSubTab === 'marketplace' && (
-                                <div className="space-y-4">
+                            {extensionsSubTab === 'marketplace' && (
+                                <div className="space-y-4 relative">
                                     <div 
                                         onClick={handleInstallExtensionFromFile}
-                                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
-                                        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); }}
-                                        onDrop={handleDropExtension}
-                                        className={`p-8 border border-dashed rounded-xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 group ${
-                                            isDragOver 
-                                                ? 'border-primary bg-primary/10 scale-[1.02]' 
-                                                : 'border-[#2a241c] hover:border-primary/50 bg-black/20 hover:bg-black/30'
-                                        }`}
+                                        onDragEnter={handleExtensionDragEnter}
+                                        onDragOver={handleExtensionDragOver}
+                                        onDragLeave={handleExtensionDragLeave}
+                                        onDrop={handleExtensionDrop}
+                                        className={`p-8 border border-dashed rounded-xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 group
+                                            ${isDraggingFile 
+                                                ? 'border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-primary/10' 
+                                                : 'border-[#2a241c] hover:border-primary/50 bg-black/20 hover:bg-black/30'}`}
                                     >
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                                            isDragOver ? 'bg-primary/20 scale-110' : 'bg-primary/10 group-hover:scale-110'
-                                        }`}>
-                                            <span className="material-symbols-outlined text-primary text-[28px]">
-                                                {isDragOver ? 'download' : 'folder_zip'}
-                                            </span>
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all
+                                            ${isDraggingFile ? 'bg-primary/20 scale-110' : 'bg-primary/10 group-hover:scale-110'}`}>
+                                            <span className={`material-symbols-outlined text-primary text-[28px] transition-all
+                                                ${isDraggingFile ? 'animate-bounce' : ''}`}>folder_zip</span>
                                         </div>
                                         <div className="flex flex-col gap-1">
                                             <span className="text-sm font-semibold text-slate-200">
-                                                {isDragOver ? 'Drop ZIP to Install' : 'Click or Drag & Drop Extension ZIP'}
+                                                {isDraggingFile ? 'Drop to Install!' : 'Click to Select or Drag & Drop Extension ZIP'}
                                             </span>
                                             <span className="text-xs text-slate-400">
-                                                {isDragOver ? 'Release to start installation' : 'Select or drop a KoBar extension (.zip) file'}
+                                                {isDraggingFile ? 'Release the ZIP file to automatically install' : 'Select or drop an independently packaged KoBar extension (.zip)'}
                                             </span>
                                         </div>
                                     </div>
+
+                                    {/* Loading overlay */}
+                                    {extsLoading && (
+                                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20 animate-in fade-in duration-200">
+                                            <span className="material-symbols-outlined text-primary text-[28px] animate-spin">sync</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
