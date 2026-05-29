@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { exec, execFile, ChildProcess } from 'child_process';
 import { LicenseManager } from './licenseManager.cjs';
 import { autoUpdater } from 'electron-updater';
+import AdmZip from 'adm-zip';
 
 // ─── KoPlayer: Worker Thread Setup ────────────────────────────────
 import { Worker } from 'worker_threads';
@@ -2222,8 +2223,311 @@ ipcMain.on('media-command', (_event, command: string) => {
     }
 });
 
-ipcMain.on('open-external', (_event, url) => {
+ipcMain.on('open-external', (_event, url: string) => {
     shell.openExternal(url);
+});
+
+// ─── Dynamic Extensions IPC Handlers ────────────────────────────────
+const extensionsDir = path.join(app.getPath('userData'), 'extensions');
+const extensionsConfigPath = path.join(app.getPath('userData'), 'extensions-config.json');
+
+// Ensure extensions directory exists
+if (!fs.existsSync(extensionsDir)) {
+    fs.mkdirSync(extensionsDir, { recursive: true });
+}
+
+function getExtensionsConfig(): Record<string, boolean> {
+    if (fs.existsSync(extensionsConfigPath)) {
+        try {
+            return JSON.parse(fs.readFileSync(extensionsConfigPath, 'utf8'));
+        } catch (e) {
+            console.error('Failed to parse extensions config:', e);
+        }
+    }
+    return {};
+}
+
+function saveExtensionsConfig(config: Record<string, boolean>) {
+    try {
+        fs.writeFileSync(extensionsConfigPath, JSON.stringify(config, null, 2), 'utf8');
+    } catch (e) {
+        console.error('Failed to save extensions config:', e);
+    }
+}
+
+ipcMain.handle('get-installed-extensions', async () => {
+    try {
+        if (!fs.existsSync(extensionsDir)) {
+            return [];
+        }
+        const dirs = fs.readdirSync(extensionsDir);
+        const config = getExtensionsConfig();
+        const installed: any[] = [];
+
+        for (const dirName of dirs) {
+            const dirPath = path.join(extensionsDir, dirName);
+            if (!fs.statSync(dirPath).isDirectory()) continue;
+
+            const manifestPath = path.join(dirPath, 'manifest.json');
+            if (fs.existsSync(manifestPath)) {
+                try {
+                    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                    const entryPath = path.join(dirPath, manifest.entry || 'index.js');
+                    let code = '';
+                    if (fs.existsSync(entryPath)) {
+                        code = fs.readFileSync(entryPath, 'utf8');
+                    }
+                    installed.push({
+                        id: manifest.id || dirName,
+                        name: manifest.name || dirName,
+                        version: manifest.version || '1.0.0',
+                        description: manifest.description || '',
+                        icon: manifest.icon || 'extension',
+                        enabled: config[manifest.id] !== false, // default to enabled if not explicitly disabled
+                        code: code
+                    });
+                } catch (err) {
+                    console.error(`Failed to load manifest for extension ${dirName}:`, err);
+                }
+            }
+        }
+        return installed;
+    } catch (e) {
+        console.error('Failed to get installed extensions:', e);
+        return [];
+    }
+});
+
+ipcMain.handle('get-available-extensions', async () => {
+    // Marketplace is currently empty (users can load custom extensions via zip files)
+    return [];
+});
+
+ipcMain.handle('install-extension', async (_event, id: string) => {
+    try {
+        const destDir = path.join(extensionsDir, id);
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+        }
+
+        let manifestContent = '';
+        let indexJsContent = '';
+
+        // 1. Try to fetch from Vite dev server if running
+        try {
+            const resManifest = await fetch(`http://localhost:5173/extensions/${id}/manifest.json`);
+            const resIndex = await fetch(`http://localhost:5173/extensions/${id}/index.js`);
+            if (resManifest.ok && resIndex.ok) {
+                manifestContent = await resManifest.text();
+                indexJsContent = await resIndex.text();
+            }
+        } catch (e) {
+            // Dev server not available/failed
+        }
+
+        // 2. Try to copy from public assets folder in package
+        if (!manifestContent || !indexJsContent) {
+            try {
+                const baseDir = isDev
+                    ? path.join(__dirname, '../public/extensions', id)
+                    : path.join(app.getAppPath(), 'dist/extensions', id);
+
+                const manifestPath = path.join(baseDir, 'manifest.json');
+                const indexPath = path.join(baseDir, 'index.js');
+
+                if (fs.existsSync(manifestPath) && fs.existsSync(indexPath)) {
+                    manifestContent = fs.readFileSync(manifestPath, 'utf8');
+                    indexJsContent = fs.readFileSync(indexPath, 'utf8');
+                }
+            } catch (e) {
+                // Fallback copy failed
+            }
+        }
+
+
+
+        if (!manifestContent || !indexJsContent) {
+            throw new Error('Extension source files not found.');
+        }
+
+        fs.writeFileSync(path.join(destDir, 'manifest.json'), manifestContent, 'utf8');
+        fs.writeFileSync(path.join(destDir, 'index.js'), indexJsContent, 'utf8');
+
+        // Set as enabled in config
+        const config = getExtensionsConfig();
+        config[id] = true;
+        saveExtensionsConfig(config);
+
+        return true;
+    } catch (e) {
+        console.error(`Failed to install extension ${id}:`, e);
+        return false;
+    }
+});
+
+ipcMain.handle('uninstall-extension', async (_event, id: string) => {
+    try {
+        const destDir = path.join(extensionsDir, id);
+        if (fs.existsSync(destDir)) {
+            fs.rmSync(destDir, { recursive: true, force: true });
+        }
+        const config = getExtensionsConfig();
+        delete config[id];
+        saveExtensionsConfig(config);
+        return true;
+    } catch (e) {
+        console.error(`Failed to uninstall extension ${id}:`, e);
+        return false;
+    }
+});
+
+ipcMain.handle('toggle-extension-enabled', async (_event, id: string, enabled: boolean) => {
+    try {
+        const config = getExtensionsConfig();
+        config[id] = enabled;
+        saveExtensionsConfig(config);
+        return true;
+    } catch (e) {
+        console.error(`Failed to toggle extension enabled state:`, e);
+        return false;
+    }
+});
+
+// Shared helper: installs an extension from a ZIP file path
+async function installExtensionFromZipPath(zipPath: string): Promise<{ success: boolean; reason?: string }> {
+    const zip = new AdmZip(zipPath);
+    
+    // Extract to a temporary folder inside userData first to inspect manifest.json
+    const tempExtractDir = path.join(app.getPath('userData'), 'temp_ext_' + Date.now());
+    if (!fs.existsSync(tempExtractDir)) {
+        fs.mkdirSync(tempExtractDir, { recursive: true });
+    }
+
+    zip.extractAllTo(tempExtractDir, true);
+
+    // Check if manifest.json exists
+    // Check both the root directory and the first level subdirectories for manifest.json
+    let manifestPath = path.join(tempExtractDir, 'manifest.json');
+    let searchDir = tempExtractDir;
+
+    if (!fs.existsSync(manifestPath)) {
+        const files = fs.readdirSync(tempExtractDir);
+        if (files.length === 1) {
+            const subDirPath = path.join(tempExtractDir, files[0]);
+            if (fs.statSync(subDirPath).isDirectory()) {
+                const subManifestPath = path.join(subDirPath, 'manifest.json');
+                if (fs.existsSync(subManifestPath)) {
+                    manifestPath = subManifestPath;
+                    searchDir = subDirPath;
+                }
+            }
+        } else {
+            // Look for any subdirectory containing manifest.json at the top level
+            for (const file of files) {
+                const subDirPath = path.join(tempExtractDir, file);
+                if (fs.statSync(subDirPath).isDirectory()) {
+                    const subManifestPath = path.join(subDirPath, 'manifest.json');
+                    if (fs.existsSync(subManifestPath)) {
+                        manifestPath = subManifestPath;
+                        searchDir = subDirPath;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if (!fs.existsSync(manifestPath)) {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        return { success: false, reason: 'manifest.json not found in ZIP archive.' };
+    }
+
+    let manifest: any;
+    try {
+        manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    } catch (e) {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        return { success: false, reason: 'Invalid manifest.json file.' };
+    }
+
+    if (!manifest.id || !manifest.name) {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        return { success: false, reason: 'manifest.json is missing required fields "id" or "name".' };
+    }
+
+    const extensionId = manifest.id;
+    const targetDir = path.join(extensionsDir, extensionId);
+
+    // If target directory already exists, clear it first
+    if (fs.existsSync(targetDir)) {
+        fs.rmSync(targetDir, { recursive: true, force: true });
+    }
+
+    // Ensure parent extensions folder exists
+    if (!fs.existsSync(extensionsDir)) {
+        fs.mkdirSync(extensionsDir, { recursive: true });
+    }
+
+    // Copy/move searchDir (which contains manifest.json at its root) to targetDir
+    fs.renameSync(searchDir, targetDir);
+
+    // Clean up the temp extract root
+    if (fs.existsSync(tempExtractDir)) {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+    }
+
+    // Update config to enable this extension
+    const config = getExtensionsConfig();
+    config[extensionId] = true;
+    saveExtensionsConfig(config);
+
+    return { success: true };
+}
+
+ipcMain.handle('install-extension-from-file', async () => {
+    try {
+        // Pass mainWindow as parent so the dialog opens above the always-on-top window
+        const parentWin = mainWindow || BrowserWindow.getAllWindows()[0];
+        const dialogOptions = {
+            title: 'Select Extension ZIP Archive',
+            filters: [
+                { name: 'ZIP Archives', extensions: ['zip'] }
+            ],
+            properties: ['openFile' as const]
+        };
+
+        const { canceled, filePaths } = parentWin
+            ? await dialog.showOpenDialog(parentWin, dialogOptions)
+            : await dialog.showOpenDialog(dialogOptions);
+
+        if (canceled || filePaths.length === 0) {
+            return { success: false, reason: 'Canceled by user' };
+        }
+
+        return await installExtensionFromZipPath(filePaths[0]);
+    } catch (e: any) {
+        console.error('Failed to install extension from file:', e);
+        return { success: false, reason: e.message || 'Unknown error occurred.' };
+    }
+});
+
+// Install extension from a file path directly (used by drag & drop)
+ipcMain.handle('install-extension-from-path', async (_event, filePath: string) => {
+    try {
+        if (!filePath || typeof filePath !== 'string') {
+            return { success: false, reason: 'Invalid file path.' };
+        }
+        if (!filePath.toLowerCase().endsWith('.zip')) {
+            return { success: false, reason: 'Only .zip files are supported.' };
+        }
+        if (!fs.existsSync(filePath)) {
+            return { success: false, reason: 'File not found.' };
+        }
+        return await installExtensionFromZipPath(filePath);
+    } catch (e: any) {
+        console.error('Failed to install extension from path:', e);
+        return { success: false, reason: e.message || 'Unknown error occurred.' };
+    }
 });
 
 ipcMain.handle('get-app-version', () => {

@@ -48,3 +48,6 @@ Assets/microsoftStore/
 # Wiki contents (private/managed separately)
 Assets/wiki/
 Assets/wiki.md
+
+# Extensions testing directories
+public/extensions/

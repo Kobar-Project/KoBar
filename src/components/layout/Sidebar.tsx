@@ -6,6 +6,7 @@ import { setIsResizingGlobal } from '../../App';
 import FocusButton from './FocusButton';
 import CalculatorButton from './CalculatorButton';
 import TooltipButton from './TooltipButton';
+import { useExtensionRegistry } from '../extensions/extensionRegistry';
 
 const Sidebar: React.FC = () => {
     const toggleNotePanel = useAppStore(state => state.toggleNotePanel);
@@ -78,6 +79,12 @@ const Sidebar: React.FC = () => {
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const orientation = useAppStore(state => state.orientation);
+    
+    // Dynamic Extensions selectors
+    const activeExtensionPanelId = useAppStore(state => state.activeExtensionPanelId);
+    const extensionReloadTrigger = useAppStore(state => state.extensionReloadTrigger);
+    void extensionReloadTrigger; // Force re-render on reload, mark as used to prevent TS6133
+    const extensionsRegistry = useExtensionRegistry();
 
     // Sidebar drag state
     const setSidebarPosition = useAppStore(state => state.setSidebarPosition);
@@ -870,10 +877,33 @@ const Sidebar: React.FC = () => {
                         }
                     }).filter(Boolean);
 
-                    return features.map((feat, idx) => (
+                    const dynamicButtons = extensionsRegistry.getButtons();
+                    const extFeatures = dynamicButtons.map(btn => {
+                        const isOpen = activeExtensionPanelId === btn.id;
+                        return (
+                            <div key={btn.id} className="w-full flex justify-center no-drag-region">
+                                <TooltipButton
+                                    label={btn.label}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg
+                                        ${isOpen ? 'bg-primary/20 text-primary border-primary/50' : 'bg-white/5 text-slate-400 hover:text-primary hover:bg-white/10'}`}
+                                    style={{ borderWidth: isOpen ? '1px' : '0px' }}
+                                    onClick={(e) => {
+                                        const rect = sidebarContainerRef.current?.getBoundingClientRect() || e.currentTarget.getBoundingClientRect();
+                                        btn.onClick(e as any, rect);
+                                    }}
+                                >
+                                    <span className="material-symbols-outlined text-[24px]">{btn.icon}</span>
+                                </TooltipButton>
+                            </div>
+                        );
+                    });
+
+                    const allFeatures = [...features, ...extFeatures];
+
+                    return allFeatures.map((feat, idx) => (
                         <React.Fragment key={idx}>
                             {feat}
-                            {(idx < features.length - 1) && (
+                            {(idx < allFeatures.length - 1) && (
                                 <div className={`${orientation === 'horizontal' ? 'h-10 w-px' : 'w-10 h-px'} bg-white/5 no-drag-region shrink-0`} />
                             )}
                         </React.Fragment>
