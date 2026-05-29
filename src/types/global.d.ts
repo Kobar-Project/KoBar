@@ -125,6 +125,7 @@ declare global {
             uninstallExtension: (id: string) => Promise<boolean>;
             toggleExtensionEnabled: (id: string, enabled: boolean) => Promise<boolean>;
             installExtensionFromFile: () => Promise<{ success: boolean; reason?: string }>;
+            installExtensionFromPath: (filePath: string) => Promise<{ success: boolean; reason?: string }>;
         };
     }
 }

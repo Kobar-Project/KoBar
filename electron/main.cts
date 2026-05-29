@@ -2259,21 +2259,8 @@ ipcMain.handle('toggle-extension-enabled', async (_event, id: string, enabled: b
     }
 });
 
-ipcMain.handle('install-extension-from-file', async () => {
+async function installExtensionZip(zipPath: string): Promise<{ success: boolean; reason?: string }> {
     try {
-        const { canceled, filePaths } = await dialog.showOpenDialog({
-            title: 'Select Extension ZIP Archive',
-            filters: [
-                { name: 'ZIP Archives', extensions: ['zip'] }
-            ],
-            properties: ['openFile']
-        });
-
-        if (canceled || filePaths.length === 0) {
-            return { success: false, reason: 'Canceled by user' };
-        }
-
-        const zipPath = filePaths[0];
         const zip = new AdmZip(zipPath);
         
         // We will extract to a temporary folder inside userData first to inspect manifest.json
@@ -2362,9 +2349,34 @@ ipcMain.handle('install-extension-from-file', async () => {
 
         return { success: true };
     } catch (e: any) {
-        console.error('Failed to install extension from file:', e);
+        console.error('Failed to install extension from zip:', e);
         return { success: false, reason: e.message || 'Unknown error occurred.' };
     }
+}
+
+ipcMain.handle('install-extension-from-file', async () => {
+    try {
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            title: 'Select Extension ZIP Archive',
+            filters: [
+                { name: 'ZIP Archives', extensions: ['zip'] }
+            ],
+            properties: ['openFile']
+        });
+
+        if (canceled || filePaths.length === 0) {
+            return { success: false, reason: 'Canceled by user' };
+        }
+
+        return await installExtensionZip(filePaths[0]);
+    } catch (e: any) {
+        console.error('Failed to install extension from file selector:', e);
+        return { success: false, reason: e.message || 'Unknown error occurred.' };
+    }
+});
+
+ipcMain.handle('install-extension-from-path', async (_event, filePath: string) => {
+    return await installExtensionZip(filePath);
 });
 
 ipcMain.handle('get-app-version', () => {
