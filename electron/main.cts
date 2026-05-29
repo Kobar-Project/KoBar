@@ -2259,124 +2259,141 @@ ipcMain.handle('toggle-extension-enabled', async (_event, id: string, enabled: b
     }
 });
 
-async function installExtensionZip(zipPath: string): Promise<{ success: boolean; reason?: string }> {
-    try {
-        const zip = new AdmZip(zipPath);
-        
-        // We will extract to a temporary folder inside userData first to inspect manifest.json
-        const tempExtractDir = path.join(app.getPath('userData'), 'temp_ext_' + Date.now());
-        if (!fs.existsSync(tempExtractDir)) {
-            fs.mkdirSync(tempExtractDir, { recursive: true });
-        }
+// Shared helper: installs an extension from a ZIP file path
+async function installExtensionFromZipPath(zipPath: string): Promise<{ success: boolean; reason?: string }> {
+    const zip = new AdmZip(zipPath);
+    
+    // Extract to a temporary folder inside userData first to inspect manifest.json
+    const tempExtractDir = path.join(app.getPath('userData'), 'temp_ext_' + Date.now());
+    if (!fs.existsSync(tempExtractDir)) {
+        fs.mkdirSync(tempExtractDir, { recursive: true });
+    }
 
-        zip.extractAllTo(tempExtractDir, true);
+    zip.extractAllTo(tempExtractDir, true);
 
-        // Check if manifest.json exists
-        // Check both the root directory and the first level subdirectories for manifest.json
-        let manifestPath = path.join(tempExtractDir, 'manifest.json');
-        let searchDir = tempExtractDir;
+    // Check if manifest.json exists
+    // Check both the root directory and the first level subdirectories for manifest.json
+    let manifestPath = path.join(tempExtractDir, 'manifest.json');
+    let searchDir = tempExtractDir;
 
-        if (!fs.existsSync(manifestPath)) {
-            const files = fs.readdirSync(tempExtractDir);
-            if (files.length === 1) {
-                const subDirPath = path.join(tempExtractDir, files[0]);
+    if (!fs.existsSync(manifestPath)) {
+        const files = fs.readdirSync(tempExtractDir);
+        if (files.length === 1) {
+            const subDirPath = path.join(tempExtractDir, files[0]);
+            if (fs.statSync(subDirPath).isDirectory()) {
+                const subManifestPath = path.join(subDirPath, 'manifest.json');
+                if (fs.existsSync(subManifestPath)) {
+                    manifestPath = subManifestPath;
+                    searchDir = subDirPath;
+                }
+            }
+        } else {
+            // Look for any subdirectory containing manifest.json at the top level
+            for (const file of files) {
+                const subDirPath = path.join(tempExtractDir, file);
                 if (fs.statSync(subDirPath).isDirectory()) {
                     const subManifestPath = path.join(subDirPath, 'manifest.json');
                     if (fs.existsSync(subManifestPath)) {
                         manifestPath = subManifestPath;
                         searchDir = subDirPath;
-                    }
-                }
-            } else {
-                // Look for any subdirectory containing manifest.json at the top level
-                for (const file of files) {
-                    const subDirPath = path.join(tempExtractDir, file);
-                    if (fs.statSync(subDirPath).isDirectory()) {
-                        const subManifestPath = path.join(subDirPath, 'manifest.json');
-                        if (fs.existsSync(subManifestPath)) {
-                            manifestPath = subManifestPath;
-                            searchDir = subDirPath;
-                            break;
-                        }
+                        break;
                     }
                 }
             }
         }
-
-        if (!fs.existsSync(manifestPath)) {
-            fs.rmSync(tempExtractDir, { recursive: true, force: true });
-            return { success: false, reason: 'manifest.json not found in ZIP archive.' };
-        }
-
-        let manifest: any;
-        try {
-            manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-        } catch (e) {
-            fs.rmSync(tempExtractDir, { recursive: true, force: true });
-            return { success: false, reason: 'Invalid manifest.json file.' };
-        }
-
-        if (!manifest.id || !manifest.name) {
-            fs.rmSync(tempExtractDir, { recursive: true, force: true });
-            return { success: false, reason: 'manifest.json is missing required fields "id" or "name".' };
-        }
-
-        const extensionId = manifest.id;
-        const targetDir = path.join(extensionsDir, extensionId);
-
-        // If target directory already exists, clear it first
-        if (fs.existsSync(targetDir)) {
-            fs.rmSync(targetDir, { recursive: true, force: true });
-        }
-
-        // Ensure parent extensions folder exists
-        if (!fs.existsSync(extensionsDir)) {
-            fs.mkdirSync(extensionsDir, { recursive: true });
-        }
-
-        // Copy/move searchDir (which contains manifest.json at its root) to targetDir
-        fs.renameSync(searchDir, targetDir);
-
-        // Clean up the temp extract root
-        if (fs.existsSync(tempExtractDir)) {
-            fs.rmSync(tempExtractDir, { recursive: true, force: true });
-        }
-
-        // Update config to enable this extension
-        const config = getExtensionsConfig();
-        config[extensionId] = true;
-        saveExtensionsConfig(config);
-
-        return { success: true };
-    } catch (e: any) {
-        console.error('Failed to install extension from zip:', e);
-        return { success: false, reason: e.message || 'Unknown error occurred.' };
     }
+
+    if (!fs.existsSync(manifestPath)) {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        return { success: false, reason: 'manifest.json not found in ZIP archive.' };
+    }
+
+    let manifest: any;
+    try {
+        manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    } catch (e) {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        return { success: false, reason: 'Invalid manifest.json file.' };
+    }
+
+    if (!manifest.id || !manifest.name) {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        return { success: false, reason: 'manifest.json is missing required fields "id" or "name".' };
+    }
+
+    const extensionId = manifest.id;
+    const targetDir = path.join(extensionsDir, extensionId);
+
+    // If target directory already exists, clear it first
+    if (fs.existsSync(targetDir)) {
+        fs.rmSync(targetDir, { recursive: true, force: true });
+    }
+
+    // Ensure parent extensions folder exists
+    if (!fs.existsSync(extensionsDir)) {
+        fs.mkdirSync(extensionsDir, { recursive: true });
+    }
+
+    // Copy/move searchDir (which contains manifest.json at its root) to targetDir
+    fs.renameSync(searchDir, targetDir);
+
+    // Clean up the temp extract root
+    if (fs.existsSync(tempExtractDir)) {
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+    }
+
+    // Update config to enable this extension
+    const config = getExtensionsConfig();
+    config[extensionId] = true;
+    saveExtensionsConfig(config);
+
+    return { success: true };
 }
 
 ipcMain.handle('install-extension-from-file', async () => {
     try {
-        const { canceled, filePaths } = await dialog.showOpenDialog({
+        // Pass mainWindow as parent so the dialog opens above the always-on-top window
+        const parentWin = mainWindow || BrowserWindow.getAllWindows()[0];
+        const dialogOptions = {
             title: 'Select Extension ZIP Archive',
             filters: [
                 { name: 'ZIP Archives', extensions: ['zip'] }
             ],
-            properties: ['openFile']
-        });
+            properties: ['openFile' as const]
+        };
+
+        const { canceled, filePaths } = parentWin
+            ? await dialog.showOpenDialog(parentWin, dialogOptions)
+            : await dialog.showOpenDialog(dialogOptions);
 
         if (canceled || filePaths.length === 0) {
             return { success: false, reason: 'Canceled by user' };
         }
 
-        return await installExtensionZip(filePaths[0]);
+        return await installExtensionFromZipPath(filePaths[0]);
     } catch (e: any) {
-        console.error('Failed to install extension from file selector:', e);
+        console.error('Failed to install extension from zip:', e);
         return { success: false, reason: e.message || 'Unknown error occurred.' };
     }
 });
 
+// Install extension from a file path directly (used by drag & drop)
 ipcMain.handle('install-extension-from-path', async (_event, filePath: string) => {
-    return await installExtensionZip(filePath);
+    try {
+        if (!filePath || typeof filePath !== 'string') {
+            return { success: false, reason: 'Invalid file path.' };
+        }
+        if (!filePath.toLowerCase().endsWith('.zip')) {
+            return { success: false, reason: 'Only .zip files are supported.' };
+        }
+        if (!fs.existsSync(filePath)) {
+            return { success: false, reason: 'File not found.' };
+        }
+        return await installExtensionFromZipPath(filePath);
+    } catch (e: any) {
+        console.error('Failed to install extension from path:', e);
+        return { success: false, reason: e.message || 'Unknown error occurred.' };
+    }
 });
 
 ipcMain.handle('get-app-version', () => {

@@ -59,8 +59,6 @@ const Accordion: React.FC<{
 
 const isSystemTab = (note: any) => note.isSettings || note.title === 'Welcome to KoBar!';
 
-let globalExtensionsSubTab: 'installed' | 'marketplace' = 'installed';
-
 const SettingsPanel: React.FC = () => {
     // ─── Granular Selectors (prevents re-render on unrelated store changes) ───
     const theme = useAppStore(state => state.theme);
@@ -234,13 +232,9 @@ const SettingsPanel: React.FC = () => {
     const [renameValue, setRenameValue] = useState('');
     const [newPresetName, setNewPresetName] = useState('');
 
-    // Dynamic Extensions State & Handlers
     const [installedExtensions, setInstalledExtensions] = useState<any[]>([]);
-    const [extensionsSubTab, setExtensionsSubTabState] = useState<'installed' | 'marketplace'>(globalExtensionsSubTab);
-    const setExtensionsSubTab = (tab: 'installed' | 'marketplace') => {
-        globalExtensionsSubTab = tab;
-        setExtensionsSubTabState(tab);
-    };
+    const extensionsSubTab = useAppStore(state => state.extensionsSubTab);
+    const setExtensionsSubTab = useAppStore(state => state.setExtensionsSubTab);
     const [extsLoading, setExtsLoading] = useState(false);
     const [installMessage, setInstallMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -401,6 +395,8 @@ const SettingsPanel: React.FC = () => {
             }
         }
     };
+
+
     const [appVersion, setAppVersion] = useState('');
     const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'upToDate' | 'available' | 'downloading' | 'downloaded' | 'error'>('idle');
     const [latestVersion, setLatestVersion] = useState('');

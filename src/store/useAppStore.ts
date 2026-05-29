@@ -410,6 +410,8 @@ interface AppState {
     activeExtensionAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
     extensionReloadTrigger: number;
     triggerExtensionReload: () => void;
+    extensionsSubTab: 'installed' | 'marketplace';
+    setExtensionsSubTab: (tab: 'installed' | 'marketplace') => void;
 
     // Workspaces
     workspaces: WorkspaceConfig[];
@@ -479,6 +481,8 @@ export const useAppStore = create<AppState>()(
             activeExtensionAnchorRect: null,
             extensionReloadTrigger: 0,
             triggerExtensionReload: () => set((state) => ({ extensionReloadTrigger: state.extensionReloadTrigger + 1 })),
+            extensionsSubTab: 'installed',
+            setExtensionsSubTab: (tab) => set({ extensionsSubTab: tab }),
             edgePosition: 'right',
             setEdgePosition: (edge) => set({ edgePosition: edge }),
             orientation: 'vertical',
