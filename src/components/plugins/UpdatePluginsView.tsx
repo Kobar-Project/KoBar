@@ -76,6 +76,11 @@ const UpdatePluginsView: React.FC = () => {
         
         setUpdating(false);
         triggerExtensionReload();
+        
+        // Wait briefly so the user can see the success/error icons before refreshing the list
+        setTimeout(() => {
+            checkForUpdates();
+        }, 1500);
     };
 
     return (

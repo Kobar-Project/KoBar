@@ -2324,7 +2324,7 @@ ipcMain.handle('toggle-extension-enabled', async (_event, id: string, enabled: b
 });
 
 // Shared helper: installs an extension from a ZIP file path
-async function installExtensionFromZipPath(zipPath: string): Promise<{ success: boolean; reason?: string }> {
+async function installExtensionFromZipPath(zipPath: string, sourceRepo?: string, versionOverride?: string): Promise<{ success: boolean; reason?: string }> {
     const zip = new AdmZip(zipPath);
     
     // Extract to a temporary folder inside userData first to inspect manifest.json
@@ -2383,6 +2383,12 @@ async function installExtensionFromZipPath(zipPath: string): Promise<{ success: 
     if (!manifest.id || !manifest.name) {
         fs.rmSync(tempExtractDir, { recursive: true, force: true });
         return { success: false, reason: 'manifest.json is missing required fields "id" or "name".' };
+    }
+
+    if (sourceRepo || versionOverride) {
+        if (sourceRepo) manifest.githubRepo = sourceRepo;
+        if (versionOverride) manifest.version = versionOverride;
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 4), 'utf8');
     }
 
     const extensionId = manifest.id;
@@ -2521,8 +2527,9 @@ ipcMain.handle('install-extension-from-github', async (_event, id: string, repo:
                 .on('error', reject);
         });
 
-        // 4. Pass to existing installer
-        const result = await installExtensionFromZipPath(tempZipPath);
+        // 4. Pass to existing installer, overriding the version with the release tag to prevent infinite update loops
+        const latestVersion = (releaseData.tag_name || releaseData.name || '').replace(/^v/, '');
+        const result = await installExtensionFromZipPath(tempZipPath, repo, latestVersion);
         
         // 5. Cleanup
         if (fs.existsSync(tempZipPath)) {

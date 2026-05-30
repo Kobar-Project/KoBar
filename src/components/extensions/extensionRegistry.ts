@@ -16,7 +16,16 @@ export interface ExtensionPanel {
 class ExtensionRegistry {
     private buttons: ExtensionButton[] = [];
     private panels: Map<string, ExtensionPanel> = new Map();
+    private manifests: Map<string, any> = new Map();
     private listeners: Set<() => void> = new Set();
+
+    registerManifest(id: string, manifest: any) {
+        this.manifests.set(id, manifest);
+    }
+
+    getManifest(id: string) {
+        return this.manifests.get(id);
+    }
 
     registerSidebarButton(button: ExtensionButton) {
         this.buttons = this.buttons.filter(b => b.id !== button.id);
@@ -51,6 +60,7 @@ class ExtensionRegistry {
     clear() {
         this.buttons = [];
         this.panels.clear();
+        this.manifests.clear();
         this.notify();
     }
 }
