@@ -114,6 +114,8 @@ const ColorPickerPopup: React.FC = () => {
     const screenBounds = useAppStore(state => state.screenBounds);
     const isSmartPositioning = useAppStore(state => state.isPopupSmartPositioning);
     const isMac = useAppStore(state => state.isMac);
+    const setEyeDropperOffset = useAppStore(state => state.setEyeDropperOffset);
+    const eyeDropperOffset = useAppStore(state => state.eyeDropperOffset);
 
     const { forceAddClipboardItem } = useClipboardStore();
     const [activeTab, setActiveTab] = useState<'wheel' | 'palettes'>('wheel');
@@ -234,8 +236,8 @@ const ColorPickerPopup: React.FC = () => {
             transitionProperty: 'opacity, transform, filter'
         };
 
-        const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
-        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+        const screenXInViewport = (screenBounds?.x ?? 0) - (window.screenX + eyeDropperOffset.x);
+        const screenYInViewport = (screenBounds?.y ?? 0) - (window.screenY + eyeDropperOffset.y);
 
         if (orientation === "horizontal") {
             let adjustedLeft = (colorPickerAnchorRect.left - offsetLeft) + (colorPickerAnchorRect.width / 2) - (popupWidth / 2);
@@ -294,8 +296,8 @@ const ColorPickerPopup: React.FC = () => {
             const popupHeight = 450;
             const popupWidth = 320;
             
-            const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
-        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+            const screenXInViewport = (screenBounds?.x ?? 0) - (window.screenX + eyeDropperOffset.x);
+            const screenYInViewport = (screenBounds?.y ?? 0) - (window.screenY + eyeDropperOffset.y);
 
         if (orientation === "horizontal") {
                 const screenWidth = screenBounds?.width ?? 1200;
@@ -319,11 +321,15 @@ const ColorPickerPopup: React.FC = () => {
         };
         document.addEventListener('kobar-drag', onDrag);
         return () => document.removeEventListener('kobar-drag', onDrag);
-    }, [colorPickerAnchorRect, screenBounds, orientation]);
+    }, [colorPickerAnchorRect, screenBounds, orientation, eyeDropperOffset]);
 
     const handleEyeDropper = async () => {
         try {
             if ('EyeDropper' in window) {
+                if (window.api?.startEyeDropper) {
+                    const offset = await window.api.startEyeDropper();
+                    setEyeDropperOffset(offset);
+                }
                 const eyeDropper = new (window as any).EyeDropper();
                 const result = await eyeDropper.open();
                 const hex = result.sRGBHex.toUpperCase();
@@ -334,6 +340,11 @@ const ColorPickerPopup: React.FC = () => {
             }
         } catch (e) {
             console.log('EyeDropper cancelled or failed', e);
+        } finally {
+            if (window.api?.stopEyeDropper) {
+                await window.api.stopEyeDropper();
+            }
+            setEyeDropperOffset({ x: 0, y: 0 });
         }
     };
 
