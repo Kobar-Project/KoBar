@@ -91,11 +91,11 @@ const PluginStore: React.FC = () => {
             const releaseRes = await fetch(`https://api.github.com/repos/${githubRepoUrl}/releases/latest`);
             if (releaseRes.ok) {
                 const releaseData = await releaseRes.json();
-                const hasZip = releaseData.assets && releaseData.assets.some((a: any) => a.name.endsWith('.zip'));
+                const hasZip = (releaseData.assets && releaseData.assets.some((a: any) => a.name.endsWith('.zip'))) || releaseData.zipball_url;
                 if (hasZip) {
                     setInstallPrompt({ repoName: githubRepoUrl.split('/')[1], repoUrl: githubRepoUrl });
                 } else {
-                    setInstallError("No .zip asset found in the latest release.");
+                    setInstallError("No .zip asset or source code found in the latest release.");
                 }
             } else {
                 setInstallError("Plugin not found at the provided link.");

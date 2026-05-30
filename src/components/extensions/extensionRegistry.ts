@@ -63,8 +63,8 @@ declare global {
     }
 }
 
-const registry = new ExtensionRegistry();
-window.KoBarExtensions = registry;
+const registry = (window as any).KoBarExtensions || new ExtensionRegistry();
+(window as any).KoBarExtensions = registry;
 
 export function useExtensionRegistry() {
     const [, setTick] = React.useState(0);

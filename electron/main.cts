@@ -2481,17 +2481,18 @@ ipcMain.handle('install-extension-from-github', async (_event, id: string, repo:
         const releaseData = await releaseRes.json() as any;
         const asset = releaseData.assets?.find((a: any) => a.name.endsWith('.zip'));
 
-        if (!asset) {
-            return { success: false, reason: 'No .zip asset found in the latest release.' };
+        if (!asset && !releaseData.zipball_url) {
+            return { success: false, reason: 'No .zip asset or source code found in the latest release.' };
         }
 
         // 2. Download the asset stream
-        const assetRes = await fetch(asset.url, {
-            headers: {
-                'Accept': 'application/octet-stream',
-                'User-Agent': 'KoBar-App'
-            }
-        });
+        const downloadUrl = asset ? asset.url : releaseData.zipball_url;
+        const headers: Record<string, string> = { 'User-Agent': 'KoBar-App' };
+        if (asset) {
+            headers['Accept'] = 'application/octet-stream';
+        }
+
+        const assetRes = await fetch(downloadUrl, { headers });
 
         if (!assetRes.ok || !assetRes.body) {
             return { success: false, reason: `Failed to download asset (${assetRes.status}).` };
