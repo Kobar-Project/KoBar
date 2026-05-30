@@ -3,9 +3,59 @@ import { useAppStore, applyCustomThemeCSS } from '../../store/useAppStore';
 import { getLanguageOptions } from '../../i18n/translations';
 import { hexToHsv, hsvToHex } from '../layout/ColorPickerPopup';
 import { IS_STORE_BUILD } from '../../App';
-import Accordion from './Accordion';
-import WorkspacesView from '../plugins/WorkspacesView';
-import FeaturesView from '../plugins/FeaturesView';
+
+const Accordion: React.FC<{
+    title: string;
+    icon: string;
+    defaultOpen?: boolean;
+    children: React.ReactNode;
+    masterToggle?: { isOn: boolean; onToggle: () => void };
+}> = ({ title, icon, defaultOpen = true, children, masterToggle }) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
+
+    const design = useAppStore(state => state.design);
+    return (
+        <div className="rounded-xl shadow-inner border overflow-hidden" 
+            style={{ 
+                backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.03)' : 'var(--theme-bg-dark)', 
+                borderColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'var(--theme-border)' 
+            }}
+        >
+            <div className="w-full flex items-center justify-between p-6">
+                <button
+                    className="flex-1 flex items-center gap-2 cursor-pointer hover:bg-black/10 transition-colors text-left"
+                    onClick={() => setIsOpen(!isOpen)}
+                >
+                    <span className="material-symbols-outlined text-primary">{icon}</span>
+                    <h3 className="text-lg font-medium text-slate-300">{title}</h3>
+                </button>
+                
+                <div className="flex items-center gap-4">
+                    {masterToggle && (
+                        <button
+                            onClick={masterToggle.onToggle}
+                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region shrink-0 ${masterToggle.isOn ? 'bg-primary' : 'bg-slate-600'}`}
+                        >
+                            <span
+                                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${masterToggle.isOn ? 'translate-x-5' : 'translate-x-0'}`}
+                            />
+                        </button>
+                    )}
+                    <button onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
+                        <span className={`material-symbols-outlined text-slate-400 text-[20px] transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                            expand_more
+                        </span>
+                    </button>
+                </div>
+            </div>
+            {isOpen && (
+                <div className="p-0 px-6 pb-6 mt-2 border-t pt-4" style={{ borderColor: 'var(--theme-border)' }}>
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const isSystemTab = (note: any) => note.isSettings || note.title === 'Welcome to KoBar!';
 
@@ -44,6 +94,20 @@ const SettingsPanel: React.FC = () => {
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const setEnableEyeAnimation = useAppStore(state => state.setEnableEyeAnimation);
     const setLaunchAtStartup = useAppStore(state => state.setLaunchAtStartup);
+    const isShortcutsEnabled = useAppStore(state => state.isShortcutsEnabled);
+    const setIsShortcutsEnabled = useAppStore(state => state.setIsShortcutsEnabled);
+    const isCopyPasteEnabled = useAppStore(state => state.isCopyPasteEnabled);
+    const setIsCopyPasteEnabled = useAppStore(state => state.setIsCopyPasteEnabled);
+    const isScreenshotEnabled = useAppStore(state => state.isScreenshotEnabled);
+    const setIsScreenshotEnabled = useAppStore(state => state.setIsScreenshotEnabled);
+    const isFocusModeEnabled = useAppStore(state => state.isFocusModeEnabled);
+    const setIsFocusModeEnabled = useAppStore(state => state.setIsFocusModeEnabled);
+    const isCalculatorEnabled = useAppStore(state => state.isCalculatorEnabled);
+    const setIsCalculatorEnabled = useAppStore(state => state.setIsCalculatorEnabled);
+    const isColorPickerEnabled = useAppStore(state => state.isColorPickerEnabled);
+    const setIsColorPickerEnabled = useAppStore(state => state.setIsColorPickerEnabled);
+    const featureOrder = useAppStore(state => state.featureOrder);
+    const setFeatureOrder = useAppStore(state => state.setFeatureOrder);
     const toggleWidth = useAppStore(state => state.toggleWidth);
     const setToggleWidth = useAppStore(state => state.setToggleWidth);
     const sidebarWidth = useAppStore(state => state.sidebarWidth);
@@ -52,15 +116,47 @@ const SettingsPanel: React.FC = () => {
     const setIconScale = useAppStore(state => state.setIconScale);
     const featureSpacing = useAppStore(state => state.featureSpacing);
     const setFeatureSpacing = useAppStore(state => state.setFeatureSpacing);
+    const hideOnScreenshot = useAppStore(state => state.hideOnScreenshot);
+    const setHideOnScreenshot = useAppStore(state => state.setHideOnScreenshot);
     const design = useAppStore(state => state.design);
     const setDesign = useAppStore(state => state.setDesign);
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const setGlassOpacity = useAppStore(state => state.setGlassOpacity);
+    const slotCount = useAppStore(state => state.slotCount);
+    const setSlotCount = useAppStore(state => state.setSlotCount);
+    const autoCopyColor = useAppStore(state => state.autoCopyColor);
+    const setAutoCopyColor = useAppStore(state => state.setAutoCopyColor);
+    const isTodoListEnabled = useAppStore(state => state.isTodoListEnabled);
+    const setIsTodoListEnabled = useAppStore(state => state.setIsTodoListEnabled);
+    const isPinInjectorEnabled = useAppStore(state => state.isPinInjectorEnabled);
+    const setIsPinInjectorEnabled = useAppStore(state => state.setIsPinInjectorEnabled);
+    const isKoBoxEnabled = useAppStore(state => state.isKoBoxEnabled);
+    const setIsKoBoxEnabled = useAppStore(state => state.setIsKoBoxEnabled);
+    const koBoxCleanupMode = useAppStore(state => state.koBoxCleanupMode);
+    const setKoBoxCleanupMode = useAppStore(state => state.setKoBoxCleanupMode);
+    const isSnippetVaultEnabled = useAppStore(state => state.isSnippetVaultEnabled);
+    const setIsSnippetVaultEnabled = useAppStore(state => state.setIsSnippetVaultEnabled);
+    const isAiHubEnabled = useAppStore(state => state.isAiHubEnabled);
+    const setIsAiHubEnabled = useAppStore(state => state.setIsAiHubEnabled);
+    const isKoPlayerEnabled = useAppStore(state => state.isKoPlayerEnabled);
+    const setIsKoPlayerEnabled = useAppStore(state => state.setIsKoPlayerEnabled);
+    const isKoCalendarEnabled = useAppStore(state => state.isKoCalendarEnabled);
+    const setIsKoCalendarEnabled = useAppStore(state => state.setIsKoCalendarEnabled);
 
     const isPopupSmartPositioning = useAppStore(state => state.isPopupSmartPositioning);
     const setIsPopupSmartPositioning = useAppStore(state => state.setIsPopupSmartPositioning);
     const orientation = useAppStore(state => state.orientation);
     const setOrientation = useAppStore(state => state.setOrientation);
+
+    // Workspaces
+    const workspaces = useAppStore(state => state.workspaces);
+    const saveCurrentAsWorkspace = useAppStore(state => state.saveCurrentAsWorkspace);
+    const loadWorkspace = useAppStore(state => state.loadWorkspace);
+    const deleteWorkspace = useAppStore(state => state.deleteWorkspace);
+    const updateWorkspaceName = useAppStore(state => state.updateWorkspaceName);
+    const updateWorkspaceSettings = useAppStore(state => state.updateWorkspaceSettings);
+
+    const [isRenamingIdx, setIsRenamingIdx] = useState<number | null>(null);
 
     // Top-level states for inline custom color picker
     const [inlineHsv, setInlineHsv] = useState<[number, number, number]>([0, 0, 100]);
@@ -133,6 +229,8 @@ const SettingsPanel: React.FC = () => {
             window.removeEventListener('touchend', handleGlobalUp);
         };
     }, [isDraggingSat, isDraggingHue, inlineHsv]);
+    const [renameValue, setRenameValue] = useState('');
+    const [newPresetName, setNewPresetName] = useState('');
 
     // Dynamic Extensions State & Handlers
     const [installedExtensions, setInstalledExtensions] = useState<any[]>([]);
@@ -427,10 +525,24 @@ const SettingsPanel: React.FC = () => {
         }
     }, []);
 
+    const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
+    const featureViewMode = useAppStore(state => state.settingsFeatureViewMode);
+    const setFeatureViewMode = useAppStore(state => state.setSettingsFeatureViewMode);
+    const workspaceViewMode = useAppStore(state => state.settingsWorkspaceViewMode);
+    const setWorkspaceViewMode = useAppStore(state => state.setSettingsWorkspaceViewMode);
+    const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+
     const handleAutoLaunchToggle = () => {
         setLaunchAtStartup(!launchAtStartup);
     };
 
+    const handleSlotCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) {
+            setSlotCount(Math.min(20, Math.max(4, val)));
+        }
+    };
+    
     // maxShortcuts handler removed
 
     const handleToggleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -459,6 +571,546 @@ const SettingsPanel: React.FC = () => {
         if (!isNaN(val)) {
             setFeatureSpacing(Math.min(50, Math.max(0, val)));
         }
+    };
+
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        setDraggedItemIndex(index);
+        
+        // Use the entire row as the drag image
+        const row = (e.currentTarget as HTMLElement).closest('.feature-row');
+        if (row && e.dataTransfer.setDragImage) {
+            e.dataTransfer.setDragImage(row, 20, row.clientHeight / 2);
+        }
+
+        // Required for Firefox
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', index.toString());
+        
+        // Slight delay to apply opacity to the row
+        setTimeout(() => {
+            if (row instanceof HTMLElement) {
+                row.style.opacity = '0.4';
+            }
+        }, 0);
+    };
+
+    const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        e.preventDefault();
+        if (draggedItemIndex === null || draggedItemIndex === index) return;
+
+        const newOrder = [...featureOrder];
+        const draggedItem = newOrder[draggedItemIndex];
+        newOrder.splice(draggedItemIndex, 1);
+        newOrder.splice(index, 0, draggedItem);
+
+        setFeatureOrder(newOrder);
+        setDraggedItemIndex(index); // Update dragged index to the new position
+    };
+
+    const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+        setDraggedItemIndex(null);
+        const row = (e.currentTarget as HTMLElement).closest('.feature-row');
+        if (row instanceof HTMLElement) {
+            row.style.opacity = '1';
+        }
+    };
+    
+    // ─── Feature Card View Helpers ───
+    const toggleCardExpanded = (id: string) => {
+        setExpandedCards(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const getFeatureMeta = (id: string): { icon: string; title: string; isEnabled: boolean; onToggle: () => void } | null => {
+        switch (id) {
+            case 'shortcuts': return { icon: 'bolt', title: t('shortcuts'), isEnabled: isShortcutsEnabled, onToggle: () => setIsShortcutsEnabled(!isShortcutsEnabled) };
+            case 'copypaste': return { icon: 'content_paste', title: t('copyAndPaste'), isEnabled: isCopyPasteEnabled, onToggle: () => setIsCopyPasteEnabled(!isCopyPasteEnabled) };
+            case 'screenshot': return { icon: 'photo_camera', title: t('screenshot'), isEnabled: isScreenshotEnabled, onToggle: () => setIsScreenshotEnabled(!isScreenshotEnabled) };
+            case 'focusmode': return { icon: 'hourglass_empty', title: t('focusMode'), isEnabled: isFocusModeEnabled, onToggle: () => setIsFocusModeEnabled(!isFocusModeEnabled) };
+            case 'calculator': return { icon: 'calculate', title: t('calculator'), isEnabled: isCalculatorEnabled, onToggle: () => setIsCalculatorEnabled(!isCalculatorEnabled) };
+            case 'colorpicker': return { icon: 'palette', title: t('colorPicker'), isEnabled: isColorPickerEnabled, onToggle: () => setIsColorPickerEnabled(!isColorPickerEnabled) };
+            case 'todolist': return { icon: 'checklist', title: t('todoList'), isEnabled: isTodoListEnabled, onToggle: () => setIsTodoListEnabled(!isTodoListEnabled) };
+            case 'kocalendar': return { icon: 'calendar_month', title: (t as any)('koCalendar') || 'Calendar', isEnabled: isKoCalendarEnabled, onToggle: () => setIsKoCalendarEnabled(!isKoCalendarEnabled) };
+            case 'pininjector': return { icon: 'push_pin', title: t('pinToTop'), isEnabled: isPinInjectorEnabled, onToggle: () => setIsPinInjectorEnabled(!isPinInjectorEnabled) };
+            case 'kobox': return { icon: 'inventory_2', title: t('kobox'), isEnabled: isKoBoxEnabled, onToggle: () => setIsKoBoxEnabled(!isKoBoxEnabled) };
+            case 'snippetvault': return { icon: 'library_books', title: t('snippetVault'), isEnabled: isSnippetVaultEnabled, onToggle: () => setIsSnippetVaultEnabled(!isSnippetVaultEnabled) };
+            case 'aihub': return { icon: 'smart_toy', title: t('aiHub'), isEnabled: isAiHubEnabled, onToggle: () => setIsAiHubEnabled(!isAiHubEnabled) };
+            case 'koplayer': return { icon: 'music_note', title: 'KoPlayer', isEnabled: isKoPlayerEnabled, onToggle: () => setIsKoPlayerEnabled(!isKoPlayerEnabled) };
+            default: return null;
+        }
+    };
+
+    const renderCardExpandedContent = (id: string): React.ReactNode => {
+        switch (id) {
+            case 'shortcuts':
+                return (
+                    <div className="text-sm text-slate-400">
+                        {language === 'tr' 
+                            ? 'Kısayollar menüsüne sürükleyip bırakarak favori uygulamalarınızı, klasörlerinizi veya web bağlantılarınızı ekleyebilirsiniz. Kısayol ekleme sınırı yoktur.' 
+                            : 'Drag and drop files, folders, apps, or links into the shortcut menu for instant access. There is no limit to how many shortcuts you can pin.'}
+                    </div>
+                );
+            case 'copypaste':
+                return (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center">
+                            <label className="text-sm text-slate-400 font-medium">{t('numberOfSlots')}</label>
+                            <span className="text-lg font-bold text-primary">{slotCount}</span>
+                        </div>
+                        <input type="range" min="4" max="20" value={slotCount} onChange={handleSlotCountChange}
+                            onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
+                            onDragStart={(e) => e.stopPropagation()} draggable={false}
+                            className={`w-full h-2 rounded-lg appearance-none cursor-pointer mt-1 no-drag-region ${design === 'style2' ? 'bg-white/10' : 'bg-slate-700'}`}
+                            style={{ accentColor: 'var(--theme-primary)' }}
+                        />
+                        <p className="text-xs text-slate-500 mt-2">{t('slotsMinMaxInfo')}</p>
+                    </div>
+                );
+            case 'screenshot':
+                return (
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-sm text-slate-300 font-medium">{t('hideOnScreenshot')}</span>
+                                <span className="text-xs text-slate-500 leading-tight pr-4">{t('hideOnScreenshotDesc')}</span>
+                            </div>
+                            <button onClick={() => setHideOnScreenshot(!hideOnScreenshot)}
+                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region shrink-0 ${hideOnScreenshot ? 'bg-primary' : 'bg-slate-600'}`}>
+                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${hideOnScreenshot ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </button>
+                        </div>
+                    </div>
+                );
+            case 'focusmode':
+                return <p className="text-sm text-slate-400">{(t as any)('focusModeDesc') || 'Pomodoro-style focus timer to boost your productivity.'}</p>;
+            case 'calculator':
+                return <p className="text-sm text-slate-400">{(t as any)('calculatorDesc') || 'Quick-access calculator for everyday math.'}</p>;
+            case 'colorpicker':
+                return (
+                    <div className={`flex flex-col gap-4 ${!isCopyPasteEnabled ? 'opacity-50' : ''}`}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-sm text-slate-300 font-medium">{t('autoAddClipboard')}</span>
+                                <span className="text-xs text-slate-500 leading-tight">{t('autoAddClipboardDesc')}</span>
+                                {!isCopyPasteEnabled && <span className="text-[10px] text-red-400 mt-1">{t('requiresCopyPaste')}</span>}
+                            </div>
+                            <button onClick={() => setAutoCopyColor(!autoCopyColor)} disabled={!isCopyPasteEnabled}
+                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region shrink-0 ${autoCopyColor && isCopyPasteEnabled ? 'bg-primary' : 'bg-slate-600'}`}>
+                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${autoCopyColor && isCopyPasteEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </button>
+                        </div>
+                    </div>
+                );
+            case 'todolist':
+                return <div className="text-sm text-slate-400">{t('todoListDesc')}</div>;
+            case 'kocalendar':
+                return <p className="text-sm text-slate-400">Manage your local events and schedule. Add due dates to your Todos to see them on the calendar.</p>;
+            case 'pininjector':
+                return <div className="text-sm text-slate-400">{t('pinToTopDesc')}</div>;
+            case 'kobox':
+                return (
+                    <div className="flex flex-col gap-3">
+                        <label className="text-sm text-slate-400 font-medium">{t('cleanupMode')}</label>
+                        <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 no-drag-region">
+                            <button onClick={() => setKoBoxCleanupMode('24h')}
+                                className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${koBoxCleanupMode === '24h' ? 'bg-primary text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                                {t('clearEvery24h')}
+                            </button>
+                            <button onClick={() => setKoBoxCleanupMode('quit')}
+                                className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${koBoxCleanupMode === 'quit' ? 'bg-primary text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                                {t('clearOnQuit')}
+                            </button>
+                        </div>
+                    </div>
+                );
+            case 'snippetvault':
+                return <div className="text-sm text-slate-400">{t('snippetVaultDesc')}</div>;
+            case 'aihub':
+                return <div className="text-sm text-slate-400">{t('aiHubDesc')}</div>;
+            case 'koplayer':
+                return <p className="text-sm text-slate-400">Global media controller. See what's playing and control playback (Play, Pause, Next, Previous) from any media source on your system.</p>;
+            default: return null;
+        }
+    };
+
+    const renderFeatureCard = (id: string, index: number) => {
+        const meta = getFeatureMeta(id);
+        if (!meta) return null;
+
+        const isExpanded = expandedCards.has(id);
+        const expandedContent = renderCardExpandedContent(id);
+        const hasExpandedContent = expandedContent !== null;
+
+        return (
+            <div
+                key={id}
+                onDragEnter={(e) => handleDragEnter(e, index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => e.preventDefault()}
+                className="feature-row relative rounded-xl border overflow-hidden transition-all duration-300"
+                style={{
+                    backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.03)' : 'var(--theme-bg-dark)',
+                    borderColor: meta.isEnabled
+                        ? 'rgba(34, 197, 94, 0.25)'
+                        : design === 'style2' ? 'rgba(255,255,255,0.05)' : 'var(--theme-border)',
+                    boxShadow: meta.isEnabled
+                        ? '0 0 24px -6px rgba(34, 197, 94, 0.35), inset 0 1px 0 rgba(34, 197, 94, 0.08)'
+                        : '0 0 24px -6px rgba(239, 68, 68, 0.22), inset 0 1px 0 rgba(239, 68, 68, 0.05)',
+                    gridColumn: isExpanded ? '1 / -1' : undefined,
+                    transform: draggedItemIndex === index ? 'scale(1.05)' : 'none',
+                    zIndex: draggedItemIndex === index ? 50 : 'auto',
+                    position: 'relative',
+                }}
+            >
+                {/* Drag handle */}
+                <div
+                    draggable
+                    onDragStart={(e: any) => handleDragStart(e, index)}
+                    className="absolute top-1.5 left-1/2 -translate-x-1/2 opacity-0 hover:opacity-50 cursor-move no-drag-region z-10 transition-opacity"
+                >
+                    <span className="material-symbols-outlined text-[14px] text-slate-400">drag_indicator</span>
+                </div>
+
+                {/* Card body */}
+                <div className={`flex ${isExpanded ? 'flex-row items-center gap-4 p-4' : 'flex-col items-center gap-3 p-5 pt-7'}`}>
+                    {/* Icon */}
+                    <div
+                        className={`${isExpanded ? 'w-10 h-10' : 'w-12 h-12'} rounded-xl flex items-center justify-center shrink-0 transition-all duration-300`}
+                        style={{ backgroundColor: meta.isEnabled ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.08)' }}
+                    >
+                        <span
+                            className={`material-symbols-outlined ${isExpanded ? 'text-[20px]' : 'text-[24px]'} transition-colors duration-300`}
+                            style={{ color: meta.isEnabled ? '#22c55e' : '#6b7280' }}
+                        >
+                            {meta.icon}
+                        </span>
+                    </div>
+
+                    {/* Title */}
+                    <span className={`text-sm font-medium text-slate-300 ${isExpanded ? '' : 'text-center leading-tight min-h-[2.5rem] flex items-center'}`}>
+                        {meta.title}
+                    </span>
+
+                    {isExpanded && <div className="flex-1" />}
+
+                    {/* Toggle */}
+                    <button
+                        onClick={meta.onToggle}
+                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region shrink-0 ${meta.isEnabled ? 'bg-green-500' : 'bg-slate-600'}`}
+                    >
+                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${meta.isEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+
+                    {/* More/Less button */}
+                    {hasExpandedContent && (
+                        <button
+                            onClick={() => toggleCardExpanded(id)}
+                            className={`flex items-center gap-1 text-xs transition-colors no-drag-region ${isExpanded ? 'text-primary ml-2' : 'text-slate-500 hover:text-primary mt-1'}`}
+                        >
+                            <span>{isExpanded ? (language === 'tr' ? 'Gizle' : 'Less') : (language === 'tr' ? 'Detaylar' : 'More')}</span>
+                            <span className={`material-symbols-outlined text-[14px] transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                                expand_more
+                            </span>
+                        </button>
+                    )}
+                </div>
+
+                {/* Expanded settings area */}
+                {isExpanded && hasExpandedContent && (
+                    <div
+                        className="px-5 pb-5 pt-3 border-t"
+                        style={{ borderColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'var(--theme-border)' }}
+                    >
+                        {expandedContent}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // Helper to render accordion based on ID
+    const renderFeatureAccordion = (id: string, index: number) => {
+        let content = null;
+        
+        switch (id) {
+            case 'shortcuts':
+                content = (
+                    <Accordion 
+                        title={t('shortcuts')}
+                        icon="bolt" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isShortcutsEnabled, onToggle: () => setIsShortcutsEnabled(!isShortcutsEnabled) }}
+                    >
+                        <div className="text-sm text-slate-400 px-1">
+                            {language === 'tr' 
+                                ? 'Kısayollar menüsüne sürükleyip bırakarak favori uygulamalarınızı, klasörlerinizi veya web bağlantılarınızı ekleyebilirsiniz. Kısayol ekleme sınırı yoktur.' 
+                                : 'Drag and drop files, folders, apps, or links into the shortcut menu for instant access. There is no limit to how many shortcuts you can pin.'}
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'copypaste':
+                content = (
+                    <Accordion 
+                        title={t('copyAndPaste')} 
+                        icon="content_paste" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isCopyPasteEnabled, onToggle: () => setIsCopyPasteEnabled(!isCopyPasteEnabled) }}
+                    >
+                        <div className="flex flex-col gap-3">
+                            <div className="flex justify-between items-center">
+                                <label className="text-sm text-slate-400 font-medium">{t('numberOfSlots')}</label>
+                                <span className="text-lg font-bold text-primary">{slotCount}</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="4"
+                                max="20"
+                                value={slotCount}
+                                onChange={handleSlotCountChange}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onTouchStart={(e) => e.stopPropagation()}
+                                onDragStart={(e) => e.stopPropagation()}
+                                draggable={false}
+                                className={`w-full h-2 rounded-lg appearance-none cursor-pointer mt-1 no-drag-region ${design === 'style2' ? 'bg-white/10' : 'bg-slate-700'}`}
+                                style={{ accentColor: 'var(--theme-primary)' }}
+                            />
+                            <p className="text-xs text-slate-500 mt-2">{t('slotsMinMaxInfo')}</p>
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'screenshot':
+                content = (
+                    <Accordion 
+                        title={t('screenshot')} 
+                        icon="photo_camera" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isScreenshotEnabled, onToggle: () => setIsScreenshotEnabled(!isScreenshotEnabled) }}
+                    >
+                        <div className="flex flex-col gap-4 px-1">
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-sm text-slate-300 font-medium">{t('hideOnScreenshot')}</span>
+                                    <span className="text-xs text-slate-500 leading-tight pr-4">{t('hideOnScreenshotDesc')}</span>
+                                </div>
+                                <button
+                                    onClick={() => setHideOnScreenshot(!hideOnScreenshot)}
+                                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region shrink-0 ${hideOnScreenshot ? 'bg-primary' : 'bg-slate-600'}`}
+                                >
+                                    <span
+                                        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${hideOnScreenshot ? 'translate-x-5' : 'translate-x-0'}`}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'focusmode':
+                content = (
+                    <Accordion 
+                        title={t('focusMode')} 
+                        icon="hourglass_empty" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isFocusModeEnabled, onToggle: () => setIsFocusModeEnabled(!isFocusModeEnabled) }}
+                    >
+                        <div className="text-sm text-slate-400">
+                             {/* Focus Mode specific settings */}
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'calculator':
+                content = (
+                    <Accordion 
+                        title={t('calculator')} 
+                        icon="calculate" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isCalculatorEnabled, onToggle: () => setIsCalculatorEnabled(!isCalculatorEnabled) }}
+                    >
+                        <div className="text-sm text-slate-400">
+                             {/* Calculator specific settings */}
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'colorpicker':
+                content = (
+                    <Accordion 
+                        title={t('colorPicker')} 
+                        icon="palette" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isColorPickerEnabled, onToggle: () => setIsColorPickerEnabled(!isColorPickerEnabled) }}
+                    >
+                        <div className={`flex flex-col gap-4 px-1 ${!isCopyPasteEnabled ? 'opacity-50' : ''}`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-sm text-slate-300 font-medium">{t('autoAddClipboard')}</span>
+                                    <span className="text-xs text-slate-500 leading-tight">{t('autoAddClipboardDesc')}</span>
+                                    {!isCopyPasteEnabled && <span className="text-[10px] text-red-400 mt-1">{t('requiresCopyPaste')}</span>}
+                                </div>
+                                <button
+                                    onClick={() => setAutoCopyColor(!autoCopyColor)}
+                                    disabled={!isCopyPasteEnabled}
+                                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region shrink-0 ${autoCopyColor && isCopyPasteEnabled ? 'bg-primary' : 'bg-slate-600'}`}
+                                >
+                                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${autoCopyColor && isCopyPasteEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'todolist':
+                content = (
+                    <Accordion 
+                        title={t('todoList')} 
+                        icon="checklist" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isTodoListEnabled, onToggle: () => setIsTodoListEnabled(!isTodoListEnabled) }}
+                    >
+                        <div className="flex flex-col gap-4 px-1 text-sm text-slate-400">
+                            {t('todoListDesc')}
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'kocalendar':
+                content = (
+                    <Accordion 
+                        title={(t as any)('koCalendar') || 'Calendar'} 
+                        icon="calendar_month" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isKoCalendarEnabled, onToggle: () => setIsKoCalendarEnabled(!isKoCalendarEnabled) }}
+                    >
+                        <div className="flex flex-col gap-4 px-1 text-sm text-slate-400">
+                            <p>Manage your local events and schedule. Add due dates to your Todos to see them on the calendar.</p>
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'pininjector':
+                content = (
+                    <Accordion 
+                        title={t('pinToTop')} 
+                        icon="push_pin" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isPinInjectorEnabled, onToggle: () => setIsPinInjectorEnabled(!isPinInjectorEnabled) }}
+                    >
+                        <div className="flex flex-col gap-4 px-1 text-sm text-slate-400">
+                            {t('pinToTopDesc')}
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'kobox':
+                content = (
+                    <Accordion 
+                        title={t('kobox')} 
+                        icon="inventory_2" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isKoBoxEnabled, onToggle: () => setIsKoBoxEnabled(!isKoBoxEnabled) }}
+                    >
+                        <div className="flex flex-col gap-3 px-1">
+                            <label className="text-sm text-slate-400 font-medium pt-2">{t('cleanupMode')}</label>
+                            <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 no-drag-region">
+                                <button
+                                    onClick={() => setKoBoxCleanupMode('24h')}
+                                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${koBoxCleanupMode === '24h'
+                                        ? 'bg-primary text-slate-900 shadow-md'
+                                        : 'text-slate-400 hover:text-slate-200'
+                                    }`}
+                                >
+                                    {t('clearEvery24h')}
+                                </button>
+                                <button
+                                    onClick={() => setKoBoxCleanupMode('quit')}
+                                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${koBoxCleanupMode === 'quit'
+                                        ? 'bg-primary text-slate-900 shadow-md'
+                                        : 'text-slate-400 hover:text-slate-200'
+                                    }`}
+                                >
+                                    {t('clearOnQuit')}
+                                </button>
+                            </div>
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'snippetvault':
+                content = (
+                    <Accordion 
+                        title={t('snippetVault')} 
+                        icon="library_books" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isSnippetVaultEnabled, onToggle: () => setIsSnippetVaultEnabled(!isSnippetVaultEnabled) }}
+                    >
+                        <div className="flex flex-col gap-4 px-1 text-sm text-slate-400 pt-2">
+                            {t('snippetVaultDesc')}
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'aihub':
+                content = (
+                    <Accordion 
+                        title={t('aiHub')} 
+                        icon="smart_toy" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isAiHubEnabled, onToggle: () => setIsAiHubEnabled(!isAiHubEnabled) }}
+                    >
+                        <div className="flex flex-col gap-4 px-1 text-sm text-slate-400 pt-2">
+                            {t('aiHubDesc')}
+                        </div>
+                    </Accordion>
+                );
+                break;
+            case 'koplayer':
+                content = (
+                    <Accordion 
+                        title="KoPlayer" 
+                        icon="music_note" 
+                        defaultOpen={false}
+                        masterToggle={{ isOn: isKoPlayerEnabled, onToggle: () => setIsKoPlayerEnabled(!isKoPlayerEnabled) }}
+                    >
+                        <div className="flex flex-col gap-4 px-1 text-sm text-slate-400 pt-2">
+                            Global media controller. See what's playing and control playback (Play, Pause, Next, Previous) from any media source on your system.
+                        </div>
+                    </Accordion>
+                );
+                break;
+            default: return null;
+        }
+
+        return (
+            <div 
+                key={id}
+                onDragEnter={(e) => handleDragEnter(e, index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => e.preventDefault()}
+                className="transition-transform feature-row"
+                style={{ 
+                    transform: draggedItemIndex === index ? 'scale(1.02)' : 'none',
+                    zIndex: draggedItemIndex === index ? 50 : 'auto',
+                    position: 'relative'
+                }}
+            >
+                {/* Visual drag handle indicator - NOW THE EXCLUSIVE DRAG TRIGGER */}
+                <div 
+                    draggable
+                    onDragStart={(e: any) => handleDragStart(e, index)}
+                    className="absolute left-[-32px] top-1/2 -translate-y-1/2 opacity-30 hover:opacity-100 flex items-center justify-center p-2 cursor-move no-drag-region"
+                >
+                    <span className="material-symbols-outlined text-[20px]">drag_indicator</span>
+                </div>
+                {content}
+            </div>
+        );
     };
 
     const handleExport = (type: 'settings' | 'data', method: 'download' | 'email') => {
@@ -618,13 +1270,306 @@ const SettingsPanel: React.FC = () => {
 
             <div className="space-y-10">
                 {/* --- WORKSPACES SECTION --- */}
-                <div className="mb-8">
-                    <WorkspacesView />
+                <div>
+                    <div className="flex items-center justify-between mb-4 px-2">
+                        <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold">{(t as any)('workspaces') || 'Workspaces'}</h3>
+                        <button
+                            onClick={() => setWorkspaceViewMode(workspaceViewMode === 'list' ? 'cards' : 'list')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all no-drag-region border hover:brightness-125"
+                            style={{
+                                backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)',
+                                borderColor: design === 'style2' ? 'rgba(255,255,255,0.08)' : 'var(--theme-border)',
+                                color: 'var(--theme-primary)',
+                            }}
+                        >
+                            <span className="material-symbols-outlined text-[16px]">
+                                {workspaceViewMode === 'list' ? 'grid_view' : 'view_list'}
+                            </span>
+                            {workspaceViewMode === 'list'
+                                ? (language === 'tr' ? 'Kartlar' : 'Cards')
+                                : (language === 'tr' ? 'Liste' : 'List')}
+                        </button>
+                    </div>
+
+                    {workspaceViewMode === 'list' ? (
+                        /* ─── LIST (Accordion) VIEW ─── */
+                        <div className="space-y-4 mb-10">
+                            <Accordion title={(t as any)('workspaces') || 'Workspaces'} icon="switch_access_shortcut" defaultOpen={true}>
+                                <div className="flex flex-col gap-6">
+                                    <p className="text-sm text-slate-400">{(t as any)('workspacesDesc') || 'Save and load your favorite KoBar configurations.'}</p>
+                                    
+                                    <div className="flex flex-col gap-3">
+                                        {workspaces.map((preset, idx) => (
+                                            <div key={preset.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${design === 'style2' ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-black/20 border-[#2a241c] hover:border-primary/30'}`}>
+                                                
+                                                {isRenamingIdx === idx ? (
+                                                    <input 
+                                                        autoFocus
+                                                        type="text" 
+                                                        value={renameValue}
+                                                        onChange={e => setRenameValue(e.target.value)}
+                                                        onBlur={() => {
+                                                            if (renameValue.trim()) {
+                                                                updateWorkspaceName(preset.id, renameValue.trim());
+                                                            }
+                                                            setIsRenamingIdx(null);
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                if (renameValue.trim()) {
+                                                                    updateWorkspaceName(preset.id, renameValue.trim());
+                                                                }
+                                                                setIsRenamingIdx(null);
+                                                            }
+                                                            if (e.key === 'Escape') {
+                                                                setIsRenamingIdx(null);
+                                                            }
+                                                        }}
+                                                        className="flex-1 bg-transparent border-b border-primary text-sm text-white focus:outline-none px-1 py-0.5 no-drag-region mr-4"
+                                                    />
+                                                ) : (
+                                                    <div 
+                                                        className="flex-1 flex items-center gap-2 cursor-pointer group no-drag-region"
+                                                        onClick={() => loadWorkspace(preset.id)}
+                                                        title={(t as any)('loadWorkspace') || 'Load'}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px] text-primary">play_circle</span>
+                                                        <span className="text-sm font-medium text-slate-200 group-hover:text-primary transition-colors">{preset.name}</span>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center gap-1 no-drag-region">
+                                                    <button 
+                                                        onClick={() => updateWorkspaceSettings(preset.id)}
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-green-400 hover:bg-green-400/10 transition-colors"
+                                                        title={(t as any)('updateWorkspaceSettings') || 'Update Settings'}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">save</span>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setIsRenamingIdx(idx);
+                                                            setRenameValue(preset.name);
+                                                        }}
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                                                        title={(t as any)('renameWorkspace') || 'Rename'}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">edit</span>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => deleteWorkspace(preset.id)}
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                        title={(t as any)('deleteWorkspace') || 'Delete'}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {workspaces.length === 0 && (
+                                            <div className="p-4 border border-dashed border-white/10 rounded-lg text-center text-slate-500 text-sm">
+                                                {language === 'tr' ? 'Henüz kayıtlı preset yok.' : 'No presets saved yet.'}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2 items-center mt-2 no-drag-region">
+                                        <input 
+                                            type="text" 
+                                            value={newPresetName}
+                                            onChange={e => setNewPresetName(e.target.value)}
+                                            placeholder={(t as any)('workspaceNamePlaceholder') || 'Preset name...'}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && newPresetName.trim()) {
+                                                    saveCurrentAsWorkspace(newPresetName.trim());
+                                                    setNewPresetName('');
+                                                }
+                                            }}
+                                            className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                if (newPresetName.trim()) {
+                                                    saveCurrentAsWorkspace(newPresetName.trim());
+                                                    setNewPresetName('');
+                                                }
+                                            }}
+                                            disabled={!newPresetName.trim()}
+                                            className="px-4 py-2 bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 rounded-lg text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {(t as any)('saveCurrentSettings') || 'Save Current Settings'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </Accordion>
+                        </div>
+                    ) : (
+                        /* ─── CARD VIEW ─── */
+                        <div className="mb-10 space-y-4">
+                            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+                                {workspaces.map((preset, idx) => (
+                                    <div
+                                        key={preset.id}
+                                        className="relative rounded-xl border overflow-hidden transition-all duration-300"
+                                        style={{
+                                            backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.03)' : 'var(--theme-bg-dark)',
+                                            borderColor: 'rgba(96, 165, 250, 0.2)',
+                                            boxShadow: '0 0 24px -6px rgba(96, 165, 250, 0.25), inset 0 1px 0 rgba(96, 165, 250, 0.08)',
+                                        }}
+                                    >
+                                        <div className="flex flex-col items-center gap-3 p-5 pt-6">
+                                            {/* Icon */}
+                                            <div
+                                                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                                style={{ backgroundColor: 'rgba(96, 165, 250, 0.12)' }}
+                                            >
+                                                <span className="material-symbols-outlined text-[24px]" style={{ color: '#60a5fa' }}>
+                                                    tune
+                                                </span>
+                                            </div>
+
+                                            {/* Name */}
+                                            {isRenamingIdx === idx ? (
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    value={renameValue}
+                                                    onChange={e => setRenameValue(e.target.value)}
+                                                    onBlur={() => {
+                                                        if (renameValue.trim()) updateWorkspaceName(preset.id, renameValue.trim());
+                                                        setIsRenamingIdx(null);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            if (renameValue.trim()) updateWorkspaceName(preset.id, renameValue.trim());
+                                                            setIsRenamingIdx(null);
+                                                        }
+                                                        if (e.key === 'Escape') setIsRenamingIdx(null);
+                                                    }}
+                                                    className="w-full bg-transparent border-b border-primary text-sm text-white text-center focus:outline-none px-1 py-0.5 no-drag-region"
+                                                />
+                                            ) : (
+                                                <span className="text-sm font-medium text-slate-300 text-center leading-tight min-h-[1.25rem]">
+                                                    {preset.name}
+                                                </span>
+                                            )}
+
+                                            {/* Action buttons */}
+                                            <div className="flex items-center gap-1 no-drag-region mt-1">
+                                                <button
+                                                    onClick={() => loadWorkspace(preset.id)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-green-400 hover:bg-green-400/10 transition-colors"
+                                                    title={(t as any)('loadWorkspace') || 'Load'}
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">play_circle</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => updateWorkspaceSettings(preset.id)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 transition-colors"
+                                                    title={(t as any)('updateWorkspaceSettings') || 'Update'}
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">save</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => { setIsRenamingIdx(idx); setRenameValue(preset.name); }}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                                                    title={(t as any)('renameWorkspace') || 'Rename'}
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteWorkspace(preset.id)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                    title={(t as any)('deleteWorkspace') || 'Delete'}
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Add new workspace card */}
+                                <div
+                                    className="relative rounded-xl border-2 border-dashed overflow-hidden transition-all duration-300 cursor-pointer group no-drag-region"
+                                    style={{
+                                        borderColor: design === 'style2' ? 'rgba(255,255,255,0.08)' : 'var(--theme-border)',
+                                    }}
+                                    onClick={() => {
+                                        if (newPresetName.trim()) {
+                                            saveCurrentAsWorkspace(newPresetName.trim());
+                                            setNewPresetName('');
+                                        }
+                                    }}
+                                >
+                                    <div className="flex flex-col items-center justify-center gap-3 p-5 pt-6 min-h-[160px]">
+                                        <div
+                                            className="w-12 h-12 rounded-xl flex items-center justify-center transition-colors group-hover:bg-primary/20"
+                                            style={{ backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)' }}
+                                        >
+                                            <span className="material-symbols-outlined text-[24px] text-slate-500 group-hover:text-primary transition-colors">add</span>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={newPresetName}
+                                            onChange={e => setNewPresetName(e.target.value)}
+                                            onClick={e => e.stopPropagation()}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && newPresetName.trim()) {
+                                                    saveCurrentAsWorkspace(newPresetName.trim());
+                                                    setNewPresetName('');
+                                                }
+                                            }}
+                                            placeholder={language === 'tr' ? 'Preset adı...' : 'Preset name...'}
+                                            className="w-full bg-transparent border-b border-white/10 focus:border-primary text-sm text-white text-center focus:outline-none px-1 py-1 no-drag-region transition-colors"
+                                        />
+                                        <span className="text-[11px] text-slate-500 group-hover:text-primary transition-colors">
+                                            {language === 'tr' ? 'Yeni Kaydet' : 'Save New'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {workspaces.length === 0 && (
+                                <p className="text-sm text-slate-500 text-center px-2">
+                                    {(t as any)('workspacesDesc') || 'Save and load your favorite KoBar configurations.'}
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* --- TOP SECTION: Dynamic Features --- */}
-                <div className="mb-8">
-                    <FeaturesView />
+                <div>
+                    <div className="flex items-center justify-between mb-4 px-2">
+                        <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold">{t('featureToggles')}</h3>
+                        <button
+                            onClick={() => setFeatureViewMode(featureViewMode === 'list' ? 'cards' : 'list')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all no-drag-region border hover:brightness-125"
+                            style={{
+                                backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)',
+                                borderColor: design === 'style2' ? 'rgba(255,255,255,0.08)' : 'var(--theme-border)',
+                                color: 'var(--theme-primary)',
+                            }}
+                        >
+                            <span className="material-symbols-outlined text-[16px]">
+                                {featureViewMode === 'list' ? 'grid_view' : 'view_list'}
+                            </span>
+                            {featureViewMode === 'list'
+                                ? (language === 'tr' ? 'Kartlar' : 'Cards')
+                                : (language === 'tr' ? 'Liste' : 'List')}
+                        </button>
+                    </div>
+                    {featureViewMode === 'list' ? (
+                        <div className="space-y-4">
+                            {featureOrder.map((id, index) => renderFeatureAccordion(id, index))}
+                        </div>
+                    ) : (
+                        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+                            {featureOrder.map((id, index) => renderFeatureCard(id, index))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="w-full h-px opacity-20" style={{ backgroundColor: 'var(--theme-border)' }}></div>

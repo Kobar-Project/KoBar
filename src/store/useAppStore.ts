@@ -416,6 +416,8 @@ interface AppState {
     triggerExtensionReload: () => void;
     pluginsTabSubMenu: 'store' | 'installed' | 'workspaces' | 'features';
     setPluginsTabSubMenu: (tab: 'store' | 'installed' | 'workspaces' | 'features') => void;
+    extensionsSubTab: 'installed' | 'marketplace';
+    setExtensionsSubTab: (tab: 'installed' | 'marketplace') => void;
     pluginsViewMode: 'grid' | 'list';
     setPluginsViewMode: (mode: 'grid' | 'list') => void;
     selectedPluginId: string | null;
@@ -495,6 +497,8 @@ export const useAppStore = create<AppState>()(
             triggerExtensionReload: () => set((state) => ({ extensionReloadTrigger: state.extensionReloadTrigger + 1 })),
             pluginsTabSubMenu: 'store',
             setPluginsTabSubMenu: (tab) => set({ pluginsTabSubMenu: tab }),
+            extensionsSubTab: 'installed',
+            setExtensionsSubTab: (tab) => set({ extensionsSubTab: tab }),
             pluginsViewMode: 'grid',
             setPluginsViewMode: (mode) => set({ pluginsViewMode: mode }),
             selectedPluginId: null,
