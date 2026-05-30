@@ -31,6 +31,7 @@ export const ENABLE_LICENSING = false;
 const App: React.FC = () => {
   const edgePosition = useAppStore(state => state.edgePosition);
   const setEdgePosition = useAppStore(state => state.setEdgePosition);
+  const eyeDropperOffset = useAppStore(state => state.eyeDropperOffset);
   const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
   const isMiniMode = useAppStore(state => state.isMiniMode);
   const theme = useAppStore(state => state.theme);
@@ -312,15 +313,20 @@ const App: React.FC = () => {
 
   return (
     <>
-      <div className={`relative w-full h-full pointer-events-none flex ${
-        sidebarPosition 
-          ? 'items-start pt-[20px]' /* Free floating: default placement */
-          : (orientation === 'horizontal'
-              ? (edgePosition === 'top' ? 'items-start justify-center pt-0' : 'items-end justify-center pb-0')
-              : (isMac 
-                  ? (edgePosition === 'left' ? 'items-start justify-start pt-[20px]' : 'items-start justify-end pt-[20px]')
-                  : 'items-start justify-center pt-[20px]'))
-      }`}>
+      <div 
+        className={`relative w-full h-full pointer-events-none flex ${
+          sidebarPosition 
+            ? 'items-start pt-[20px]' /* Free floating: default placement */
+            : (orientation === 'horizontal'
+                ? (edgePosition === 'top' ? 'items-start justify-center pt-0' : 'items-end justify-center pb-0')
+                : (isMac 
+                    ? (edgePosition === 'left' ? 'items-start justify-start pt-[20px]' : 'items-start justify-end pt-[20px]')
+                    : 'items-start justify-center pt-[20px]'))
+        }`}
+        style={{
+          transform: `translate(${eyeDropperOffset.x}px, ${eyeDropperOffset.y}px)`
+        }}
+      >
         <div 
           id="kobar-sidebar-wrapper"
           className={`relative pointer-events-auto shrink-0 transition-opacity duration-300 ${isMiniMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}

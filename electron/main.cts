@@ -49,6 +49,8 @@ let sidebarRect = { width: 80, height: 600, offsetX: 1660, offsetY: 20 };
 let teleportShortcutKey = '';
 let borderWindow: BrowserWindow | null = null;
 let pipWindow: BrowserWindow | null = null;
+let preEyeDropperBounds: { x: number; y: number; width: number; height: number; } | null = null;
+let isEyeDropperActive = false;
 
 let trackingInterval: NodeJS.Timeout | null = null;
 let pinnedHwnd: number | null = null;
@@ -193,7 +195,10 @@ function createWindow() {
     }
 
     // Edge detection — fires during drag for smooth real-time updates
-    mainWindow.on('move', () => handleWindowMove());
+    mainWindow.on('move', () => {
+        if (isEyeDropperActive) return;
+        handleWindowMove();
+    });
 
     mainWindow.once('ready-to-show', () => {
         if (mainWindow) {
@@ -221,6 +226,7 @@ function createWindow() {
 
     let saveBoundsTimeout: ReturnType<typeof setTimeout>;
     mainWindow.on('move', () => {
+        if (isEyeDropperActive) return;
         clearTimeout(saveBoundsTimeout);
         saveBoundsTimeout = setTimeout(async () => {
             if (!mainWindow) return;
@@ -2477,4 +2483,13 @@ ipcMain.handle('get-app-version', () => {
 
 ipcMain.handle('is-dev', () => {
     return isDev;
+});
+
+ipcMain.handle('start-eyedropper', async () => {
+    isEyeDropperActive = true;
+    return { x: 0, y: 0 };
+});
+
+ipcMain.handle('stop-eyedropper', async () => {
+    isEyeDropperActive = false;
 });

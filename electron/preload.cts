@@ -38,6 +38,8 @@ contextBridge.exposeInMainWorld('api', {
     },
     // Mouse click-through for transparent window
     setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('set-ignore-mouse-events', ignore),
+    startEyeDropper: () => ipcRenderer.invoke('start-eyedropper'),
+    stopEyeDropper: () => ipcRenderer.invoke('stop-eyedropper'),
     onOpenSettings: (callback: () => void) => {
         const handler = () => callback();
         ipcRenderer.on('open-settings', handler);

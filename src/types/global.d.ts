@@ -27,6 +27,9 @@ declare global {
             writeToClipboard: (data: { type: string; content: string }) => void;
             // Mouse click-through
             setIgnoreMouseEvents: (ignore: boolean) => void;
+            // EyeDropper helpers
+            startEyeDropper: () => Promise<{ x: number; y: number }>;
+            stopEyeDropper: () => Promise<void>;
             onOpenSettings: (callback: () => void) => (() => void);
             // Global Paste Support
             setGlobalPasteMode: (isActive: boolean) => void;

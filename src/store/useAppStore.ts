@@ -248,6 +248,8 @@ interface AppState {
     setIsColorPickerOpen: (val: boolean) => void;
     colorPickerAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
     setColorPickerAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
+    eyeDropperOffset: { x: number, y: number };
+    setEyeDropperOffset: (offset: { x: number, y: number }) => void;
 
     isPinInjectorEnabled: boolean;
     setIsPinInjectorEnabled: (val: boolean) => void;
@@ -633,6 +635,8 @@ export const useAppStore = create<AppState>()(
             },
             colorPickerAnchorRect: null,
             setColorPickerAnchorRect: (rect) => set({ colorPickerAnchorRect: rect }),
+            eyeDropperOffset: { x: 0, y: 0 },
+            setEyeDropperOffset: (offset) => set({ eyeDropperOffset: offset }),
 
             isPinInjectorEnabled: false,
             setIsPinInjectorEnabled: (val: boolean) => set({ isPinInjectorEnabled: val }),

@@ -131,6 +131,173 @@ const SettingsPanel: React.FC = () => {
             window.removeEventListener('touchend', handleGlobalUp);
         };
     }, [isDraggingSat, isDraggingHue, inlineHsv]);
+    const [renameValue, setRenameValue] = useState('');
+    const [newPresetName, setNewPresetName] = useState('');
+
+    // Dynamic Extensions State & Handlers
+    const [installedExtensions, setInstalledExtensions] = useState<any[]>([]);
+    const extensionsSubTab = useAppStore(state => state.extensionsSubTab);
+    const setExtensionsSubTab = useAppStore(state => state.setExtensionsSubTab);
+    const [extsLoading, setExtsLoading] = useState(false);
+    const [installMessage, setInstallMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [isDraggingFile, setIsDraggingFile] = useState(false);
+    const dragCounter = useRef(0);
+    const triggerExtensionReload = useAppStore(state => state.triggerExtensionReload);
+
+    // Reset drag-and-drop state on tab switch to prevent leaks
+    useEffect(() => {
+        dragCounter.current = 0;
+        setIsDraggingFile(false);
+    }, [extensionsSubTab]);
+
+    const loadExtensionsData = async () => {
+        setExtsLoading(true);
+        try {
+            if (window.api?.getInstalledExtensions) {
+                const installed = await window.api.getInstalledExtensions();
+                setInstalledExtensions(installed);
+            }
+        } catch (e) {
+            console.error('Failed to load extensions data:', e);
+        } finally {
+            setExtsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadExtensionsData();
+    }, []);
+
+    const handleToggleExtension = async (id: string, enabled: boolean) => {
+        if (window.api?.toggleExtensionEnabled) {
+            await window.api.toggleExtensionEnabled(id, enabled);
+            triggerExtensionReload();
+            loadExtensionsData();
+        }
+    };
+
+
+
+    const handleUninstallExtension = async (id: string) => {
+        if (window.api?.uninstallExtension) {
+            setExtsLoading(true);
+            const startTime = Date.now();
+            try {
+                await window.api.uninstallExtension(id);
+                triggerExtensionReload();
+                await loadExtensionsData();
+            } finally {
+                const elapsed = Date.now() - startTime;
+                if (elapsed < 500) {
+                    await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+                }
+                setExtsLoading(false);
+            }
+        }
+    };
+
+    const handleInstallExtensionFromFile = async () => {
+        if (window.api?.installExtensionFromFile) {
+            setExtsLoading(true);
+            setInstallMessage(null);
+            const startTime = Date.now();
+            let isCanceled = false;
+            try {
+                const res = await window.api.installExtensionFromFile();
+                if (res.success) {
+                    setInstallMessage({ type: 'success', text: 'Extension installed successfully!' });
+                    triggerExtensionReload();
+                    await loadExtensionsData();
+                } else {
+                    if (res.reason === 'Canceled by user') {
+                        isCanceled = true;
+                    } else {
+                        setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+                    }
+                }
+            } catch (e: any) {
+                setInstallMessage({ type: 'error', text: `Error during installation: ${e.message || e}` });
+            } finally {
+                if (!isCanceled) {
+                    const elapsed = Date.now() - startTime;
+                    if (elapsed < 500) {
+                        await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+                    }
+                }
+                setExtsLoading(false);
+            }
+        }
+    };
+
+    const handleExtensionDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current++;
+        if (dragCounter.current === 1) {
+            setIsDraggingFile(true);
+        }
+    };
+
+    const handleExtensionDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleExtensionDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current--;
+        if (dragCounter.current === 0) {
+            setIsDraggingFile(false);
+        }
+    };
+
+    const handleExtensionDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current = 0;
+        setIsDraggingFile(false);
+
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length === 0) return;
+
+        const file = files[0];
+        const filePath = window.api?.getFilePath?.(file) || (file as any).path;
+        
+        if (!filePath) {
+            setInstallMessage({ type: 'error', text: 'Could not resolve file path.' });
+            return;
+        }
+
+        if (!filePath.toLowerCase().endsWith('.zip')) {
+            setInstallMessage({ type: 'error', text: 'Please drop a valid .zip extension package.' });
+            return;
+        }
+
+        if (window.api?.installExtensionFromPath) {
+            setExtsLoading(true);
+            setInstallMessage(null);
+            const startTime = Date.now();
+            try {
+                const res = await window.api.installExtensionFromPath(filePath);
+                if (res.success) {
+                    setInstallMessage({ type: 'success', text: 'Extension installed successfully!' });
+                    triggerExtensionReload();
+                    await loadExtensionsData();
+                } else {
+                    setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+                }
+            } catch (err: any) {
+                setInstallMessage({ type: 'error', text: `Error during installation: ${err.message || err}` });
+            } finally {
+                const elapsed = Date.now() - startTime;
+                if (elapsed < 500) {
+                    await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
+                }
+                setExtsLoading(false);
+            }
+        }
+    };
     const [appVersion, setAppVersion] = useState('');
     const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'upToDate' | 'available' | 'downloading' | 'downloaded' | 'error'>('idle');
     const [latestVersion, setLatestVersion] = useState('');
@@ -450,6 +617,499 @@ const SettingsPanel: React.FC = () => {
             <h2 className="text-2xl font-semibold text-slate-200 mb-8">{t('settings')}</h2>
 
             <div className="space-y-10">
+                {/* --- WORKSPACES SECTION --- */}
+                <div>
+                    <div className="flex items-center justify-between mb-4 px-2">
+                        <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold">{(t as any)('workspaces') || 'Workspaces'}</h3>
+                        <button
+                            onClick={() => setWorkspaceViewMode(workspaceViewMode === 'list' ? 'cards' : 'list')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all no-drag-region border hover:brightness-125"
+                            style={{
+                                backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)',
+                                borderColor: design === 'style2' ? 'rgba(255,255,255,0.08)' : 'var(--theme-border)',
+                                color: 'var(--theme-primary)',
+                            }}
+                        >
+                            <span className="material-symbols-outlined text-[16px]">
+                                {workspaceViewMode === 'list' ? 'grid_view' : 'view_list'}
+                            </span>
+                            {workspaceViewMode === 'list'
+                                ? (language === 'tr' ? 'Kartlar' : 'Cards')
+                                : (language === 'tr' ? 'Liste' : 'List')}
+                        </button>
+                    </div>
+
+                    {workspaceViewMode === 'list' ? (
+                        /* ─── LIST (Accordion) VIEW ─── */
+                        <div className="space-y-4 mb-10">
+                            <Accordion title={(t as any)('workspaces') || 'Workspaces'} icon="switch_access_shortcut" defaultOpen={true}>
+                                <div className="flex flex-col gap-6">
+                                    <p className="text-sm text-slate-400">{(t as any)('workspacesDesc') || 'Save and load your favorite KoBar configurations.'}</p>
+                                    
+                                    <div className="flex flex-col gap-3">
+                                        {workspaces.map((preset, idx) => (
+                                            <div key={preset.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${design === 'style2' ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-black/20 border-[#2a241c] hover:border-primary/30'}`}>
+                                                
+                                                {isRenamingIdx === idx ? (
+                                                    <input 
+                                                        autoFocus
+                                                        type="text" 
+                                                        value={renameValue}
+                                                        onChange={e => setRenameValue(e.target.value)}
+                                                        onBlur={() => {
+                                                            if (renameValue.trim()) {
+                                                                updateWorkspaceName(preset.id, renameValue.trim());
+                                                            }
+                                                            setIsRenamingIdx(null);
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                if (renameValue.trim()) {
+                                                                    updateWorkspaceName(preset.id, renameValue.trim());
+                                                                }
+                                                                setIsRenamingIdx(null);
+                                                            }
+                                                            if (e.key === 'Escape') {
+                                                                setIsRenamingIdx(null);
+                                                            }
+                                                        }}
+                                                        className="flex-1 bg-transparent border-b border-primary text-sm text-white focus:outline-none px-1 py-0.5 no-drag-region mr-4"
+                                                    />
+                                                ) : (
+                                                    <div 
+                                                        className="flex-1 flex items-center gap-2 cursor-pointer group no-drag-region"
+                                                        onClick={() => loadWorkspace(preset.id)}
+                                                        title={(t as any)('loadWorkspace') || 'Load'}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px] text-primary">play_circle</span>
+                                                        <span className="text-sm font-medium text-slate-200 group-hover:text-primary transition-colors">{preset.name}</span>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center gap-1 no-drag-region">
+                                                    <button 
+                                                        onClick={() => updateWorkspaceSettings(preset.id)}
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-green-400 hover:bg-green-400/10 transition-colors"
+                                                        title={(t as any)('updateWorkspaceSettings') || 'Update Settings'}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">save</span>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setIsRenamingIdx(idx);
+                                                            setRenameValue(preset.name);
+                                                        }}
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                                                        title={(t as any)('renameWorkspace') || 'Rename'}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">edit</span>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => deleteWorkspace(preset.id)}
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                        title={(t as any)('deleteWorkspace') || 'Delete'}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {workspaces.length === 0 && (
+                                            <div className="p-4 border border-dashed border-white/10 rounded-lg text-center text-slate-500 text-sm">
+                                                {language === 'tr' ? 'Henüz kayıtlı preset yok.' : 'No presets saved yet.'}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2 items-center mt-2 no-drag-region">
+                                        <input 
+                                            type="text" 
+                                            value={newPresetName}
+                                            onChange={e => setNewPresetName(e.target.value)}
+                                            placeholder={(t as any)('workspaceNamePlaceholder') || 'Preset name...'}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && newPresetName.trim()) {
+                                                    saveCurrentAsWorkspace(newPresetName.trim());
+                                                    setNewPresetName('');
+                                                }
+                                            }}
+                                            className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                if (newPresetName.trim()) {
+                                                    saveCurrentAsWorkspace(newPresetName.trim());
+                                                    setNewPresetName('');
+                                                }
+                                            }}
+                                            disabled={!newPresetName.trim()}
+                                            className="px-4 py-2 bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 rounded-lg text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {(t as any)('saveCurrentSettings') || 'Save Current Settings'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </Accordion>
+                        </div>
+                    ) : (
+                        /* ─── CARD VIEW ─── */
+                        <div className="mb-10 space-y-4">
+                            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+                                {workspaces.map((preset, idx) => (
+                                    <div
+                                        key={preset.id}
+                                        className="relative rounded-xl border overflow-hidden transition-all duration-300"
+                                        style={{
+                                            backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.03)' : 'var(--theme-bg-dark)',
+                                            borderColor: 'rgba(96, 165, 250, 0.2)',
+                                            boxShadow: '0 0 24px -6px rgba(96, 165, 250, 0.25), inset 0 1px 0 rgba(96, 165, 250, 0.08)',
+                                        }}
+                                    >
+                                        <div className="flex flex-col items-center gap-3 p-5 pt-6">
+                                            {/* Icon */}
+                                            <div
+                                                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                                style={{ backgroundColor: 'rgba(96, 165, 250, 0.12)' }}
+                                            >
+                                                <span className="material-symbols-outlined text-[24px]" style={{ color: '#60a5fa' }}>
+                                                    tune
+                                                </span>
+                                            </div>
+
+                                            {/* Name */}
+                                            {isRenamingIdx === idx ? (
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    value={renameValue}
+                                                    onChange={e => setRenameValue(e.target.value)}
+                                                    onBlur={() => {
+                                                        if (renameValue.trim()) updateWorkspaceName(preset.id, renameValue.trim());
+                                                        setIsRenamingIdx(null);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            if (renameValue.trim()) updateWorkspaceName(preset.id, renameValue.trim());
+                                                            setIsRenamingIdx(null);
+                                                        }
+                                                        if (e.key === 'Escape') setIsRenamingIdx(null);
+                                                    }}
+                                                    className="w-full bg-transparent border-b border-primary text-sm text-white text-center focus:outline-none px-1 py-0.5 no-drag-region"
+                                                />
+                                            ) : (
+                                                <span className="text-sm font-medium text-slate-300 text-center leading-tight min-h-[1.25rem]">
+                                                    {preset.name}
+                                                </span>
+                                            )}
+
+                                            {/* Action buttons */}
+                                            <div className="flex items-center gap-1 no-drag-region mt-1">
+                                                <button
+                                                    onClick={() => loadWorkspace(preset.id)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-green-400 hover:bg-green-400/10 transition-colors"
+                                                    title={(t as any)('loadWorkspace') || 'Load'}
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">play_circle</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => updateWorkspaceSettings(preset.id)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 transition-colors"
+                                                    title={(t as any)('updateWorkspaceSettings') || 'Update'}
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">save</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => { setIsRenamingIdx(idx); setRenameValue(preset.name); }}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                                                    title={(t as any)('renameWorkspace') || 'Rename'}
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteWorkspace(preset.id)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                    title={(t as any)('deleteWorkspace') || 'Delete'}
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Add new workspace card */}
+                                <div
+                                    className="relative rounded-xl border-2 border-dashed overflow-hidden transition-all duration-300 cursor-pointer group no-drag-region"
+                                    style={{
+                                        borderColor: design === 'style2' ? 'rgba(255,255,255,0.08)' : 'var(--theme-border)',
+                                    }}
+                                    onClick={() => {
+                                        if (newPresetName.trim()) {
+                                            saveCurrentAsWorkspace(newPresetName.trim());
+                                            setNewPresetName('');
+                                        }
+                                    }}
+                                >
+                                    <div className="flex flex-col items-center justify-center gap-3 p-5 pt-6 min-h-[160px]">
+                                        <div
+                                            className="w-12 h-12 rounded-xl flex items-center justify-center transition-colors group-hover:bg-primary/20"
+                                            style={{ backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)' }}
+                                        >
+                                            <span className="material-symbols-outlined text-[24px] text-slate-500 group-hover:text-primary transition-colors">add</span>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={newPresetName}
+                                            onChange={e => setNewPresetName(e.target.value)}
+                                            onClick={e => e.stopPropagation()}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && newPresetName.trim()) {
+                                                    saveCurrentAsWorkspace(newPresetName.trim());
+                                                    setNewPresetName('');
+                                                }
+                                            }}
+                                            placeholder={language === 'tr' ? 'Preset adı...' : 'Preset name...'}
+                                            className="w-full bg-transparent border-b border-white/10 focus:border-primary text-sm text-white text-center focus:outline-none px-1 py-1 no-drag-region transition-colors"
+                                        />
+                                        <span className="text-[11px] text-slate-500 group-hover:text-primary transition-colors">
+                                            {language === 'tr' ? 'Yeni Kaydet' : 'Save New'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {workspaces.length === 0 && (
+                                <p className="text-sm text-slate-500 text-center px-2">
+                                    {(t as any)('workspacesDesc') || 'Save and load your favorite KoBar configurations.'}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* --- TOP SECTION: Dynamic Features --- */}
+                <div>
+                    <div className="flex items-center justify-between mb-4 px-2">
+                        <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold">{t('featureToggles')}</h3>
+                        <button
+                            onClick={() => setFeatureViewMode(featureViewMode === 'list' ? 'cards' : 'list')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all no-drag-region border hover:brightness-125"
+                            style={{
+                                backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)',
+                                borderColor: design === 'style2' ? 'rgba(255,255,255,0.08)' : 'var(--theme-border)',
+                                color: 'var(--theme-primary)',
+                            }}
+                        >
+                            <span className="material-symbols-outlined text-[16px]">
+                                {featureViewMode === 'list' ? 'grid_view' : 'view_list'}
+                            </span>
+                            {featureViewMode === 'list'
+                                ? (language === 'tr' ? 'Kartlar' : 'Cards')
+                                : (language === 'tr' ? 'Liste' : 'List')}
+                        </button>
+                    </div>
+                    {featureViewMode === 'list' ? (
+                        <div className="space-y-4">
+                            {featureOrder.map((id, index) => renderFeatureAccordion(id, index))}
+                        </div>
+                    ) : (
+                        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+                            {featureOrder.map((id, index) => renderFeatureCard(id, index))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="w-full h-px opacity-20" style={{ backgroundColor: 'var(--theme-border)' }}></div>
+
+                {/* --- EXTENSIONS SECTION --- */}
+                <div>
+                    <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-4 px-2">Extensions</h3>
+                    <Accordion title="Extensions Manager" icon="extension" defaultOpen={true}>
+                        <div className="flex flex-col gap-6 no-drag-region">
+                            {/* Sub-tabs & Action button */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 flex-1">
+                                    <button
+                                        onClick={() => setExtensionsSubTab('installed')}
+                                        className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${extensionsSubTab === 'installed' ? 'bg-primary text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        Installed
+                                    </button>
+                                    <button
+                                        onClick={() => setExtensionsSubTab('marketplace')}
+                                        className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${extensionsSubTab === 'marketplace' ? 'bg-primary text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        Install Extensions
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={() => window.api?.openExternal('https://github.com/eedali/KoBar/wiki/Extensions')}
+                                    className="px-3 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary/50 text-primary text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shrink-0"
+                                    title="Browse official extensions on GitHub"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                    Visit Marketplace
+                                </button>
+                            </div>
+
+                            {/* Installation feedback message */}
+                            {installMessage && (
+                                <div className={`px-4 py-3 rounded-xl border text-xs flex items-center gap-2 animate-in fade-in duration-200 ${
+                                    installMessage.type === 'success' 
+                                        ? 'bg-green-500/10 border-green-500/30 text-green-400' 
+                                        : 'bg-red-500/10 border-red-500/30 text-red-400'
+                                }`}>
+                                    <span className="material-symbols-outlined text-[16px]">
+                                        {installMessage.type === 'success' ? 'check_circle' : 'error'}
+                                    </span>
+                                    <span className="flex-1">{installMessage.text}</span>
+                                    <button 
+                                        onClick={() => setInstallMessage(null)} 
+                                        className="text-slate-400 hover:text-slate-200 p-0.5 rounded transition-all hover:bg-white/5"
+                                    >
+                                        <span className="material-symbols-outlined text-[14px]">close</span>
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Installed Extensions Sub-tab */}
+                            {extensionsSubTab === 'installed' && (
+                                <div 
+                                    className="relative min-h-[120px]"
+                                    onDragEnter={handleExtensionDragEnter}
+                                    onDragOver={handleExtensionDragOver}
+                                    onDragLeave={handleExtensionDragLeave}
+                                    onDrop={handleExtensionDrop}
+                                >
+                                    {installedExtensions.length === 0 ? (
+                                        <div 
+                                            onClick={handleInstallExtensionFromFile}
+                                            className={`p-8 border border-dashed rounded-xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 group
+                                                ${isDraggingFile 
+                                                    ? 'border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-primary/10' 
+                                                    : 'border-[#2a241c] hover:border-primary/50 bg-black/20 hover:bg-black/30'}`}
+                                            title="Click to select or Drag & Drop Extension ZIP"
+                                        >
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all
+                                                ${isDraggingFile ? 'bg-primary/20 scale-110' : 'bg-primary/10 group-hover:scale-110'}`}>
+                                                <span className={`material-symbols-outlined text-primary text-[28px] transition-all
+                                                    ${isDraggingFile ? 'animate-bounce' : ''}`}>folder_zip</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-sm font-semibold text-slate-200">
+                                                    {isDraggingFile ? 'Drop to Install!' : 'No extensions installed yet.'}
+                                                </span>
+                                                <span className="text-xs text-slate-400">
+                                                    {isDraggingFile ? 'Release the ZIP file to automatically install' : 'Drag & drop an extension ZIP file here or click to browse'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {installedExtensions.map((ext) => (
+                                                <div key={ext.id} className="flex items-center justify-between p-4 rounded-xl border border-[#2a241c] bg-black/20 hover:border-primary/30 transition-all">
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                                            <span className="material-symbols-outlined text-primary text-[20px]">{ext.icon || 'extension'}</span>
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-semibold text-slate-200 truncate">{ext.name}</span>
+                                                                <span className="text-[10px] font-mono text-slate-500 shrink-0">v{ext.version}</span>
+                                                            </div>
+                                                            <span className="text-xs text-slate-400 leading-normal truncate max-w-xs">{ext.description}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        {/* Enable/Disable Toggle */}
+                                                        <button
+                                                            onClick={() => handleToggleExtension(ext.id, !ext.enabled)}
+                                                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${ext.enabled ? 'bg-green-500' : 'bg-slate-600'}`}
+                                                        >
+                                                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${ext.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                        </button>
+
+                                                        {/* Uninstall Button */}
+                                                        <button
+                                                            onClick={() => handleUninstallExtension(ext.id)}
+                                                            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                            title="Uninstall"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Drag over overlay when there are extensions installed */}
+                                    {isDraggingFile && installedExtensions.length > 0 && (
+                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm border border-dashed border-primary rounded-xl flex flex-col items-center justify-center gap-2 pointer-events-none z-10 animate-in fade-in duration-200">
+                                            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center animate-bounce">
+                                                <span className="material-symbols-outlined text-primary text-[24px]">folder_zip</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1 text-center">
+                                                <span className="text-sm font-semibold text-slate-200">Drop to Install!</span>
+                                                <span className="text-xs text-slate-400">Release the ZIP file to automatically install</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Loading overlay */}
+                                    {extsLoading && (
+                                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20 animate-in fade-in duration-200">
+                                            <span className="material-symbols-outlined text-primary text-[28px] animate-spin">sync</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Install Extensions Sub-tab */}
+                            {extensionsSubTab === 'marketplace' && (
+                                <div className="space-y-4 relative">
+                                    <div 
+                                        onClick={handleInstallExtensionFromFile}
+                                        onDragEnter={handleExtensionDragEnter}
+                                        onDragOver={handleExtensionDragOver}
+                                        onDragLeave={handleExtensionDragLeave}
+                                        onDrop={handleExtensionDrop}
+                                        className={`p-8 border border-dashed rounded-xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 group
+                                            ${isDraggingFile 
+                                                ? 'border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-primary/10' 
+                                                : 'border-[#2a241c] hover:border-primary/50 bg-black/20 hover:bg-black/30'}`}
+                                    >
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all
+                                            ${isDraggingFile ? 'bg-primary/20 scale-110' : 'bg-primary/10 group-hover:scale-110'}`}>
+                                            <span className={`material-symbols-outlined text-primary text-[28px] transition-all
+                                                ${isDraggingFile ? 'animate-bounce' : ''}`}>folder_zip</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-sm font-semibold text-slate-200">
+                                                {isDraggingFile ? 'Drop to Install!' : 'Click to Select or Drag & Drop Extension ZIP'}
+                                            </span>
+                                            <span className="text-xs text-slate-400">
+                                                {isDraggingFile ? 'Release the ZIP file to automatically install' : 'Select or drop an independently packaged KoBar extension (.zip)'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Loading overlay */}
+                                    {extsLoading && (
+                                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20 animate-in fade-in duration-200">
+                                            <span className="material-symbols-outlined text-primary text-[28px] animate-spin">sync</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </Accordion>
+                </div>
+
+                <div className="w-full h-px opacity-20" style={{ backgroundColor: 'var(--theme-border)' }}></div>
+
                 {/* --- MIDDLE SECTION: Application UI Configuration --- */}
                 <div>
                     <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold mb-4 px-2">{t('uiLayout')}</h3>
