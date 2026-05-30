@@ -13,8 +13,10 @@ export const MOCK_PLUGINS = [
         color: 'primary',
         downloads: '12.4k',
         rating: '4.8',
-        tags: ["KoBar's plugins", 'Approved'],
-        repo: 'facebook/react' // using popular repo to mock GitHub API stats
+        tags: ["KoBar's plugins", 'Approved', 'Installed'],
+        installed: true,
+        active: true,
+        repo: 'facebook/react' 
     },
     {
         id: 'term-quick',
@@ -28,7 +30,25 @@ export const MOCK_PLUGINS = [
         downloads: '5.1k',
         rating: '4.2',
         tags: ['Beta', 'Not Installed'],
+        installed: false,
+        active: false,
         repo: 'electron/electron'
+    },
+    {
+        id: 'snippet-vault',
+        name: 'SnippetVault',
+        author: 'CodeMaster',
+        description: 'Store and quickly retrieve your most used code snippets.',
+        fullDescription: 'SnippetVault is a lifesaver for developers. Save code blocks and insert them anywhere with a quick shortcut.',
+        version: 'v2.0.1',
+        icon: 'code',
+        color: 'blue-500',
+        downloads: '8.2k',
+        rating: '4.5',
+        tags: ['Approved', 'Installed'],
+        installed: true,
+        active: false,
+        repo: 'microsoft/vscode'
     }
 ];
 
@@ -39,19 +59,56 @@ const PluginStore: React.FC = () => {
     const pluginsSearchQuery = useAppStore(state => state.pluginsSearchQuery);
     const setPluginsSearchQuery = useAppStore(state => state.setPluginsSearchQuery);
     const pluginsSelectedTags = useAppStore(state => state.pluginsSelectedTags);
+    const setPluginsSelectedTags = useAppStore(state => state.setPluginsSelectedTags);
+    const setSelectedPluginId = useAppStore(state => state.setSelectedPluginId);
 
     const tags = ['All', "KoBar's plugins", 'Approved', 'Unapproved', 'Installed', 'Not Installed', 'Beta'];
 
-    const setSelectedPluginId = useAppStore(state => state.setSelectedPluginId);
+    const handleTagClick = (clickedTag: string) => {
+        if (clickedTag === 'All') {
+            // If all tags are currently selected, clear them. Otherwise, select all.
+            if (pluginsSelectedTags.length === tags.length - 1) {
+                setPluginsSelectedTags([]);
+            } else {
+                setPluginsSelectedTags(tags.filter(t => t !== 'All'));
+            }
+            return;
+        }
 
-    // Dynamic color classes helper
+        let newTags = [...pluginsSelectedTags];
+        if (newTags.includes(clickedTag)) {
+            newTags = newTags.filter(t => t !== clickedTag);
+        } else {
+            newTags.push(clickedTag);
+        }
+        setPluginsSelectedTags(newTags);
+    };
+
+    // Filter plugins
+    const filteredPlugins = MOCK_PLUGINS.filter(plugin => {
+        if (pluginsSearchQuery) {
+            const q = pluginsSearchQuery.toLowerCase();
+            if (!plugin.name.toLowerCase().includes(q) && 
+                !plugin.description.toLowerCase().includes(q) &&
+                !plugin.author.toLowerCase().includes(q)) {
+                return false;
+            }
+        }
+
+        if (pluginsSelectedTags.length > 0) {
+            const hasMatchingTag = pluginsSelectedTags.some(tag => plugin.tags.includes(tag));
+            if (!hasMatchingTag) return false;
+        }
+
+        return true;
+    });
+
     const getColorClasses = (color: string) => {
         if (color === 'primary') {
             return {
                 bg: 'bg-primary/10',
                 border: 'hover:border-primary/50',
                 text: 'text-primary',
-                glow: 'bg-primary/10',
                 gradient: 'from-primary/30 to-blue-500/20'
             };
         }
@@ -59,17 +116,22 @@ const PluginStore: React.FC = () => {
             bg: `bg-${color}/10`,
             border: `hover:border-${color}/50`,
             text: `text-${color}`,
-            glow: `bg-${color}/10`,
-            gradient: `from-${color}/30 to-teal-500/20` // mock gradient logic
+            gradient: `from-${color}/30 to-teal-500/20`
         };
+    };
+
+    const getGlowClass = (installed: boolean, active: boolean) => {
+        if (!installed) return 'bg-black/0 shadow-none';
+        if (installed && active) return 'bg-green-500/30';
+        return 'bg-red-500/30';
     };
 
     return (
         <div className="flex flex-col h-full space-y-6">
             <div className="flex items-center justify-between px-2">
                 <div className="flex flex-col">
-                    <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold">{(t as any)('pluginStore') || 'Plugin Store'}</h3>
-                    <p className="text-xs text-slate-500 mt-1">{(t as any)('pluginStoreDesc') || 'Browse and install official community plugins.'}</p>
+                    <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold">{(t as any)('plugins') || 'Plugins'}</h3>
+                    <p className="text-xs text-slate-500 mt-1">{(t as any)('pluginStoreDesc') || 'Browse, manage, and install extensions.'}</p>
                 </div>
             </div>
 
@@ -88,18 +150,23 @@ const PluginStore: React.FC = () => {
                 
                 {/* Filter Tags */}
                 <div className="flex flex-wrap gap-2 mt-3 no-drag-region">
-                    {tags.map(tag => (
-                        <span 
-                            key={tag}
-                            className={`px-3 py-1 border rounded-full text-[11px] font-medium cursor-pointer transition-colors ${
-                                pluginsSelectedTags.includes(tag) || (tag === 'All' && pluginsSelectedTags.length === 0)
-                                ? 'bg-primary text-slate-900 border-primary'
-                                : 'bg-white/5 text-slate-400 border-white/10 hover:bg-primary/20 hover:text-primary'
-                            }`}
-                        >
-                            {tag}
-                        </span>
-                    ))}
+                    {tags.map(tag => {
+                        const isSelected = (tag === 'All' && (pluginsSelectedTags.length === 0 || pluginsSelectedTags.length === tags.length - 1)) || 
+                                           (tag !== 'All' && pluginsSelectedTags.includes(tag));
+                        return (
+                            <span 
+                                key={tag}
+                                onClick={() => handleTagClick(tag)}
+                                className={`px-3 py-1 border rounded-full text-[11px] font-medium cursor-pointer transition-colors ${
+                                    isSelected
+                                    ? 'bg-primary text-slate-900 border-primary'
+                                    : 'bg-white/5 text-slate-400 border-white/10 hover:bg-primary/20 hover:text-primary'
+                                }`}
+                            >
+                                {tag}
+                            </span>
+                        );
+                    })}
                 </div>
 
                 {/* View Toggles Underneath Tags */}
@@ -128,15 +195,16 @@ const PluginStore: React.FC = () => {
             {/* Grid view */}
             {pluginsViewMode === 'grid' && (
                 <div className="grid grid-cols-2 gap-4 px-2">
-                    {MOCK_PLUGINS.map(plugin => {
+                    {filteredPlugins.map(plugin => {
                         const colors = getColorClasses(plugin.color);
+                        const glowClass = getGlowClass(plugin.installed, plugin.active);
                         return (
                             <div 
                                 key={plugin.id}
                                 onClick={() => setSelectedPluginId(plugin.id)}
                                 className={`aspect-[2/3] bg-black/20 border border-white/5 rounded-2xl relative group overflow-hidden transition-all ${colors.border} hover:bg-black/40 cursor-pointer no-drag-region flex flex-col`}
                             >
-                                <div className={`absolute inset-0 ${colors.glow} blur-[50px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
+                                <div className={`absolute inset-0 ${glowClass} blur-[50px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
                                 
                                 {/* Top Half: Banner Image */}
                                 <div className={`h-1/2 w-full bg-gradient-to-br ${colors.gradient} relative`}>
@@ -166,15 +234,16 @@ const PluginStore: React.FC = () => {
             {/* List view */}
             {pluginsViewMode === 'list' && (
                 <div className="flex flex-col gap-3 px-2">
-                    {MOCK_PLUGINS.map(plugin => {
+                    {filteredPlugins.map(plugin => {
                         const colors = getColorClasses(plugin.color);
+                        const glowClass = getGlowClass(plugin.installed, plugin.active);
                         return (
                             <div 
                                 key={plugin.id}
                                 onClick={() => setSelectedPluginId(plugin.id)}
                                 className={`flex items-center gap-4 p-4 rounded-xl border border-white/5 bg-black/20 hover:bg-black/40 transition-all cursor-pointer no-drag-region relative group overflow-hidden ${colors.border}`}
                             >
-                                <div className={`absolute inset-0 ${colors.glow} blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
+                                <div className={`absolute inset-0 ${glowClass} blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
                                 
                                 <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center shrink-0 relative z-10`}>
                                     <span className={`material-symbols-outlined ${colors.text} text-[20px]`}>{plugin.icon}</span>
@@ -190,6 +259,13 @@ const PluginStore: React.FC = () => {
                             </div>
                         );
                     })}
+                </div>
+            )}
+            
+            {filteredPlugins.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-10 text-slate-500">
+                    <span className="material-symbols-outlined text-[48px] mb-2 opacity-50">extension_off</span>
+                    <span className="text-sm">No plugins found.</span>
                 </div>
             )}
         </div>

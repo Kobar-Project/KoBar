@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import PluginStore from './PluginStore';
-import InstalledPlugins from './InstalledPlugins';
+
 import WorkspacesView from './WorkspacesView';
 import FeaturesView from './FeaturesView';
 import PluginDetail from './PluginDetail';
@@ -14,8 +14,7 @@ const PluginsPanel: React.FC = () => {
     const t = useAppStore(state => state.t);
 
     const menuItems = [
-        { id: 'store', icon: 'storefront', label: (t as any)('pluginStore') || 'Plugin Store' },
-        { id: 'installed', icon: 'extension', label: (t as any)('installedPlugins') || 'Installed' },
+        { id: 'store', icon: 'extension', label: (t as any)('plugins') || 'Plugins' },
         { id: 'workspaces', icon: 'dashboard_customize', label: (t as any)('workspaces') || 'Workspaces' },
         { id: 'features', icon: 'toggle_on', label: (t as any)('kobarFeatures') || 'KoBar Features' },
     ];
@@ -59,7 +58,7 @@ const PluginsPanel: React.FC = () => {
             {/* Render sub-views here based on pluginsTabSubMenu */}
             <div className="flex-1 relative">
                 {pluginsTabSubMenu === 'store' && <PluginStore />}
-                {pluginsTabSubMenu === 'installed' && <InstalledPlugins />}
+
                 {pluginsTabSubMenu === 'workspaces' && <WorkspacesView />}
                 {pluginsTabSubMenu === 'features' && <FeaturesView />}
             </div>

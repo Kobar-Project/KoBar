@@ -12,10 +12,12 @@ const PluginDetail: React.FC = () => {
     const [loadingStats, setLoadingStats] = useState(false);
     const [installProgress, setInstallProgress] = useState<number | null>(null);
     const [isLocalInstalled, setIsLocalInstalled] = useState(false);
+    const [isLocalActive, setIsLocalActive] = useState(false);
 
     useEffect(() => {
         if (plugin) {
-            setIsLocalInstalled(plugin.tags.includes('Installed'));
+            setIsLocalInstalled(plugin.installed || plugin.tags.includes('Installed'));
+            setIsLocalActive(plugin.active || false);
         }
     }, [plugin]);
 
@@ -151,9 +153,18 @@ const PluginDetail: React.FC = () => {
                             <span className="material-symbols-outlined text-[18px]">delete</span>
                             Uninstall
                         </button>
-                        <button className="flex-1 py-2 rounded-lg bg-primary text-slate-900 transition-colors text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                            <span className="material-symbols-outlined text-[18px]">toggle_on</span>
-                            Disable
+                        <button 
+                            onClick={() => setIsLocalActive(!isLocalActive)}
+                            className={`flex-1 py-2 rounded-lg transition-colors text-sm font-semibold flex items-center justify-center gap-2 shadow-lg ${
+                                isLocalActive 
+                                    ? 'bg-primary text-slate-900 shadow-primary/20' 
+                                    : 'bg-black/40 text-slate-400 border border-white/5 hover:text-slate-200 hover:bg-black/60'
+                            }`}
+                        >
+                            <span className="material-symbols-outlined text-[18px]">
+                                {isLocalActive ? 'toggle_on' : 'toggle_off'}
+                            </span>
+                            {isLocalActive ? 'Disable' : 'Enable'}
                         </button>
                     </>
                 ) : installProgress !== null ? (
