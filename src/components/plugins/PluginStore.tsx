@@ -194,7 +194,7 @@ const PluginStore: React.FC = () => {
 
             {/* Grid view */}
             {pluginsViewMode === 'grid' && (
-                <div className="grid grid-cols-2 gap-4 px-2">
+                <div className="flex flex-wrap gap-4 px-2">
                     {filteredPlugins.map(plugin => {
                         const colors = getColorClasses(plugin.color);
                         const glowClass = getGlowClass(plugin.installed, plugin.active);
@@ -202,21 +202,21 @@ const PluginStore: React.FC = () => {
                             <div 
                                 key={plugin.id}
                                 onClick={() => setSelectedPluginId(plugin.id)}
-                                className={`aspect-[2/3] bg-black/20 border border-white/5 rounded-2xl relative group overflow-hidden transition-all ${colors.border} hover:bg-black/40 cursor-pointer no-drag-region flex flex-col`}
+                                className={`w-[260px] h-[350px] shrink-0 bg-black/20 border border-white/5 rounded-2xl relative group overflow-hidden transition-all ${colors.border} hover:bg-black/40 cursor-pointer no-drag-region flex flex-col`}
                             >
                                 <div className={`absolute inset-0 ${glowClass} blur-[50px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
                                 
                                 {/* Top Half: Banner Image */}
-                                <div className={`h-1/2 w-full bg-gradient-to-br ${colors.gradient} relative`}>
+                                <div className={`h-2/3 w-full bg-gradient-to-br ${colors.gradient} relative`}>
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <span className="material-symbols-outlined text-white/20 text-5xl">image</span>
                                     </div>
                                 </div>
 
                                 {/* Bottom Half: Info */}
-                                <div className="h-1/2 w-full p-4 flex flex-col items-center justify-center relative z-10 text-center gap-2">
-                                    <div className={`w-12 h-12 rounded-xl ${colors.bg} flex items-center justify-center shrink-0 -mt-10 mb-1 border-4 border-[#1a1612]`}>
-                                        <span className={`material-symbols-outlined ${colors.text} text-[24px]`}>{plugin.icon}</span>
+                                <div className="h-1/3 w-full px-4 pb-3 pt-0 flex flex-col items-center justify-center relative z-10 text-center gap-1">
+                                    <div className={`w-14 h-14 rounded-full bg-[#111111] flex items-center justify-center shrink-0 -mt-10 mb-1 border-[4px] border-[#222] shadow-lg`}>
+                                        <span className={`material-symbols-outlined ${colors.text} text-[26px]`}>{plugin.icon}</span>
                                     </div>
                                     <span className="text-base font-bold text-slate-200 leading-tight">{plugin.name}</span>
                                     <span className="text-[11px] text-slate-400 italic">by {plugin.author}</span>
@@ -245,7 +245,7 @@ const PluginStore: React.FC = () => {
                             >
                                 <div className={`absolute inset-0 ${glowClass} blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
                                 
-                                <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center shrink-0 relative z-10`}>
+                                <div className={`w-10 h-10 rounded-full bg-[#1e1e1e] flex items-center justify-center shrink-0 relative z-10 border border-black/20`}>
                                     <span className={`material-symbols-outlined ${colors.text} text-[20px]`}>{plugin.icon}</span>
                                 </div>
                                 
