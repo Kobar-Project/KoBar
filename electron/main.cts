@@ -2411,51 +2411,10 @@ ipcMain.handle('is-dev', () => {
 });
 
 ipcMain.handle('start-eyedropper', async () => {
-    if (!mainWindow) return { x: 0, y: 0 };
-
     isEyeDropperActive = true;
-    preEyeDropperBounds = mainWindow.getBounds();
-
-    const displays = screen.getAllDisplays();
-
-    // Single monitor — no resize needed, no flicker risk
-    if (displays.length <= 1) {
-        return { x: 0, y: 0 };
-    }
-
-    let minX = displays[0].bounds.x, minY = displays[0].bounds.y;
-    let maxX = displays[0].bounds.x + displays[0].bounds.width;
-    let maxY = displays[0].bounds.y + displays[0].bounds.height;
-
-    displays.forEach(d => {
-        if (d.bounds.x < minX) minX = d.bounds.x;
-        if (d.bounds.y < minY) minY = d.bounds.y;
-        if (d.bounds.x + d.bounds.width > maxX) maxX = d.bounds.x + d.bounds.width;
-        if (d.bounds.y + d.bounds.height > maxY) maxY = d.bounds.y + d.bounds.height;
-    });
-
-    // Hide window to prevent visible DWM repaint flash during resize
-    mainWindow.setOpacity(0);
-    mainWindow.setBounds({ x: minX, y: minY, width: maxX - minX, height: maxY - minY });
-    // Wait one frame for OS to settle the new bounds before restoring visibility
-    await new Promise(resolve => setTimeout(resolve, 50));
-    mainWindow.setOpacity(1);
-
-    const actualBounds = mainWindow.getBounds();
-    return {
-        x: preEyeDropperBounds.x - actualBounds.x,
-        y: preEyeDropperBounds.y - actualBounds.y
-    };
+    return { x: 0, y: 0 };
 });
 
 ipcMain.handle('stop-eyedropper', async () => {
     isEyeDropperActive = false;
-    if (mainWindow && preEyeDropperBounds) {
-        // Hide window again to prevent flash when restoring to original bounds
-        mainWindow.setOpacity(0);
-        mainWindow.setBounds(preEyeDropperBounds);
-        preEyeDropperBounds = null;
-        await new Promise(resolve => setTimeout(resolve, 50));
-        mainWindow.setOpacity(1);
-    }
 });
