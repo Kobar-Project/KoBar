@@ -131,7 +131,8 @@ const App: React.FC = () => {
         exts.forEach(ext => {
           if (ext.enabled && ext.code) {
             try {
-              const blob = new Blob([ext.code], { type: 'application/javascript' });
+              window.KoBarExtensions?.registerManifest?.(ext.id, ext);
+              const blob = new Blob([`(() => {\n${ext.code}\n})();`], { type: 'application/javascript' });
               const url = URL.createObjectURL(blob);
               const script = document.createElement('script');
               script.src = url;

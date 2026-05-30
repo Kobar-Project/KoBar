@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAppStore } from '../../store/useAppStore';
 import NoteEditor from './NoteEditor';
 import SettingsPanel from './SettingsPanel';
+import PluginsPanel from '../plugins/PluginsPanel';
 import ResizerHandle from './ResizerHandle';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
@@ -19,6 +20,7 @@ const NotePanel: React.FC = () => {
     const updateNoteEmoji = useAppStore(state => state.updateNoteEmoji);
     const t = useAppStore(state => state.t);
     const openSettingsTab = useAppStore(state => state.openSettingsTab);
+    const openPluginsTab = useAppStore(state => state.openPluginsTab);
     const design = useAppStore(state => state.design);
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const isMac = useAppStore(state => state.isMac);
@@ -269,14 +271,23 @@ const NotePanel: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Settings Button (Fixed in Top Right) */}
-                <button
-                    onClick={openSettingsTab}
-                    className="mb-2 p-1.5 text-slate-500 hover:text-primary transition-all rounded-lg hover:bg-white/5 flex items-center justify-center pointer-events-auto"
-                    title={t('settings')}
-                >
-                    <span className="material-symbols-outlined text-[22px]">settings</span>
-                </button>
+                {/* Top Right Action Buttons */}
+                <div className="mb-2 flex items-center gap-1 pointer-events-auto">
+                    <button
+                        onClick={openPluginsTab}
+                        className="p-1.5 text-slate-500 hover:text-primary transition-all rounded-lg hover:bg-white/5 flex items-center justify-center"
+                        title={(t as any)('plugins') || 'Plugins'}
+                    >
+                        <span className="material-symbols-outlined text-[22px]">extension</span>
+                    </button>
+                    <button
+                        onClick={openSettingsTab}
+                        className="p-1.5 text-slate-500 hover:text-primary transition-all rounded-lg hover:bg-white/5 flex items-center justify-center"
+                        title={t('settings')}
+                    >
+                        <span className="material-symbols-outlined text-[22px]">settings</span>
+                    </button>
+                </div>
 
                 {/* Delete Confirm Popup */}
                 {deleteConfirm !== null && createPortal(
@@ -340,6 +351,8 @@ const NotePanel: React.FC = () => {
             {/* Editor or Settings Area */}
             {activeNote?.isSettings ? (
                 <SettingsPanel />
+            ) : activeNote?.isPlugins ? (
+                <PluginsPanel />
             ) : (
                 <NoteEditor />
             )}

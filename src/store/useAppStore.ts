@@ -63,6 +63,7 @@ export interface Note {
     emoji: string | null;
     content: string;
     isSettings?: boolean;
+    isPlugins?: boolean;
 }
 
 export interface PinnedApp {
@@ -178,6 +179,7 @@ interface AppState {
     updateNoteTitle: (id: number, title: string) => void;
     updateNoteEmoji: (id: number, emoji: string) => void;
     openSettingsTab: () => void;
+    openPluginsTab: () => void;
     // App Launcher
     pinnedApps: PinnedApp[];
     pinApp: (app: PinnedApp) => void;
@@ -412,8 +414,18 @@ interface AppState {
     activeExtensionAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
     extensionReloadTrigger: number;
     triggerExtensionReload: () => void;
+    pluginsTabSubMenu: 'store' | 'installed' | 'updates' | 'workspaces' | 'features';
+    setPluginsTabSubMenu: (tab: 'store' | 'installed' | 'updates' | 'workspaces' | 'features') => void;
     extensionsSubTab: 'installed' | 'marketplace';
     setExtensionsSubTab: (tab: 'installed' | 'marketplace') => void;
+    pluginsViewMode: 'grid' | 'list';
+    setPluginsViewMode: (mode: 'grid' | 'list') => void;
+    selectedPluginId: string | null;
+    setSelectedPluginId: (id: string | null) => void;
+    pluginsSearchQuery: string;
+    setPluginsSearchQuery: (query: string) => void;
+    pluginsSelectedTags: string[];
+    setPluginsSelectedTags: (tags: string[]) => void;
 
     // Workspaces
     workspaces: WorkspaceConfig[];
@@ -483,8 +495,18 @@ export const useAppStore = create<AppState>()(
             activeExtensionAnchorRect: null,
             extensionReloadTrigger: 0,
             triggerExtensionReload: () => set((state) => ({ extensionReloadTrigger: state.extensionReloadTrigger + 1 })),
+            pluginsTabSubMenu: 'store',
+            setPluginsTabSubMenu: (tab) => set({ pluginsTabSubMenu: tab }),
             extensionsSubTab: 'installed',
             setExtensionsSubTab: (tab) => set({ extensionsSubTab: tab }),
+            pluginsViewMode: 'grid',
+            setPluginsViewMode: (mode) => set({ pluginsViewMode: mode }),
+            selectedPluginId: null,
+            setSelectedPluginId: (id) => set({ selectedPluginId: id }),
+            pluginsSearchQuery: '',
+            setPluginsSearchQuery: (query) => set({ pluginsSearchQuery: query }),
+            pluginsSelectedTags: [],
+            setPluginsSelectedTags: (tags) => set({ pluginsSelectedTags: tags }),
             edgePosition: 'right',
             setEdgePosition: (edge) => set({ edgePosition: edge }),
             orientation: 'vertical',
@@ -924,6 +946,31 @@ export const useAppStore = create<AppState>()(
                     isNotePanelOpen: true,
                     notes: nextNotes,
                     activeNoteId: settingsNote.id,
+                    nextNoteId: nextId,
+                };
+            }),
+            openPluginsTab: () => set((state) => {
+                let pluginsNote = state.notes.find(n => n.isPlugins);
+                let nextNotes = state.notes;
+                let nextId = state.nextNoteId;
+
+                if (!pluginsNote) {
+                    pluginsNote = {
+                        id: state.nextNoteId,
+                        title: state.t ? (state.t as any)('plugins') || 'Plugins' : 'Plugins',
+                        icon: 'extension',
+                        emoji: null,
+                        content: '',
+                        isPlugins: true,
+                    };
+                    nextNotes = [...state.notes, pluginsNote];
+                    nextId++;
+                }
+
+                return {
+                    isNotePanelOpen: true,
+                    notes: nextNotes,
+                    activeNoteId: pluginsNote.id,
                     nextNoteId: nextId,
                 };
             }),

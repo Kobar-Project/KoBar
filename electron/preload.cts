@@ -214,10 +214,17 @@ contextBridge.exposeInMainWorld('api', {
 
     // Extensions API Support
     getInstalledExtensions: () => ipcRenderer.invoke('get-installed-extensions'),
+    checkPluginUpdates: () => ipcRenderer.invoke('check-plugin-updates'),
     getAvailableExtensions: () => ipcRenderer.invoke('get-available-extensions'),
     installExtension: (id: string) => ipcRenderer.invoke('install-extension', id),
     uninstallExtension: (id: string) => ipcRenderer.invoke('uninstall-extension', id),
     toggleExtensionEnabled: (id: string, enabled: boolean) => ipcRenderer.invoke('toggle-extension-enabled', id, enabled),
     installExtensionFromFile: () => ipcRenderer.invoke('install-extension-from-file'),
     installExtensionFromPath: (filePath: string) => ipcRenderer.invoke('install-extension-from-path', filePath),
+    installExtensionFromGithub: (id: string, repo: string) => ipcRenderer.invoke('install-extension-from-github', id, repo),
+    onPluginInstallProgress: (callback: (id: string, percent: number) => void) => {
+        const handler = (_event: any, data: { id: string, percent: number }) => callback(data.id, data.percent);
+        ipcRenderer.on('plugin-install-progress', handler);
+        return () => ipcRenderer.removeListener('plugin-install-progress', handler);
+    }
 });

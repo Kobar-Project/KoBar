@@ -2155,6 +2155,10 @@ ipcMain.handle('get-installed-extensions', async () => {
                         version: manifest.version || '1.0.0',
                         description: manifest.description || '',
                         icon: manifest.icon || 'extension',
+                        image: manifest.image || '',
+                        categories: manifest.categories || [],
+                        versionNote: manifest.versionNote || '',
+                        githubRepo: manifest.githubRepo || manifest.githubLink || '',
                         enabled: config[manifest.id] !== false, // default to enabled if not explicitly disabled
                         code: code
                     });
@@ -2166,6 +2170,60 @@ ipcMain.handle('get-installed-extensions', async () => {
         return installed;
     } catch (e) {
         console.error('Failed to get installed extensions:', e);
+        return [];
+    }
+});
+
+ipcMain.handle('check-plugin-updates', async () => {
+    try {
+        if (!fs.existsSync(extensionsDir)) return [];
+        const dirs = fs.readdirSync(extensionsDir);
+        const updates: any[] = [];
+
+        for (const dirName of dirs) {
+            const dirPath = path.join(extensionsDir, dirName);
+            if (!fs.statSync(dirPath).isDirectory()) continue;
+
+            const manifestPath = path.join(dirPath, 'manifest.json');
+            if (fs.existsSync(manifestPath)) {
+                try {
+                    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                    const repo = manifest.githubRepo || manifest.githubLink;
+                    if (repo && repo.includes('/')) {
+                        const releaseRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+                            headers: {
+                                'Accept': 'application/vnd.github.v3+json',
+                                'User-Agent': 'KoBar-App'
+                            }
+                        });
+                        
+                        if (releaseRes.ok) {
+                            const releaseData = await releaseRes.json() as any;
+                            const latestVersion = releaseData.tag_name || releaseData.name;
+                            
+                            const cleanCurrent = (manifest.version || '1.0.0').replace(/^v/, '');
+                            const cleanLatest = (latestVersion || '').replace(/^v/, '');
+                            
+                            if (cleanLatest && cleanLatest !== cleanCurrent) {
+                                updates.push({
+                                    id: manifest.id || dirName,
+                                    name: manifest.name || dirName,
+                                    currentVersion: manifest.version || '1.0.0',
+                                    latestVersion: cleanLatest,
+                                    releaseNotes: releaseData.body || '',
+                                    repo: repo
+                                });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Failed to check updates for ${dirName}:`, err);
+                }
+            }
+        }
+        return updates;
+    } catch (e) {
+        console.error('Failed to check plugin updates:', e);
         return [];
     }
 });
@@ -2266,7 +2324,7 @@ ipcMain.handle('toggle-extension-enabled', async (_event, id: string, enabled: b
 });
 
 // Shared helper: installs an extension from a ZIP file path
-async function installExtensionFromZipPath(zipPath: string): Promise<{ success: boolean; reason?: string }> {
+async function installExtensionFromZipPath(zipPath: string, sourceRepo?: string, versionOverride?: string): Promise<{ success: boolean; reason?: string }> {
     const zip = new AdmZip(zipPath);
     
     // Extract to a temporary folder inside userData first to inspect manifest.json
@@ -2325,6 +2383,12 @@ async function installExtensionFromZipPath(zipPath: string): Promise<{ success: 
     if (!manifest.id || !manifest.name) {
         fs.rmSync(tempExtractDir, { recursive: true, force: true });
         return { success: false, reason: 'manifest.json is missing required fields "id" or "name".' };
+    }
+
+    if (sourceRepo || versionOverride) {
+        if (sourceRepo) manifest.githubRepo = sourceRepo;
+        if (versionOverride) manifest.version = versionOverride;
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 4), 'utf8');
     }
 
     const extensionId = manifest.id;
@@ -2398,6 +2462,83 @@ ipcMain.handle('install-extension-from-path', async (_event, filePath: string) =
         return await installExtensionFromZipPath(filePath);
     } catch (e: any) {
         console.error('Failed to install extension from path:', e);
+        return { success: false, reason: e.message || 'Unknown error occurred.' };
+    }
+});
+
+ipcMain.handle('install-extension-from-github', async (_event, id: string, repo: string) => {
+    try {
+        if (!repo || !repo.includes('/')) {
+            return { success: false, reason: 'Invalid GitHub repository format.' };
+        }
+
+        // 1. Fetch latest release metadata
+        const releaseRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+            headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'KoBar-App'
+            }
+        });
+
+        if (!releaseRes.ok) {
+            return { success: false, reason: `Failed to fetch latest release metadata (${releaseRes.status}).` };
+        }
+
+        const releaseData = await releaseRes.json() as any;
+        const asset = releaseData.assets?.find((a: any) => a.name.endsWith('.zip'));
+
+        if (!asset && !releaseData.zipball_url) {
+            return { success: false, reason: 'No .zip asset or source code found in the latest release.' };
+        }
+
+        // 2. Download the asset stream
+        const downloadUrl = asset ? asset.url : releaseData.zipball_url;
+        const headers: Record<string, string> = { 'User-Agent': 'KoBar-App' };
+        if (asset) {
+            headers['Accept'] = 'application/octet-stream';
+        }
+
+        const assetRes = await fetch(downloadUrl, { headers });
+
+        if (!assetRes.ok || !assetRes.body) {
+            return { success: false, reason: `Failed to download asset (${assetRes.status}).` };
+        }
+
+        const totalBytes = Number(assetRes.headers.get('content-length') || 0);
+        let loadedBytes = 0;
+        
+        // 3. Pipe stream to temporary file and emit progress
+        const tempZipPath = path.join(app.getPath('temp'), `plugin_${id}_${Date.now()}.zip`);
+        const { Readable } = require('stream');
+        const readableStream = Readable.fromWeb(assetRes.body as any);
+        const writeStream = fs.createWriteStream(tempZipPath);
+
+        readableStream.on('data', (chunk: Buffer) => {
+            loadedBytes += chunk.length;
+            if (totalBytes > 0 && mainWindow) {
+                const percent = Math.round((loadedBytes / totalBytes) * 100);
+                mainWindow.webContents.send('plugin-install-progress', { id, percent });
+            }
+        });
+
+        await new Promise((resolve, reject) => {
+            readableStream.pipe(writeStream)
+                .on('finish', resolve)
+                .on('error', reject);
+        });
+
+        // 4. Pass to existing installer, overriding the version with the release tag to prevent infinite update loops
+        const latestVersion = (releaseData.tag_name || releaseData.name || '').replace(/^v/, '');
+        const result = await installExtensionFromZipPath(tempZipPath, repo, latestVersion);
+        
+        // 5. Cleanup
+        if (fs.existsSync(tempZipPath)) {
+            fs.unlinkSync(tempZipPath);
+        }
+
+        return result;
+    } catch (e: any) {
+        console.error('Failed to install from GitHub:', e);
         return { success: false, reason: e.message || 'Unknown error occurred.' };
     }
 });
