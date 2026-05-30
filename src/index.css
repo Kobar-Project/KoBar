@@ -149,9 +149,11 @@
 
 @layer utilities {
   .drag-region {
+    -webkit-app-region: drag;
   }
 
   .no-drag-region {
+    -webkit-app-region: no-drag;
   }
 
   .custom-radio {
@@ -329,6 +331,201 @@ body {
   border-radius: 0.5rem;
   margin: 1rem 0;
 }
+
+/* Editor.js Dark Theme Overrides */
+.ce-block__content,
+.ce-toolbar__content {
+    max-width: 100%;
+}
+
+/* Editor.js Typography Fixes (Tailwind resets headings) */
+.ce-header {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #f8fafc;
+}
+h1.ce-header { font-size: 2.25rem; line-height: 2.5rem; }
+h2.ce-header { font-size: 1.875rem; line-height: 2.25rem; }
+h3.ce-header { font-size: 1.5rem; line-height: 2rem; }
+h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
+h5.ce-header { font-size: 1.125rem; line-height: 1.75rem; }
+h6.ce-header { font-size: 1rem; line-height: 1.5rem; }
+
+/* Adjust block spacing to prevent overlapping with plus button */
+.ce-block__content {
+    padding-left: 36px !important;
+}
+
+/* Base Popovers and Toolbars */
+.ce-toolbar {
+    z-index: 9999 !important;
+}
+
+.ce-inline-toolbar,
+.ce-conversion-toolbar,
+.ce-settings,
+.ce-popover,
+.ce-popover__container {
+    background-color: var(--theme-bg-base) !important;
+    border: 1px solid var(--theme-border) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+    color: #cbd5e1 !important;
+    -webkit-app-region: no-drag !important;
+    pointer-events: auto !important;
+    z-index: 9999 !important;
+}
+
+/* Popover Search/Filter */
+.cdx-search-field {
+    background-color: var(--theme-bg-dark) !important;
+    border-bottom: 1px solid var(--theme-border) !important;
+    color: #cbd5e1 !important;
+}
+.cdx-search-field__input {
+    color: #e2e8f0 !important;
+}
+.cdx-search-field__icon svg {
+    fill: #94a3b8 !important;
+}
+
+/* Popover Items */
+.ce-popover-item,
+.ce-popover__item {
+    color: #cbd5e1 !important;
+}
+.ce-popover-item:hover,
+.ce-popover__item:hover {
+    background-color: rgba(255,255,255,0.05) !important;
+    color: var(--theme-primary) !important;
+}
+.ce-popover-item--active,
+.ce-popover__item--active {
+    color: var(--theme-primary) !important;
+    background-color: rgba(255,255,255,0.03) !important;
+}
+.ce-popover-item__icon,
+.ce-popover__item-icon {
+    color: inherit !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+.ce-popover-item:hover .ce-popover-item__icon,
+.ce-popover__item:hover .ce-popover__item-icon {
+    background-color: transparent !important;
+}
+
+/* Toolbar Buttons (Drag Handle, Plus) */
+.ce-toolbar__settings-btn {
+    color: #94a3b8 !important;
+    background-color: transparent !important;
+}
+.ce-toolbar__settings-btn:hover {
+    color: var(--theme-primary) !important;
+    background-color: var(--theme-bg-base) !important;
+}
+
+/* Hide native plus button */
+.ce-toolbar__plus {
+    display: none !important;
+}
+
+/* Custom plus trigger button hover */
+.editorjs-plus-trigger-btn {
+    transition: transform 0.1s ease, background-color 0.1s ease;
+}
+.editorjs-plus-trigger-btn:hover {
+    background-color: var(--theme-bg-base) !important;
+    transform: scale(1.15);
+}
+
+/* Block Selection (prevent white left border) */
+.ce-block--selected .ce-block__content {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border-radius: 8px !important;
+}
+.ce-block--selected .cdx-block {
+    background-color: transparent !important;
+}
+
+/* Inline Tools */
+.ce-inline-toolbar__buttons,
+.ce-conversion-toolbar__buttons {
+    color: #cbd5e1;
+}
+
+.ce-inline-tool,
+.ce-conversion-tool,
+.ce-settings__button {
+    color: #cbd5e1 !important;
+}
+
+.ce-inline-tool:hover,
+.ce-conversion-tool:hover,
+.ce-settings__button:hover {
+    background-color: rgba(255,255,255,0.05) !important;
+    color: var(--theme-primary) !important;
+}
+
+.ce-inline-tool--active {
+    color: var(--theme-primary) !important;
+}
+
+/* Table Tool (if used later) */
+.tc-toolbox, .tc-popover {
+    background-color: var(--theme-bg-base) !important;
+    border: 1px solid var(--theme-border) !important;
+    color: #cbd5e1 !important;
+    -webkit-app-region: no-drag !important;
+    pointer-events: auto !important;
+}
+
+.tc-popover__item:hover {
+    background-color: rgba(255,255,255,0.05) !important;
+}
+
+.codex-editor {
+    color: #cbd5e1;
+    font-size: 1.125rem;
+    line-height: 1.75;
+}
+
+.codex-editor * {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+/* Quote Redesign */
+.cdx-quote {
+    border-left: 4px solid var(--theme-primary) !important;
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    padding: 1rem 1.5rem !important;
+    border-radius: 0 0.75rem 0.75rem 0 !important;
+    margin: 1.5rem 0 !important;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+}
+.cdx-quote::before {
+    content: '"';
+    position: absolute;
+    left: 10px;
+    top: -10px;
+    font-size: 3rem;
+    color: var(--theme-primary);
+    opacity: 0.2;
+    font-family: serif;
+    pointer-events: none;
+}
+.cdx-quote__text {
+    font-style: italic;
+    color: #e2e8f0;
+    margin-bottom: 0.5rem !important;
+}
+.cdx-quote__caption {
+    font-size: 0.875rem;
+    color: #94a3b8;
+}
+
 /* Prevent accidental text/element selection globally */
 * {
     user-select: none;

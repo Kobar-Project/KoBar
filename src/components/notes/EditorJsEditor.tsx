@@ -1,0 +1,627 @@
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
+import EditorJS from '@editorjs/editorjs';
+import Header from '@editorjs/header';
+import List from '@editorjs/list';
+import CustomCodeTool from './CustomCodeTool';
+import Quote from '@editorjs/quote';
+import Delimiter from '@editorjs/delimiter';
+import { useAppStore } from '../../store/useAppStore';
+import { validateEditorJsData } from './editorConverters';
+import type { EditorJsOutputData } from './editorConverters';
+import BlockInsertionPanel from './BlockInsertionPanel';
+
+// Fix Editor.js duplicate checklist bug by overriding the static toolbox getter
+// The `@editorjs/list` plugin might be rendered twice by Editor.js Convert-to menu due to overlapping definitions
+const OriginalList = List as any;
+class CustomList extends OriginalList {
+    static get toolbox() {
+        const items = OriginalList.toolbox;
+        if (Array.isArray(items)) {
+            const seen = new Set();
+            return items.filter((item: any) => {
+                const key = item.data?.style || item.title;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+        return items;
+    }
+}
+
+const EditorJsEditor: React.FC = React.memo(() => {
+    const activeNoteId = useAppStore((state) => state.activeNoteId);
+    const activeNote = useAppStore((state) => state.notes.find(n => n.id === state.activeNoteId));
+    const updateNoteTitle = useAppStore((state) => state.updateNoteTitle);
+    const updateNoteEditorjsData = useAppStore((state) => state.updateNoteEditorjsData);
+    const t = useAppStore((state) => state.t);
+    const design = useAppStore((state) => state.design);
+
+    const editorRef = useRef<EditorJS | null>(null);
+    const holderRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const isMountedRef = useRef(false);
+    const isSavingRef = useRef(false);
+    const currentNoteIdRef = useRef<number | null>(null);
+
+    // Block insertion panel state
+    const [showInsertPanel, setShowInsertPanel] = useState(false);
+    const [insertPanelPos, setInsertPanelPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    // Ref-based plus button management (avoids re-renders that cause flickering)
+    const plusBtnRef = useRef<HTMLButtonElement>(null);
+    const plusBlockIndexRef = useRef<number | null>(null);
+    const lastHoveredBlockRef = useRef<Element | null>(null);
+    const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Helper: hide plus button via direct DOM manipulation (no state → no re-render)
+    const hidePlusButton = useCallback(() => {
+        const btn = plusBtnRef.current;
+        if (!btn) return;
+        btn.style.display = 'none';
+        plusBlockIndexRef.current = null;
+        lastHoveredBlockRef.current = null;
+    }, []);
+    const [slashBlockIndex, setSlashBlockIndex] = useState<number | null>(null);
+
+    // Parse stored Editor.js data for a note
+    const getEditorData = useCallback((note: typeof activeNote): EditorJsOutputData => {
+        if (!note?.editorjsData) {
+            return { time: Date.now(), blocks: [{ type: 'paragraph', data: { text: '' } }], version: '2.30.0' };
+        }
+        try {
+            const parsed = JSON.parse(note.editorjsData);
+            
+            // Migration: Convert old type: 'checklist' blocks to type: 'list' with style: 'checklist'
+            if (parsed.blocks && Array.isArray(parsed.blocks)) {
+                parsed.blocks = parsed.blocks.map((block: any) => {
+                    if (block.type === 'checklist' && block.data && Array.isArray(block.data.items)) {
+                        return {
+                            ...block,
+                            type: 'list',
+                            data: {
+                                style: 'checklist',
+                                items: block.data.items.map((item: any) => ({
+                                    content: item.text || '',
+                                    meta: { checked: !!item.checked },
+                                    items: []
+                                }))
+                            }
+                        };
+                    }
+                    return block;
+                });
+            }
+
+            if (validateEditorJsData(parsed)) {
+                return parsed;
+            }
+        } catch {
+            // Invalid JSON, return empty
+        }
+        return { time: Date.now(), blocks: [{ type: 'paragraph', data: { text: '' } }], version: '2.30.0' };
+    }, []);
+
+    // Save current editor content to store
+    const saveToStore = useCallback(async () => {
+        if (!editorRef.current || isSavingRef.current) return;
+        isSavingRef.current = true;
+        try {
+            const outputData = await editorRef.current.save();
+            const currentId = currentNoteIdRef.current;
+            if (currentId) {
+                updateNoteEditorjsData(currentId, JSON.stringify(outputData));
+            }
+        } catch (err) {
+            console.error('[EditorJS] Save failed:', err);
+        } finally {
+            isSavingRef.current = false;
+        }
+    }, [updateNoteEditorjsData]);
+
+    // Initialize or re-initialize Editor.js
+    useEffect(() => {
+        if (!holderRef.current || !activeNote || activeNote.isSettings) return;
+        if (activeNote.editorType !== 'editorjs') return;
+
+        // If we're switching to a different note, save the old one first then destroy
+        const initEditor = async () => {
+            // Save previous content before switching
+            if (editorRef.current && currentNoteIdRef.current !== null && currentNoteIdRef.current !== activeNote.id) {
+                try {
+                    const prevData = await editorRef.current.save();
+                    updateNoteEditorjsData(currentNoteIdRef.current, JSON.stringify(prevData));
+                } catch { /* ignore save errors on switch */ }
+            }
+
+            // Destroy previous instance
+            if (editorRef.current) {
+                try {
+                    editorRef.current.destroy();
+                } catch { /* ignore destroy errors */ }
+                editorRef.current = null;
+            }
+
+            currentNoteIdRef.current = activeNote.id;
+
+            const data = getEditorData(activeNote);
+
+            // Small delay to ensure DOM element is clean
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            if (!holderRef.current) return;
+
+            // Clear any leftover DOM content
+            holderRef.current.innerHTML = '';
+
+            const editor = new EditorJS({
+                holder: holderRef.current,
+                data: data,
+                placeholder: t('editorjsPlaceholder') || "Press '/' or click '+' to add a block...",
+                tools: {
+                    header: {
+                        class: Header as any,
+                        config: {
+                            levels: [1, 2, 3, 4, 5, 6],
+                            defaultLevel: 2
+                        },
+                        inlineToolbar: true,
+                    },
+                    list: {
+                        class: CustomList as any,
+                        inlineToolbar: true,
+                        config: {
+                            defaultStyle: 'unordered'
+                        }
+                    },
+                    code: {
+                        class: CustomCodeTool as any,
+                    },
+                    quote: {
+                        class: Quote as any,
+                        inlineToolbar: true,
+                        config: {
+                            quotePlaceholder: 'Enter a quote',
+                            captionPlaceholder: 'Quote author',
+                        }
+                    },
+                    delimiter: {
+                        class: Delimiter as any,
+                    },
+                },
+                onChange: async () => {
+                    if (isMountedRef.current) {
+                        await saveToStore();
+                    }
+                },
+                onReady: () => {
+                    isMountedRef.current = true;
+                    // Restore scroll position
+                    if (containerRef.current) {
+                        const savedPos = useAppStore.getState().scrollPositions[`note_editorjs_${activeNote.id}`];
+                        if (savedPos !== undefined) {
+                            setTimeout(() => {
+                                if (containerRef.current) containerRef.current.scrollTop = savedPos;
+                            }, 50);
+                        }
+                    }
+                },
+                // Minimal config — we handle the toolbox ourselves
+                minHeight: 100,
+            });
+
+            editorRef.current = editor;
+        };
+
+        initEditor();
+
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, [activeNoteId, activeNote?.editorType]); // Only re-init on tab change or type change
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (editorRef.current) {
+                // Save before destroy
+                const id = currentNoteIdRef.current;
+                if (id) {
+                    editorRef.current.save().then(data => {
+                        useAppStore.getState().updateNoteEditorjsData(id, JSON.stringify(data));
+                    }).catch(() => {});
+                }
+                try {
+                    editorRef.current.destroy();
+                } catch { /* ignore */ }
+                editorRef.current = null;
+            }
+        };
+    }, []);
+
+    // Track scroll position
+    useEffect(() => {
+        if (!containerRef.current || !activeNoteId) return;
+        const scrollNode = containerRef.current;
+
+        const handleScroll = () => {
+            useAppStore.getState().setScrollPosition(`note_editorjs_${activeNoteId}`, scrollNode.scrollTop);
+        };
+
+        scrollNode.addEventListener('scroll', handleScroll, { passive: true });
+        return () => scrollNode.removeEventListener('scroll', handleScroll);
+    }, [activeNoteId]);
+
+    // Detect "/" key press for slash command and "+" button hover
+    useEffect(() => {
+        const holder = holderRef.current;
+        if (!holder) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                const sel = window.getSelection();
+                if (!sel || sel.rangeCount === 0) return;
+
+                const range = sel.getRangeAt(0);
+                const blockEl = (range.startContainer as HTMLElement).closest?.('.ce-block') 
+                    || (range.startContainer.parentElement)?.closest?.('.ce-block');
+                
+                if (!blockEl) return;
+
+                // Only trigger on empty blocks or at the start of text
+                const contentEl = blockEl.querySelector('.ce-paragraph, [contenteditable]');
+                const textContent = contentEl?.textContent || '';
+                
+                // If the block is empty or has only whitespace, show the panel
+                if (textContent.trim() === '' || textContent.trim() === '/') {
+                    e.preventDefault();
+                    
+                    // Clear the slash character
+                    if (contentEl && contentEl.textContent) {
+                        contentEl.textContent = '';
+                    }
+
+                    const rect = blockEl.getBoundingClientRect();
+                    const containerRect = containerRef.current?.getBoundingClientRect();
+                    
+                    if (containerRect) {
+                        // Find block index
+                        const allBlocks = holder.querySelectorAll('.ce-block');
+                        let blockIndex = 0;
+                        allBlocks.forEach((b, i) => { if (b === blockEl) blockIndex = i; });
+                        
+                        setSlashBlockIndex(blockIndex);
+                        setInsertPanelPos({
+                            x: rect.left,
+                            y: rect.bottom + 4,
+                        });
+                        setShowInsertPanel(true);
+                    }
+                }
+            }
+
+            if (e.key === 'Escape' && showInsertPanel) {
+                setShowInsertPanel(false);
+                setSlashBlockIndex(null);
+            }
+        };
+
+        holder.addEventListener('keydown', handleKeyDown);
+        return () => holder.removeEventListener('keydown', handleKeyDown);
+    }, [showInsertPanel]);
+
+    // Update plus trigger position on mouse move over blocks (ref-based — zero re-renders)
+    useEffect(() => {
+        const holder = holderRef.current;
+        const container = containerRef.current;
+        if (!holder) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (showInsertPanel) return; // Don't show + while panel is open
+
+            const target = e.target as HTMLElement;
+
+            // If hovering the plus button itself, skip processing
+            if (target.closest('.editorjs-plus-trigger-btn')) return;
+
+            const blockEl = target.closest('.ce-block');
+
+            if (!blockEl) {
+                if (lastHoveredBlockRef.current !== null) {
+                    lastHoveredBlockRef.current = null;
+                    hidePlusButton();
+                }
+                return;
+            }
+
+            // Same block as before → skip recalculation entirely
+            if (blockEl === lastHoveredBlockRef.current) return;
+
+            // Check if this block is empty
+            const contentEl = blockEl.querySelector('.ce-paragraph, [contenteditable]');
+            const textContent = contentEl?.textContent || '';
+
+            if (textContent.trim() !== '') {
+                if (lastHoveredBlockRef.current !== null) {
+                    lastHoveredBlockRef.current = null;
+                    hidePlusButton();
+                }
+                return;
+            }
+
+            lastHoveredBlockRef.current = blockEl;
+
+            // Cancel any pending hide from mouseleave
+            if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current);
+                hideTimeoutRef.current = null;
+            }
+
+            // Find block index
+            const allBlocks = holder.querySelectorAll('.ce-block');
+            let blockIndex = 0;
+            allBlocks.forEach((b, i) => { if (b === blockEl) blockIndex = i; });
+
+            // Position the button directly via DOM — no setState, no re-render
+            const rect = blockEl.getBoundingClientRect();
+            const btn = plusBtnRef.current;
+            if (btn) {
+                btn.style.left = `${rect.left + 4}px`;
+                btn.style.top = `${rect.top + rect.height / 2 - 12}px`;
+                btn.style.display = 'flex';
+            }
+            plusBlockIndexRef.current = blockIndex;
+        };
+
+        const handleMouseLeave = (e: MouseEvent) => {
+            const relatedTarget = e.relatedTarget as HTMLElement | null;
+            // If mouse is moving to the plus button, don't hide
+            if (relatedTarget?.closest('.editorjs-plus-trigger-btn')) return;
+
+            // Small delay to prevent flicker during fast mouse movements
+            if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = setTimeout(() => {
+                lastHoveredBlockRef.current = null;
+                hidePlusButton();
+            }, 80);
+        };
+
+        // Hide plus button when container scrolls (stale position)
+        const handleScroll = () => {
+            hidePlusButton();
+        };
+
+        holder.addEventListener('mousemove', handleMouseMove);
+        holder.addEventListener('mouseleave', handleMouseLeave);
+        if (container) {
+            container.addEventListener('scroll', handleScroll, { passive: true });
+        }
+        return () => {
+            holder.removeEventListener('mousemove', handleMouseMove);
+            holder.removeEventListener('mouseleave', handleMouseLeave);
+            if (container) {
+                container.removeEventListener('scroll', handleScroll);
+            }
+            if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+        };
+    }, [showInsertPanel, hidePlusButton]);
+
+    // Plus button mouse events — prevent hide when hovering the button itself
+    useEffect(() => {
+        const btn = plusBtnRef.current;
+        if (!btn) return;
+
+        const handleBtnEnter = () => {
+            // Cancel any pending hide from mouseleave
+            if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current);
+                hideTimeoutRef.current = null;
+            }
+        };
+
+        const handleBtnLeave = (e: MouseEvent) => {
+            const relatedTarget = e.relatedTarget as HTMLElement | null;
+            // If going back to the editor, let mousemove re-evaluate
+            if (relatedTarget?.closest('.editorjs-holder')) return;
+            hidePlusButton();
+        };
+
+        btn.addEventListener('mouseenter', handleBtnEnter);
+        btn.addEventListener('mouseleave', handleBtnLeave as EventListener);
+        return () => {
+            btn.removeEventListener('mouseenter', handleBtnEnter);
+            btn.removeEventListener('mouseleave', handleBtnLeave as EventListener);
+        };
+    }, [hidePlusButton]);
+
+    // Hide plus button when switching notes (stale position from previous note)
+    useEffect(() => {
+        hidePlusButton();
+    }, [activeNoteId, hidePlusButton]);
+
+    // Hide plus button when insert panel opens
+    useEffect(() => {
+        if (showInsertPanel) hidePlusButton();
+    }, [showInsertPanel, hidePlusButton]);
+
+    // Handle plus button click
+    const handlePlusClick = useCallback(() => {
+        const blockIndex = plusBlockIndexRef.current;
+        if (blockIndex === null) return;
+
+        const holder = holderRef.current;
+        if (!holder) return;
+
+        const blockEl = holder.querySelectorAll('.ce-block')[blockIndex];
+        if (!blockEl) return;
+
+        const rect = blockEl.getBoundingClientRect();
+        setSlashBlockIndex(blockIndex);
+        setInsertPanelPos({
+            x: rect.left,
+            y: rect.bottom + 4,
+        });
+        setShowInsertPanel(true);
+        hidePlusButton();
+    }, [hidePlusButton]);
+
+    // Handle block type selection from the insertion panel
+    const handleBlockSelect = useCallback(async (blockType: string) => {
+        setShowInsertPanel(false);
+        setSlashBlockIndex(null);
+
+        if (!editorRef.current) return;
+
+        const editor = editorRef.current;
+        const currentIndex = slashBlockIndex ?? 0;
+
+        try {
+            // Insert the block at the current position
+            switch (blockType) {
+                case 'header':
+                    await editor.blocks.insert('header', { text: '', level: 2 }, undefined, currentIndex, true);
+                    break;
+                case 'list-unordered':
+                    await editor.blocks.insert('list', { style: 'unordered', items: [''] }, undefined, currentIndex, true);
+                    break;
+                case 'list-ordered':
+                    await editor.blocks.insert('list', { style: 'ordered', items: [''] }, undefined, currentIndex, true);
+                    break;
+                case 'checklist':
+                    await editor.blocks.insert('list', { style: 'checklist', items: [{ content: '', meta: { checked: false }, items: [] }] }, undefined, currentIndex, true);
+                    break;
+                case 'code':
+                    await editor.blocks.insert('code', { code: '' }, undefined, currentIndex, true);
+                    break;
+                case 'quote':
+                    await editor.blocks.insert('quote', { text: '', caption: '' }, undefined, currentIndex, true);
+                    break;
+                case 'delimiter':
+                    await editor.blocks.insert('delimiter', {}, undefined, currentIndex, true);
+                    break;
+                case 'image':
+                    // Trigger file picker for image
+                    triggerImagePicker();
+                    return;
+                default:
+                    break;
+            }
+
+            // Delete the empty placeholder block if we replaced it
+            if (slashBlockIndex !== null) {
+                try {
+                    // The new block was inserted, now remove the old empty block that's now shifted
+                    const blockCount = editor.blocks.getBlocksCount();
+                    if (blockCount > 1) {
+                        // The old block is now at currentIndex + 1 since we inserted before it
+                        editor.blocks.delete(currentIndex + 1);
+                    }
+                } catch { /* ignore if deletion fails */ }
+            }
+
+            // Focus the newly inserted block
+            editor.caret.setToBlock(currentIndex, 'start');
+        } catch (err) {
+            console.error('[EditorJS] Block insert failed:', err);
+        }
+    }, [slashBlockIndex]);
+
+    // Image picker for Editor.js
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const triggerImagePicker = useCallback(() => {
+        fileInputRef.current?.click();
+    }, []);
+
+    const handleImageFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!editorRef.current || !e.target.files || e.target.files.length === 0) return;
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const base64 = reader.result as string;
+            if (editorRef.current) {
+                const index = slashBlockIndex ?? editorRef.current.blocks.getBlocksCount();
+                // Insert a paragraph with image content as a workaround
+                // Editor.js image tool with base64 inline
+                await editorRef.current.blocks.insert('paragraph', {
+                    text: `<img src="${base64}" style="max-width:100%;border-radius:8px;" />`
+                }, undefined, index, true);
+            }
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    }, [slashBlockIndex]);
+
+    if (!activeNote || activeNote.isSettings) return null;
+
+    return (
+        <div
+            ref={containerRef}
+            className={`flex-1 p-8 flex flex-col overflow-y-auto w-full max-w-full relative ${design === 'style2' ? 'bg-transparent' : ''}`}
+        >
+            {/* Hidden file input for image selection */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageFileSelect}
+            />
+
+            {/* Title area */}
+            <div className="flex items-center gap-4 mb-6 no-drag-region">
+                <input
+                    className="bg-transparent text-4xl font-bold text-slate-100 border-none outline-none w-full focus:ring-0 placeholder-slate-700"
+                    placeholder={t('noteTitlePlaceholder')}
+                    type="text"
+                    value={activeNote.title}
+                    onChange={(e) => updateNoteTitle(activeNote.id, e.target.value)}
+                />
+            </div>
+
+            {/* Editor.js Holder */}
+            <div
+                ref={holderRef}
+                className="flex-1 no-drag-region editorjs-holder"
+                id={`editorjs-holder-${activeNoteId}`}
+            />
+
+            {/* Plus trigger button — always mounted, visibility controlled via refs (prevents flickering) */}
+            {createPortal(
+                <button
+                    ref={plusBtnRef}
+                    onClick={handlePlusClick}
+                    className="editorjs-plus-trigger-btn fixed z-[200] no-drag-region pointer-events-auto"
+                    style={{
+                        display: 'none',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '6px',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        color: 'var(--theme-primary)',
+                        background: 'var(--theme-bg-dark)',
+                        border: '1px solid var(--theme-border)',
+                    }}
+                    title="Add block"
+                >
+                    <span className="material-symbols-outlined text-[18px]">add</span>
+                </button>,
+                document.body
+            )}
+
+            {/* Block Insertion Panel */}
+            {showInsertPanel && (
+                <BlockInsertionPanel
+                    position={insertPanelPos}
+                    onSelect={handleBlockSelect}
+                    onClose={() => { setShowInsertPanel(false); setSlashBlockIndex(null); }}
+                    containerRef={containerRef}
+                />
+            )}
+        </div>
+    );
+});
+
+export default EditorJsEditor;

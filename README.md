@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/version-1.0.26-f4a125?style=flat" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
+  <a href="https://deepwiki.com/Kobar-Project/KoBar"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki" /></a>
 </p>
 
 > 🍎 **macOS support is currently under active development.** Some features may be limited or unavailable on macOS.
