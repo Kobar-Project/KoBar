@@ -167,38 +167,64 @@ const LocalInstallView: React.FC = () => {
                                 No extensions installed yet. Click "Install Extensions" to add one!
                             </div>
                         ) : (
-                            installedExtensions.map((ext) => (
-                                <div key={ext.id} className="flex items-center justify-between p-4 rounded-xl border border-[#2a241c] bg-black/20 hover:border-primary/30 transition-all">
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                                            <span className="material-symbols-outlined text-primary text-[20px]">{ext.icon || 'extension'}</span>
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-semibold text-slate-200 truncate">{ext.name}</span>
-                                                <span className="text-[10px] font-mono text-slate-500 shrink-0">v{ext.version}</span>
+                            installedExtensions.map((ext: any) => (
+                                <div key={ext.id} className="flex flex-col p-4 rounded-xl border border-[#2a241c] bg-black/20 hover:border-primary/30 transition-all">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                                            {ext.image ? (
+                                                <img src={ext.image} alt={ext.name} className="w-12 h-12 rounded-xl object-cover shrink-0" onError={(e) => (e.currentTarget.src = '/Assets/images/plugin-default-image.png')} />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                                    <span className="material-symbols-outlined text-primary text-[24px]">{ext.icon || 'extension'}</span>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="flex flex-col min-w-0 gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-semibold text-slate-200 truncate">{ext.name}</span>
+                                                    <span className="text-[10px] font-mono text-slate-500 shrink-0">v{ext.version}</span>
+                                                    {ext.githubRepo && (
+                                                        <a href={`https://github.com/${ext.githubRepo}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-primary transition-colors flex items-center" title="View on GitHub">
+                                                            <span className="material-symbols-outlined text-[14px]">link</span>
+                                                        </a>
+                                                    )}
+                                                </div>
+                                                <span className="text-xs text-slate-400 leading-normal truncate">{ext.description}</span>
+                                                
+                                                {ext.categories && ext.categories.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {ext.categories.slice(0, 3).map((cat: string) => (
+                                                            <span key={cat} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/5 text-slate-400 border border-white/5">
+                                                                {cat}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                {ext.versionNote && (
+                                                    <div className="text-[10px] text-primary/80 mt-1 italic line-clamp-1 border-l-2 border-primary/30 pl-2">
+                                                        {ext.versionNote}
+                                                    </div>
+                                                )}
                                             </div>
-                                            <span className="text-xs text-slate-400 leading-normal truncate max-w-xs">{ext.description}</span>
                                         </div>
-                                    </div>
 
-                                    <div className="flex items-center gap-3 shrink-0">
-                                        {/* Enable/Disable Toggle */}
-                                        <button
-                                            onClick={() => handleToggleExtension(ext.id, !ext.enabled)}
-                                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${ext.enabled ? 'bg-green-500' : 'bg-slate-600'}`}
-                                        >
-                                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${ext.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                                        </button>
+                                        <div className="flex items-center gap-3 shrink-0 ml-4">
+                                            <button
+                                                onClick={() => handleToggleExtension(ext.id, !ext.enabled)}
+                                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${ext.enabled ? 'bg-green-500' : 'bg-slate-600'}`}
+                                            >
+                                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${ext.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                                            </button>
 
-                                        {/* Uninstall Button */}
-                                        <button
-                                            onClick={() => handleUninstallExtension(ext.id)}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                                            title="Uninstall"
-                                        >
-                                            <span className="material-symbols-outlined text-[18px]">delete</span>
-                                        </button>
+                                            <button
+                                                onClick={() => handleUninstallExtension(ext.id)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                title="Uninstall"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))

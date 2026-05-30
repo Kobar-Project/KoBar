@@ -414,8 +414,8 @@ interface AppState {
     activeExtensionAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
     extensionReloadTrigger: number;
     triggerExtensionReload: () => void;
-    pluginsTabSubMenu: 'store' | 'installed' | 'workspaces' | 'features';
-    setPluginsTabSubMenu: (tab: 'store' | 'installed' | 'workspaces' | 'features') => void;
+    pluginsTabSubMenu: 'store' | 'installed' | 'updates' | 'workspaces' | 'features';
+    setPluginsTabSubMenu: (tab: 'store' | 'installed' | 'updates' | 'workspaces' | 'features') => void;
     extensionsSubTab: 'installed' | 'marketplace';
     setExtensionsSubTab: (tab: 'installed' | 'marketplace') => void;
     pluginsViewMode: 'grid' | 'list';

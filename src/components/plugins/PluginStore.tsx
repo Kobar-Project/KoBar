@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 export const MOCK_PLUGINS = [
@@ -61,6 +61,70 @@ const PluginStore: React.FC = () => {
     const pluginsSelectedTags = useAppStore(state => state.pluginsSelectedTags);
     const setPluginsSelectedTags = useAppStore(state => state.setPluginsSelectedTags);
     const setSelectedPluginId = useAppStore(state => state.setSelectedPluginId);
+    const triggerExtensionReload = useAppStore(state => state.triggerExtensionReload);
+
+    const [githubRepoUrl, setGithubRepoUrl] = useState<string | null>(null);
+    const [isCheckingRepo, setIsCheckingRepo] = useState(false);
+    const [installPrompt, setInstallPrompt] = useState<{repoName: string, repoUrl: string} | null>(null);
+    const [installError, setInstallError] = useState<string | null>(null);
+    const [installing, setInstalling] = useState(false);
+
+    useEffect(() => {
+        const githubRegex = /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)/i;
+        const match = pluginsSearchQuery.trim().match(githubRegex);
+        if (match) {
+            setGithubRepoUrl(`${match[1]}/${match[2]}`);
+        } else {
+            setGithubRepoUrl(null);
+            setInstallPrompt(null);
+            setInstallError(null);
+        }
+    }, [pluginsSearchQuery]);
+
+    const checkGithubRepo = async () => {
+        if (!githubRepoUrl) return;
+        setIsCheckingRepo(true);
+        setInstallError(null);
+        setInstallPrompt(null);
+        
+        try {
+            const releaseRes = await fetch(`https://api.github.com/repos/${githubRepoUrl}/releases/latest`);
+            if (releaseRes.ok) {
+                const releaseData = await releaseRes.json();
+                const hasZip = releaseData.assets && releaseData.assets.some((a: any) => a.name.endsWith('.zip'));
+                if (hasZip) {
+                    setInstallPrompt({ repoName: githubRepoUrl.split('/')[1], repoUrl: githubRepoUrl });
+                } else {
+                    setInstallError("No .zip asset found in the latest release.");
+                }
+            } else {
+                setInstallError("Plugin not found at the provided link.");
+            }
+        } catch (e) {
+            setInstallError("Failed to check GitHub repository.");
+        } finally {
+            setIsCheckingRepo(false);
+        }
+    };
+
+    const confirmInstallGithub = async () => {
+        if (!installPrompt) return;
+        setInstalling(true);
+        try {
+            const result = await window.api.installExtensionFromGithub(installPrompt.repoName, installPrompt.repoUrl);
+            if (result.success) {
+                setPluginsSearchQuery('');
+                triggerExtensionReload();
+                useAppStore.getState().setPluginsTabSubMenu('installed');
+            } else {
+                setInstallError(result.reason || "Installation failed.");
+            }
+        } catch (e) {
+            setInstallError("An unexpected error occurred during installation.");
+        } finally {
+            setInstalling(false);
+        }
+    };
 
     const tags = ['All', "KoBar's plugins", 'Approved', 'Unapproved', 'Installed', 'Not Installed', 'Beta'];
 
@@ -143,10 +207,57 @@ const PluginStore: React.FC = () => {
                         type="text" 
                         value={pluginsSearchQuery}
                         onChange={(e) => setPluginsSearchQuery(e.target.value)}
-                        placeholder="Search plugins by name, tag, or author..." 
-                        className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:border-primary transition-colors placeholder:text-slate-600"
+                        placeholder="Search plugins by name, tag, or author... (or paste GitHub link)" 
+                        className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 pl-10 pr-24 text-sm text-slate-200 focus:outline-none focus:border-primary transition-colors placeholder:text-slate-600"
                     />
+                    {githubRepoUrl && (
+                        <button 
+                            onClick={checkGithubRepo}
+                            disabled={isCheckingRepo}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-black px-3 py-1 rounded-lg text-xs font-semibold hover:bg-primary/90 disabled:opacity-50"
+                        >
+                            {isCheckingRepo ? 'Checking...' : 'Load Link'}
+                        </button>
+                    )}
                 </div>
+
+                {installPrompt && (
+                    <div className="mt-4 p-4 rounded-xl bg-primary/10 border border-primary/30 flex flex-col gap-3">
+                        <div className="flex items-start gap-3">
+                            <span className="material-symbols-outlined text-primary mt-0.5">info</span>
+                            <div>
+                                <h4 className="text-sm font-semibold text-slate-200">GitHub Plugin Found</h4>
+                                <p className="text-xs text-slate-400 mt-1">Would you like to install the <strong>{installPrompt.repoName}</strong> plugin?</p>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-2">
+                            <button 
+                                onClick={() => setInstallPrompt(null)}
+                                className="px-4 py-1.5 rounded-lg text-xs font-medium bg-black/30 text-slate-300 hover:bg-black/50"
+                            >
+                                No
+                            </button>
+                            <button 
+                                onClick={confirmInstallGithub}
+                                disabled={installing}
+                                className="px-4 py-1.5 rounded-lg text-xs font-medium bg-primary text-black hover:bg-primary/90 flex items-center gap-2"
+                            >
+                                {installing && <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>}
+                                {installing ? 'Installing...' : 'Yes, Install'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {installError && (
+                    <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-red-400">
+                        <span className="material-symbols-outlined mt-0.5">error</span>
+                        <div>
+                            <h4 className="text-sm font-semibold">Install Error</h4>
+                            <p className="text-xs mt-1">{installError}</p>
+                        </div>
+                    </div>
+                )}
                 
                 {/* Filter Tags */}
                 <div className="flex flex-wrap gap-2 mt-3 no-drag-region">

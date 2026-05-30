@@ -6,6 +6,7 @@ import WorkspacesView from './WorkspacesView';
 import FeaturesView from './FeaturesView';
 import PluginDetail from './PluginDetail';
 import LocalInstallView from './LocalInstallView';
+import UpdatePluginsView from './UpdatePluginsView';
 
 const PluginsPanel: React.FC = () => {
     const pluginsTabSubMenu = useAppStore(state => state.pluginsTabSubMenu);
@@ -17,6 +18,7 @@ const PluginsPanel: React.FC = () => {
     const menuItems = [
         { id: 'store', icon: 'extension', label: (t as any)('plugins') || 'Plugins' },
         { id: 'installed', icon: 'download', label: 'Local Install' },
+        { id: 'updates', icon: 'update', label: 'Update Plugins' },
         { id: 'workspaces', icon: 'dashboard_customize', label: (t as any)('workspaces') || 'Workspaces' },
         { id: 'features', icon: 'toggle_on', label: (t as any)('kobarFeatures') || 'KoBar Features' },
     ];
@@ -61,6 +63,7 @@ const PluginsPanel: React.FC = () => {
             <div className="flex-1 relative">
                 {pluginsTabSubMenu === 'store' && <PluginStore />}
                 {pluginsTabSubMenu === 'installed' && <LocalInstallView />}
+                {pluginsTabSubMenu === 'updates' && <UpdatePluginsView />}
                 {pluginsTabSubMenu === 'workspaces' && <WorkspacesView />}
                 {pluginsTabSubMenu === 'features' && <FeaturesView />}
             </div>

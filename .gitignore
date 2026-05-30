@@ -52,3 +52,9 @@ Assets/wiki.md
 
 # Extensions testing directories
 public/extensions/
+
+# Notes
+Assets/notes/
+
+# Test Plugins
+.TestPlugins/

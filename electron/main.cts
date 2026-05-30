@@ -2155,6 +2155,10 @@ ipcMain.handle('get-installed-extensions', async () => {
                         version: manifest.version || '1.0.0',
                         description: manifest.description || '',
                         icon: manifest.icon || 'extension',
+                        image: manifest.image || '',
+                        categories: manifest.categories || [],
+                        versionNote: manifest.versionNote || '',
+                        githubRepo: manifest.githubRepo || manifest.githubLink || '',
                         enabled: config[manifest.id] !== false, // default to enabled if not explicitly disabled
                         code: code
                     });
@@ -2166,6 +2170,60 @@ ipcMain.handle('get-installed-extensions', async () => {
         return installed;
     } catch (e) {
         console.error('Failed to get installed extensions:', e);
+        return [];
+    }
+});
+
+ipcMain.handle('check-plugin-updates', async () => {
+    try {
+        if (!fs.existsSync(extensionsDir)) return [];
+        const dirs = fs.readdirSync(extensionsDir);
+        const updates: any[] = [];
+
+        for (const dirName of dirs) {
+            const dirPath = path.join(extensionsDir, dirName);
+            if (!fs.statSync(dirPath).isDirectory()) continue;
+
+            const manifestPath = path.join(dirPath, 'manifest.json');
+            if (fs.existsSync(manifestPath)) {
+                try {
+                    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                    const repo = manifest.githubRepo || manifest.githubLink;
+                    if (repo && repo.includes('/')) {
+                        const releaseRes = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+                            headers: {
+                                'Accept': 'application/vnd.github.v3+json',
+                                'User-Agent': 'KoBar-App'
+                            }
+                        });
+                        
+                        if (releaseRes.ok) {
+                            const releaseData = await releaseRes.json() as any;
+                            const latestVersion = releaseData.tag_name || releaseData.name;
+                            
+                            const cleanCurrent = (manifest.version || '1.0.0').replace(/^v/, '');
+                            const cleanLatest = (latestVersion || '').replace(/^v/, '');
+                            
+                            if (cleanLatest && cleanLatest !== cleanCurrent) {
+                                updates.push({
+                                    id: manifest.id || dirName,
+                                    name: manifest.name || dirName,
+                                    currentVersion: manifest.version || '1.0.0',
+                                    latestVersion: cleanLatest,
+                                    releaseNotes: releaseData.body || '',
+                                    repo: repo
+                                });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Failed to check updates for ${dirName}:`, err);
+                }
+            }
+        }
+        return updates;
+    } catch (e) {
+        console.error('Failed to check plugin updates:', e);
         return [];
     }
 });

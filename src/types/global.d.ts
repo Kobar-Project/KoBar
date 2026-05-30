@@ -122,7 +122,8 @@ declare global {
             isDev: () => Promise<boolean>;
 
             // Extensions API
-            getInstalledExtensions: () => Promise<Array<{ id: string; name: string; version: string; description: string; icon: string; enabled: boolean; code?: string }>>;
+            getInstalledExtensions: () => Promise<Array<{ id: string; name: string; version: string; description: string; icon: string; enabled: boolean; code?: string; image?: string; categories?: string[]; versionNote?: string; githubRepo?: string }>>;
+            checkPluginUpdates: () => Promise<Array<{ id: string; name: string; currentVersion: string; latestVersion: string; releaseNotes: string; repo: string }>>;
             getAvailableExtensions: () => Promise<Array<{ id: string; name: string; version: string; description: string; icon: string; downloadUrl: string }>>;
             installExtension: (id: string) => Promise<boolean>;
             uninstallExtension: (id: string) => Promise<boolean>;

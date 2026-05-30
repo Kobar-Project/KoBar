@@ -27,6 +27,7 @@ export function getLanguageOptions(activeLang: LanguageCode): { code: LanguageCo
 
 export const translations = {
     en: {
+        plugins: "Plugins",
         updateAvailableTitle: "Update Available",
         updateAvailableMessage: "A new version of KoBar ({version}) is available. Would you like to download and install it?",
         updateYes: "Yes, Install",
@@ -274,6 +275,7 @@ export const translations = {
         exportDataDesc: "Backup your notes, calendar events, to-dos, and snippets.",
     },
     tr: {
+        plugins: "Eklentiler",
         updateAvailableTitle: "Güncelleme Mevcut",
         updateAvailableMessage: "KoBar'ın yeni bir sürümü ({version}) mevcut. İndirip kurmak ister misiniz?",
         updateYes: "Evet, Yükle",

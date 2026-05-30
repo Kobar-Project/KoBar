@@ -214,6 +214,7 @@ contextBridge.exposeInMainWorld('api', {
 
     // Extensions API Support
     getInstalledExtensions: () => ipcRenderer.invoke('get-installed-extensions'),
+    checkPluginUpdates: () => ipcRenderer.invoke('check-plugin-updates'),
     getAvailableExtensions: () => ipcRenderer.invoke('get-available-extensions'),
     installExtension: (id: string) => ipcRenderer.invoke('install-extension', id),
     uninstallExtension: (id: string) => ipcRenderer.invoke('uninstall-extension', id),
