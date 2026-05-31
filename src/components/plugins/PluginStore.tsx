@@ -1,58 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
-export const MOCK_PLUGINS = [
-    {
-        id: 'deep-translate',
-        name: 'DeepTranslate',
-        author: 'KoBar Team',
-        description: 'Advanced translation features powered by AI. Translate text instantly anywhere.',
-        fullDescription: 'DeepTranslate integrates powerful AI models directly into your workflow. Whether you are translating code comments, messages, or entire documents, you can do it with a single click. Features auto-language detection and offline mode for selected languages.',
-        version: 'v1.2.0',
-        icon: 'translate',
-        color: 'primary',
-        downloads: '12.4k',
-        rating: '4.8',
-        tags: ["KoBar's plugins", 'Approved', 'Installed'],
-        installed: true,
-        active: true,
-        repo: 'facebook/react' 
-    },
-    {
-        id: 'term-quick',
-        name: 'TermQuick',
-        author: 'DevGuru',
-        description: 'Integrated quick terminal for executing shell commands right from the sidebar.',
-        fullDescription: 'TermQuick gives you instant access to a command line interface without leaving KoBar. Execute scripts, manage files, and run npm commands seamlessly. It supports both PowerShell and Bash depending on your OS.',
-        version: 'v0.9.1',
-        icon: 'terminal',
-        color: 'emerald-500',
-        downloads: '5.1k',
-        rating: '4.2',
-        tags: ['Beta', 'Not Installed'],
-        installed: false,
-        active: false,
-        repo: 'electron/electron'
-    },
-    {
-        id: 'snippet-vault',
-        name: 'SnippetVault',
-        author: 'CodeMaster',
-        description: 'Store and quickly retrieve your most used code snippets.',
-        fullDescription: 'SnippetVault is a lifesaver for developers. Save code blocks and insert them anywhere with a quick shortcut.',
-        version: 'v2.0.1',
-        icon: 'code',
-        color: 'blue-500',
-        downloads: '8.2k',
-        rating: '4.5',
-        tags: ['Approved', 'Installed'],
-        installed: true,
-        active: false,
-        repo: 'microsoft/vscode'
-    }
-];
+const PLUGIN_REGISTRY_URL = 'https://raw.githubusercontent.com/Kobar-Project/kobar-plugins-registry/main/registry.json';
 
 const PluginStore: React.FC = () => {
+    const externalPluginsList = useAppStore(state => state.externalPluginsList);
+    const setExternalPluginsList = useAppStore(state => state.setExternalPluginsList);
+    const [isFetchingRegistry, setIsFetchingRegistry] = useState(false);
     const t = useAppStore(state => state.t);
     const pluginsViewMode = useAppStore(state => state.pluginsViewMode);
     const setPluginsViewMode = useAppStore(state => state.setPluginsViewMode);
@@ -65,9 +19,89 @@ const PluginStore: React.FC = () => {
 
     const [githubRepoUrl, setGithubRepoUrl] = useState<string | null>(null);
     const [isCheckingRepo, setIsCheckingRepo] = useState(false);
-    const [installPrompt, setInstallPrompt] = useState<{repoName: string, repoUrl: string} | null>(null);
+    const [installPrompt, setInstallPrompt] = useState<{ repoName: string, repoUrl: string } | null>(null);
     const [installError, setInstallError] = useState<string | null>(null);
     const [installing, setInstalling] = useState(false);
+
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [installMessage, setInstallMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [installedExtensions, setInstalledExtensions] = useState<any[]>([]);
+
+    // Feature Toggles from AppStore
+    const isShortcutsEnabled = useAppStore(state => state.isShortcutsEnabled);
+    const setIsShortcutsEnabled = useAppStore(state => state.setIsShortcutsEnabled);
+    const isCopyPasteEnabled = useAppStore(state => state.isCopyPasteEnabled);
+    const setIsCopyPasteEnabled = useAppStore(state => state.setIsCopyPasteEnabled);
+    const isScreenshotEnabled = useAppStore(state => state.isScreenshotEnabled);
+    const setIsScreenshotEnabled = useAppStore(state => state.setIsScreenshotEnabled);
+    const isFocusModeEnabled = useAppStore(state => state.isFocusModeEnabled);
+    const setIsFocusModeEnabled = useAppStore(state => state.setIsFocusModeEnabled);
+    const isCalculatorEnabled = useAppStore(state => state.isCalculatorEnabled);
+    const setIsCalculatorEnabled = useAppStore(state => state.setIsCalculatorEnabled);
+    const isColorPickerEnabled = useAppStore(state => state.isColorPickerEnabled);
+    const setIsColorPickerEnabled = useAppStore(state => state.setIsColorPickerEnabled);
+    const isTodoListEnabled = useAppStore(state => state.isTodoListEnabled);
+    const setIsTodoListEnabled = useAppStore(state => state.setIsTodoListEnabled);
+    const isKoCalendarEnabled = useAppStore(state => state.isKoCalendarEnabled);
+    const setIsKoCalendarEnabled = useAppStore(state => state.setIsKoCalendarEnabled);
+    const isPinInjectorEnabled = useAppStore(state => state.isPinInjectorEnabled);
+    const setIsPinInjectorEnabled = useAppStore(state => state.setIsPinInjectorEnabled);
+    const isKoBoxEnabled = useAppStore(state => state.isKoBoxEnabled);
+    const setIsKoBoxEnabled = useAppStore(state => state.setIsKoBoxEnabled);
+    const isSnippetVaultEnabled = useAppStore(state => state.isSnippetVaultEnabled);
+    const setIsSnippetVaultEnabled = useAppStore(state => state.setIsSnippetVaultEnabled);
+    const isAiHubEnabled = useAppStore(state => state.isAiHubEnabled);
+    const setIsAiHubEnabled = useAppStore(state => state.setIsAiHubEnabled);
+    const isKoPlayerEnabled = useAppStore(state => state.isKoPlayerEnabled);
+    const setIsKoPlayerEnabled = useAppStore(state => state.setIsKoPlayerEnabled);
+
+    const featureOrder = useAppStore(state => state.featureOrder);
+
+    const loadExtensionsData = async () => {
+        try {
+            if (window.api?.getInstalledExtensions) {
+                const installed = await window.api.getInstalledExtensions();
+                setInstalledExtensions(installed);
+            }
+        } catch (e) {
+            console.error('Failed to load extensions data:', e);
+        }
+    };
+
+    useEffect(() => {
+        const fetchRegistry = async () => {
+            setIsFetchingRegistry(true);
+            try {
+                // Fetch from the centralized registry
+                // Appending a timestamp query parameter to prevent aggressive caching
+                const res = await fetch(`${PLUGIN_REGISTRY_URL}?t=${new Date().getTime()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setExternalPluginsList(data);
+                } else {
+                    console.error('Failed to fetch plugin registry. Status:', res.status);
+                }
+            } catch (error) {
+                console.error('Error fetching plugin registry:', error);
+            } finally {
+                setIsFetchingRegistry(false);
+            }
+        };
+
+        loadExtensionsData();
+        fetchRegistry();
+    }, []);
+
+    // Listen for extension reload triggers
+    useEffect(() => {
+        const unsubscribe = useAppStore.subscribe((state, prevState) => {
+            if (state.extensionReloadTrigger !== prevState.extensionReloadTrigger) {
+                loadExtensionsData();
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
 
     useEffect(() => {
         const githubRegex = /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)/i;
@@ -86,7 +120,7 @@ const PluginStore: React.FC = () => {
         setIsCheckingRepo(true);
         setInstallError(null);
         setInstallPrompt(null);
-        
+
         try {
             const releaseRes = await fetch(`https://api.github.com/repos/${githubRepoUrl}/releases/latest`);
             if (releaseRes.ok) {
@@ -115,7 +149,6 @@ const PluginStore: React.FC = () => {
             if (result.success) {
                 setPluginsSearchQuery('');
                 triggerExtensionReload();
-                useAppStore.getState().setPluginsTabSubMenu('installed');
             } else {
                 setInstallError(result.reason || "Installation failed.");
             }
@@ -126,11 +159,146 @@ const PluginStore: React.FC = () => {
         }
     };
 
-    const tags = ['All', "KoBar's plugins", 'Approved', 'Unapproved', 'Installed', 'Not Installed', 'Beta'];
+    const handleInstallExtensionFromFile = async () => {
+        if (window.api?.installExtensionFromFile) {
+            setInstallMessage(null);
+            try {
+                const res = await window.api.installExtensionFromFile();
+                if (res.success) {
+                    setInstallMessage({ type: 'success', text: 'Extension installed successfully!' });
+                    triggerExtensionReload();
+                } else if (res.reason !== 'Canceled by user') {
+                    setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+                }
+            } catch (e: any) {
+                setInstallMessage({ type: 'error', text: `Error during installation: ${e.message || e}` });
+            }
+        }
+    };
+
+    const handleDropExtension = async (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+
+        const files = e.dataTransfer?.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        if (!file.name.toLowerCase().endsWith('.zip')) {
+            setInstallMessage({ type: 'error', text: 'Only .zip files are supported.' });
+            return;
+        }
+
+        const filePath = window.api?.getFilePath?.(file);
+        if (!filePath || !window.api?.installExtensionFromPath) {
+            setInstallMessage({ type: 'error', text: 'Drag & drop is not supported in this environment.' });
+            return;
+        }
+
+        setInstallMessage(null);
+        try {
+            const res = await window.api.installExtensionFromPath(filePath);
+            if (res.success) {
+                setInstallMessage({ type: 'success', text: 'Extension installed successfully!' });
+                triggerExtensionReload();
+            } else {
+                setInstallMessage({ type: 'error', text: `Failed to install: ${res.reason || 'Unknown error'}` });
+            }
+        } catch (e: any) {
+            setInstallMessage({ type: 'error', text: `Error during installation: ${e.message || e}` });
+        }
+    };
+
+    const handleToggleExtension = async (plugin: any) => {
+        if (plugin.isInternal) {
+            plugin.onToggle();
+        } else {
+            if (plugin.installed && window.api?.toggleExtensionEnabled) {
+                await window.api.toggleExtensionEnabled(plugin.id, !plugin.active);
+                triggerExtensionReload();
+            }
+        }
+    };
+
+    const handleUninstallExtension = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (window.api?.uninstallExtension) {
+            await window.api.uninstallExtension(id);
+            triggerExtensionReload();
+        }
+    };
+
+    const getFeatureMeta = (id: string): any => {
+        switch (id) {
+            case 'shortcuts': return { icon: 'bolt', name: (typeof t === 'function' ? t('shortcuts') : undefined) || 'Shortcuts', isEnabled: isShortcutsEnabled, onToggle: () => setIsShortcutsEnabled(!isShortcutsEnabled), description: 'Drag and drop files, folders, apps, or links for instant access.' };
+            case 'copypaste': return { icon: 'content_paste', name: (typeof t === 'function' ? t('copyAndPaste') : undefined) || 'Copy & Paste', isEnabled: isCopyPasteEnabled, onToggle: () => setIsCopyPasteEnabled(!isCopyPasteEnabled), description: 'Multi-slot clipboard manager.' };
+            case 'screenshot': return { icon: 'photo_camera', name: (typeof t === 'function' ? t('screenshot') : undefined) || 'Screenshot', isEnabled: isScreenshotEnabled, onToggle: () => setIsScreenshotEnabled(!isScreenshotEnabled), description: 'Quickly capture and save screen regions.' };
+            case 'focusmode': return { icon: 'hourglass_empty', name: (typeof t === 'function' ? t('focusMode') : undefined) || 'Focus Mode', isEnabled: isFocusModeEnabled, onToggle: () => setIsFocusModeEnabled(!isFocusModeEnabled), description: 'Pomodoro-style focus timer.' };
+            case 'calculator': return { icon: 'calculate', name: (typeof t === 'function' ? t('calculator') : undefined) || 'Calculator', isEnabled: isCalculatorEnabled, onToggle: () => setIsCalculatorEnabled(!isCalculatorEnabled), description: 'Quick-access calculator for everyday math.' };
+            case 'colorpicker': return { icon: 'palette', name: (typeof t === 'function' ? t('colorPicker') : undefined) || 'Color Picker', isEnabled: isColorPickerEnabled, onToggle: () => setIsColorPickerEnabled(!isColorPickerEnabled), description: 'Screen color picker and palette manager.' };
+            case 'todolist': return { icon: 'checklist', name: (typeof t === 'function' ? t('todoList') : undefined) || 'To-Do List', isEnabled: isTodoListEnabled, onToggle: () => setIsTodoListEnabled(!isTodoListEnabled), description: 'Manage your tasks directly from the sidebar.' };
+            case 'kocalendar': return { icon: 'calendar_month', name: (typeof t === 'function' ? t('koCalendar') : undefined) || 'Calendar', isEnabled: isKoCalendarEnabled, onToggle: () => setIsKoCalendarEnabled(!isKoCalendarEnabled), description: 'Manage your local events and schedule.' };
+            case 'pininjector': return { icon: 'push_pin', name: (typeof t === 'function' ? t('pinToTop') : undefined) || 'Pin to Top', isEnabled: isPinInjectorEnabled, onToggle: () => setIsPinInjectorEnabled(!isPinInjectorEnabled), description: 'Pin any desktop window to the top.' };
+            case 'kobox': return { icon: 'inventory_2', name: (typeof t === 'function' ? t('kobox') : undefined) || 'KoBox', isEnabled: isKoBoxEnabled, onToggle: () => setIsKoBoxEnabled(!isKoBoxEnabled), description: 'Temporary file drop zone.' };
+            case 'snippetvault': return { icon: 'library_books', name: (typeof t === 'function' ? t('snippetVault') : undefined) || 'Snippet Vault', isEnabled: isSnippetVaultEnabled, onToggle: () => setIsSnippetVaultEnabled(!isSnippetVaultEnabled), description: 'Save and reuse text snippets.' };
+            case 'aihub': return { icon: 'smart_toy', name: (typeof t === 'function' ? t('aiHub') : undefined) || 'AI Hub', isEnabled: isAiHubEnabled, onToggle: () => setIsAiHubEnabled(!isAiHubEnabled), description: 'Quick access to AI assistants.' };
+            case 'koplayer': return { icon: 'music_note', name: 'KoPlayer', isEnabled: isKoPlayerEnabled, onToggle: () => setIsKoPlayerEnabled(!isKoPlayerEnabled), description: 'Global media controller.' };
+            default: return null;
+        }
+    };
+
+    const allPlugins = useMemo(() => {
+        const internals = (featureOrder || []).map(id => {
+            const meta = getFeatureMeta(id);
+            if (!meta) return null;
+            return {
+                id,
+                name: meta.name,
+                author: 'KoBar Team',
+                description: meta.description,
+                icon: meta.icon,
+                color: 'primary',
+                tags: ["KoBar's plugins", 'Installed'],
+                installed: true,
+                active: meta.isEnabled,
+                onToggle: meta.onToggle,
+                isInternal: true
+            };
+        }).filter(Boolean);
+
+        const externals = (Array.isArray(externalPluginsList) ? externalPluginsList : []).map((ext: any) => {
+            const installedPlugin = (installedExtensions || []).find(i => i.id === ext.id);
+            return {
+                ...ext,
+                icon: ext.icon || 'extension',
+                color: 'blue-500',
+                tags: installedPlugin ? ['Installed'] : ['Not Installed'],
+                installed: !!installedPlugin,
+                active: installedPlugin ? installedPlugin.enabled : false,
+                isInternal: false,
+                version: installedPlugin ? installedPlugin.version : undefined
+            };
+        });
+
+        // Add dynamically loaded local extensions that aren't in the externalPluginsList (like dev/local zip installs)
+        const localOnlyExtensions = (installedExtensions || []).filter(inst => !(Array.isArray(externalPluginsList) ? externalPluginsList : []).find(ext => ext.id === inst.id)).map(inst => ({
+            ...inst,
+            author: inst.author || 'Local Extension',
+            color: 'emerald-500',
+            tags: ['Installed'],
+            installed: true,
+            active: inst.enabled,
+            isInternal: false
+        }));
+
+        return [...internals, ...externals, ...localOnlyExtensions];
+    }, [featureOrder, isShortcutsEnabled, isCopyPasteEnabled, isScreenshotEnabled, isFocusModeEnabled, isCalculatorEnabled, isColorPickerEnabled, isTodoListEnabled, isKoCalendarEnabled, isPinInjectorEnabled, isKoBoxEnabled, isSnippetVaultEnabled, isAiHubEnabled, isKoPlayerEnabled, installedExtensions]);
+
+    const tags = ['All', "KoBar's plugins", 'Installed', 'Not Installed', 'Beta'];
 
     const handleTagClick = (clickedTag: string) => {
         if (clickedTag === 'All') {
-            // If all tags are currently selected, clear them. Otherwise, select all.
             if (pluginsSelectedTags.length === tags.length - 1) {
                 setPluginsSelectedTags([]);
             } else {
@@ -148,19 +316,18 @@ const PluginStore: React.FC = () => {
         setPluginsSelectedTags(newTags);
     };
 
-    // Filter plugins
-    const filteredPlugins = MOCK_PLUGINS.filter(plugin => {
+    const filteredPlugins = (allPlugins || []).filter((plugin: any) => {
         if (pluginsSearchQuery) {
             const q = pluginsSearchQuery.toLowerCase();
-            if (!plugin.name.toLowerCase().includes(q) && 
+            if (!plugin.name.toLowerCase().includes(q) &&
                 !plugin.description.toLowerCase().includes(q) &&
-                !plugin.author.toLowerCase().includes(q)) {
+                !(plugin.author && plugin.author.toLowerCase().includes(q))) {
                 return false;
             }
         }
 
         if (pluginsSelectedTags.length > 0) {
-            const hasMatchingTag = pluginsSelectedTags.some(tag => plugin.tags.includes(tag));
+            const hasMatchingTag = pluginsSelectedTags.some(tag => plugin.tags && plugin.tags.includes(tag));
             if (!hasMatchingTag) return false;
         }
 
@@ -190,28 +357,84 @@ const PluginStore: React.FC = () => {
         return 'bg-red-500/30';
     };
 
+    const handleGithubClick = (e: React.MouseEvent, url: string) => {
+        e.stopPropagation();
+        if (window.api?.openExternal) {
+            window.api.openExternal(url);
+        } else {
+            window.open(url, '_blank');
+        }
+    };
+
     return (
         <div className="flex flex-col h-full space-y-6">
             <div className="flex items-center justify-between px-2">
-                <div className="flex flex-col">
-                    <h3 className="text-sm uppercase tracking-wider text-slate-500 font-semibold">{(t as any)('plugins') || 'Plugins'}</h3>
-                    <p className="text-xs text-slate-500 mt-1">{(t as any)('pluginStoreDesc') || 'Browse, manage, and install extensions.'}</p>
+                {/* Main buttons are now managed via PluginsPanel at the top level and appear here above the search implicitly */}
+            </div>
+
+            {/* Install Extension Zip Drag/Drop */}
+            <div className="px-2 no-drag-region">
+                <div
+                    onClick={handleInstallExtensionFromFile}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); }}
+                    onDrop={handleDropExtension}
+                    className={`p-4 border border-dashed rounded-xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group ${isDragOver
+                            ? 'border-primary bg-primary/10 scale-[1.02]'
+                            : 'border-[#2a241c] hover:border-primary/50 bg-black/20 hover:bg-black/30'
+                        }`}
+                >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isDragOver ? 'bg-primary/20 scale-110' : 'bg-primary/10 group-hover:scale-110'
+                        }`}>
+                        <span className="material-symbols-outlined text-primary text-[24px]">
+                            {isDragOver ? 'download' : 'folder_zip'}
+                        </span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-sm font-semibold text-slate-200">
+                            {isDragOver ? 'Drop ZIP to Install' : 'Click or Drag & Drop Extension ZIP'}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                            {isDragOver ? 'Release to start installation' : 'Select or drop a KoBar extension (.zip) file'}
+                        </span>
+                    </div>
                 </div>
+
+                {installMessage && (
+                    <div className={`mt-3 p-3 rounded-xl border flex items-center justify-between ${installMessage.type === 'success'
+                            ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                            : 'bg-red-500/10 border-red-500/20 text-red-400'
+                        }`}>
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[18px]">
+                                {installMessage.type === 'success' ? 'check_circle' : 'error'}
+                            </span>
+                            <span className="text-sm">{installMessage.text}</span>
+                        </div>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setInstallMessage(null); }}
+                            className="text-slate-400 hover:text-slate-200 p-0.5 rounded transition-all hover:bg-white/5"
+                        >
+                            <span className="material-symbols-outlined text-[14px]">close</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Search and Filter */}
             <div className="px-2">
                 <div className="relative w-full no-drag-region">
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">search</span>
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         value={pluginsSearchQuery}
                         onChange={(e) => setPluginsSearchQuery(e.target.value)}
-                        placeholder="Search plugins by name, tag, or author... (or paste GitHub link)" 
+                        placeholder="Search plugins by name, tag, or author... (or paste GitHub link)"
                         className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 pl-10 pr-24 text-sm text-slate-200 focus:outline-none focus:border-primary transition-colors placeholder:text-slate-600"
                     />
                     {githubRepoUrl && (
-                        <button 
+                        <button
                             onClick={checkGithubRepo}
                             disabled={isCheckingRepo}
                             className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-black px-3 py-1 rounded-lg text-xs font-semibold hover:bg-primary/90 disabled:opacity-50"
@@ -231,13 +454,13 @@ const PluginStore: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex justify-end gap-2 mt-2">
-                            <button 
+                            <button
                                 onClick={() => setInstallPrompt(null)}
                                 className="px-4 py-1.5 rounded-lg text-xs font-medium bg-black/30 text-slate-300 hover:bg-black/50"
                             >
                                 No
                             </button>
-                            <button 
+                            <button
                                 onClick={confirmInstallGithub}
                                 disabled={installing}
                                 className="px-4 py-1.5 rounded-lg text-xs font-medium bg-primary text-black hover:bg-primary/90 flex items-center gap-2"
@@ -258,21 +481,20 @@ const PluginStore: React.FC = () => {
                         </div>
                     </div>
                 )}
-                
+
                 {/* Filter Tags */}
                 <div className="flex flex-wrap gap-2 mt-3 no-drag-region">
                     {tags.map(tag => {
-                        const isSelected = (tag === 'All' && (pluginsSelectedTags.length === 0 || pluginsSelectedTags.length === tags.length - 1)) || 
-                                           (tag !== 'All' && pluginsSelectedTags.includes(tag));
+                        const isSelected = (tag === 'All' && (pluginsSelectedTags.length === 0 || pluginsSelectedTags.length === tags.length - 1)) ||
+                            (tag !== 'All' && pluginsSelectedTags.includes(tag));
                         return (
-                            <span 
+                            <span
                                 key={tag}
                                 onClick={() => handleTagClick(tag)}
-                                className={`px-3 py-1 border rounded-full text-[11px] font-medium cursor-pointer transition-colors ${
-                                    isSelected
-                                    ? 'bg-primary text-slate-900 border-primary'
-                                    : 'bg-white/5 text-slate-400 border-white/10 hover:bg-primary/20 hover:text-primary'
-                                }`}
+                                className={`px-3 py-1 border rounded-full text-[11px] font-medium cursor-pointer transition-colors ${isSelected
+                                        ? 'bg-primary text-slate-900 border-primary'
+                                        : 'bg-white/5 text-slate-400 border-white/10 hover:bg-primary/20 hover:text-primary'
+                                    }`}
                             >
                                 {tag}
                             </span>
@@ -284,18 +506,16 @@ const PluginStore: React.FC = () => {
                 <div className="flex items-center gap-2 mt-4 no-drag-region">
                     <button
                         onClick={() => setPluginsViewMode('grid')}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                            pluginsViewMode === 'grid' ? 'bg-primary text-slate-900 shadow-md' : 'bg-black/20 text-slate-400 border border-white/5 hover:text-slate-200'
-                        }`}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${pluginsViewMode === 'grid' ? 'bg-primary text-slate-900 shadow-md' : 'bg-black/20 text-slate-400 border border-white/5 hover:text-slate-200'
+                            }`}
                         title="Grid View"
                     >
                         <span className="material-symbols-outlined text-[18px]">grid_view</span>
                     </button>
                     <button
                         onClick={() => setPluginsViewMode('list')}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                            pluginsViewMode === 'list' ? 'bg-primary text-slate-900 shadow-md' : 'bg-black/20 text-slate-400 border border-white/5 hover:text-slate-200'
-                        }`}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${pluginsViewMode === 'list' ? 'bg-primary text-slate-900 shadow-md' : 'bg-black/20 text-slate-400 border border-white/5 hover:text-slate-200'
+                            }`}
                         title="List View"
                     >
                         <span className="material-symbols-outlined text-[18px]">view_list</span>
@@ -306,22 +526,38 @@ const PluginStore: React.FC = () => {
             {/* Grid view */}
             {pluginsViewMode === 'grid' && (
                 <div className="flex flex-wrap gap-4 px-2">
-                    {filteredPlugins.map(plugin => {
+                    {filteredPlugins.map((plugin: any) => {
                         const colors = getColorClasses(plugin.color);
                         const glowClass = getGlowClass(plugin.installed, plugin.active);
                         return (
-                            <div 
+                            <div
                                 key={plugin.id}
-                                onClick={() => setSelectedPluginId(plugin.id)}
+                                onClick={() => !plugin.isInternal && setSelectedPluginId(plugin.id)}
                                 className={`w-[260px] h-[350px] shrink-0 bg-black/20 border border-white/5 rounded-2xl relative group overflow-hidden transition-all ${colors.border} hover:bg-black/40 cursor-pointer no-drag-region flex flex-col`}
                             >
                                 <div className={`absolute inset-0 ${glowClass} blur-[50px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
-                                
+
                                 {/* Top Half: Banner Image */}
                                 <div className={`h-2/3 w-full bg-gradient-to-br ${colors.gradient} relative`}>
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-white/20 text-5xl">image</span>
+                                        {plugin.image ? (
+                                            <img src={plugin.image} alt={plugin.name} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                        ) : (
+                                            <span className="material-symbols-outlined text-white/20 text-5xl">extension</span>
+                                        )}
                                     </div>
+
+                                    {/* Action button overlay */}
+                                    {plugin.installed && (
+                                        <div className="absolute top-3 right-3 z-20">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleToggleExtension(plugin); }}
+                                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${plugin.active ? 'bg-green-500' : 'bg-slate-600'}`}
+                                            >
+                                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${plugin.active ? 'translate-x-5' : 'translate-x-0'}`} />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Bottom Half: Info */}
@@ -331,9 +567,87 @@ const PluginStore: React.FC = () => {
                                     </div>
                                     <span className="text-base font-bold text-slate-200 leading-tight">{plugin.name}</span>
                                     <span className="text-[11px] text-slate-400 italic">by {plugin.author}</span>
-                                    <div className="flex items-center gap-2 mt-auto">
-                                        <span className="text-[10px] text-slate-500 flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">download</span> {plugin.downloads}</span>
-                                        <span className="text-[10px] text-slate-500 flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">star</span> {plugin.rating}</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* List view (Detailed) */}
+            {pluginsViewMode === 'list' && (
+                <div className="flex flex-col gap-4 px-2">
+                    {filteredPlugins.map((plugin: any) => {
+                        const colors = getColorClasses(plugin.color);
+                        const glowClass = getGlowClass(plugin.installed, plugin.active);
+                        return (
+                            <div
+                                key={plugin.id}
+                                onClick={() => !plugin.isInternal && setSelectedPluginId(plugin.id)}
+                                className={`flex flex-col p-4 rounded-xl border border-[#2a241c] bg-black/20 hover:border-primary/30 transition-all cursor-pointer no-drag-region relative group overflow-hidden`}
+                            >
+                                <div className={`absolute inset-0 ${glowClass} blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
+
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                                        {plugin.image ? (
+                                            <img src={plugin.image} alt={plugin.name} className="w-12 h-12 rounded-xl object-cover shrink-0" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                                <span className={`material-symbols-outlined ${colors.text} text-[24px]`}>{plugin.icon}</span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex flex-col min-w-0 gap-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-semibold text-slate-200 truncate">{plugin.name}</span>
+                                                {plugin.version && <span className="text-[10px] font-mono text-slate-500 shrink-0">v{plugin.version}</span>}
+                                                {plugin.githubRepo && (
+                                                    <button onClick={(e) => handleGithubClick(e, `https://github.com/${plugin.githubRepo}`)} className="text-slate-400 hover:text-primary transition-colors flex items-center" title="View on GitHub">
+                                                        <span className="material-symbols-outlined text-[14px]">link</span>
+                                                    </button>
+                                                )}
+                                                <span className="text-xs text-slate-400 italic">by {plugin.author}</span>
+                                            </div>
+                                            <span className="text-xs text-slate-400 leading-normal truncate">{plugin.description}</span>
+
+                                            {plugin.categories && plugin.categories.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {plugin.categories.slice(0, 3).map((cat: string) => (
+                                                        <span key={cat} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/5 text-slate-400 border border-white/5">
+                                                            {cat}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {plugin.versionNote && (
+                                                <div className="text-[10px] text-primary/80 mt-1 italic line-clamp-1 border-l-2 border-primary/30 pl-2">
+                                                    {plugin.versionNote}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 shrink-0 ml-4">
+                                        {plugin.installed && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleToggleExtension(plugin); }}
+                                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${plugin.active ? 'bg-green-500' : 'bg-slate-600'}`}
+                                            >
+                                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${plugin.active ? 'translate-x-5' : 'translate-x-0'}`} />
+                                            </button>
+                                        )}
+
+                                        {!plugin.isInternal && plugin.installed && (
+                                            <button
+                                                onClick={(e) => handleUninstallExtension(e, plugin.id)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                title="Uninstall"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -342,37 +656,6 @@ const PluginStore: React.FC = () => {
                 </div>
             )}
 
-            {/* List view */}
-            {pluginsViewMode === 'list' && (
-                <div className="flex flex-col gap-3 px-2">
-                    {filteredPlugins.map(plugin => {
-                        const colors = getColorClasses(plugin.color);
-                        const glowClass = getGlowClass(plugin.installed, plugin.active);
-                        return (
-                            <div 
-                                key={plugin.id}
-                                onClick={() => setSelectedPluginId(plugin.id)}
-                                className={`flex items-center gap-4 p-4 rounded-xl border border-white/5 bg-black/20 hover:bg-black/40 transition-all cursor-pointer no-drag-region relative group overflow-hidden ${colors.border}`}
-                            >
-                                <div className={`absolute inset-0 ${glowClass} blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
-                                
-                                <div className={`w-10 h-10 rounded-full bg-[#1e1e1e] flex items-center justify-center shrink-0 relative z-10 border border-black/20`}>
-                                    <span className={`material-symbols-outlined ${colors.text} text-[20px]`}>{plugin.icon}</span>
-                                </div>
-                                
-                                <div className="flex flex-col flex-1 min-w-0 relative z-10">
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-sm font-bold text-slate-200">{plugin.name}</span>
-                                        <span className="text-xs text-slate-400 italic">by {plugin.author}</span>
-                                    </div>
-                                    <span className="text-xs text-slate-500 truncate mt-0.5">{plugin.description}</span>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-            
             {filteredPlugins.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-10 text-slate-500">
                     <span className="material-symbols-outlined text-[48px] mb-2 opacity-50">extension_off</span>

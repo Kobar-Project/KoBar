@@ -877,7 +877,7 @@ const Sidebar: React.FC = () => {
                     }).filter(Boolean);
 
                     const dynamicButtons = extensionsRegistry.getButtons();
-                    const extFeatures = dynamicButtons.map(btn => {
+                    const extFeatures = dynamicButtons.map((btn: any) => {
                         const isOpen = activeExtensionPanelId === btn.id;
                         return (
                             <div key={btn.id} className="w-full flex justify-center no-drag-region">

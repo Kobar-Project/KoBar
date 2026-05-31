@@ -3,9 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import PluginStore from './PluginStore';
 
 import WorkspacesView from './WorkspacesView';
-import FeaturesView from './FeaturesView';
 import PluginDetail from './PluginDetail';
-import LocalInstallView from './LocalInstallView';
 import UpdatePluginsView from './UpdatePluginsView';
 
 const PluginsPanel: React.FC = () => {
@@ -16,11 +14,9 @@ const PluginsPanel: React.FC = () => {
     const t = useAppStore(state => state.t);
 
     const menuItems = [
-        { id: 'store', icon: 'extension', label: (t as any)('plugins') || 'Plugins' },
-        { id: 'installed', icon: 'download', label: 'Local Install' },
+        { id: 'store', icon: 'extension', label: (typeof t === 'function' ? t('plugins') : undefined) || 'Plugins' },
         { id: 'updates', icon: 'update', label: 'Update Plugins' },
-        { id: 'workspaces', icon: 'dashboard_customize', label: (t as any)('workspaces') || 'Workspaces' },
-        { id: 'features', icon: 'toggle_on', label: (t as any)('kobarFeatures') || 'KoBar Features' },
+        { id: 'workspaces', icon: 'dashboard_customize', label: (typeof t === 'function' ? t('workspaces') : undefined) || 'Workspaces' },
     ];
 
     if (selectedPluginId) {
@@ -39,8 +35,6 @@ const PluginsPanel: React.FC = () => {
             className="flex-1 overflow-y-auto p-8 pl-10 pb-4 custom-scrollbar relative flex flex-col" 
             style={{ backgroundColor: design === 'style2' ? 'transparent' : 'var(--theme-bg-base)' }}
         >
-            <h2 className="text-2xl font-semibold text-slate-200 mb-6">{(t as any)('plugins') || 'Plugins Ecosystem'}</h2>
-
             {/* Sub-navigation Pills */}
             <div className="flex flex-wrap gap-2 mb-8 no-drag-region">
                 {menuItems.map(item => (
@@ -62,10 +56,8 @@ const PluginsPanel: React.FC = () => {
             {/* Render sub-views here based on pluginsTabSubMenu */}
             <div className="flex-1 relative">
                 {pluginsTabSubMenu === 'store' && <PluginStore />}
-                {pluginsTabSubMenu === 'installed' && <LocalInstallView />}
                 {pluginsTabSubMenu === 'updates' && <UpdatePluginsView />}
                 {pluginsTabSubMenu === 'workspaces' && <WorkspacesView />}
-                {pluginsTabSubMenu === 'features' && <FeaturesView />}
             </div>
         </div>
     );

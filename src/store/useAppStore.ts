@@ -422,6 +422,8 @@ interface AppState {
     setPluginsViewMode: (mode: 'grid' | 'list') => void;
     selectedPluginId: string | null;
     setSelectedPluginId: (id: string | null) => void;
+    externalPluginsList: any[];
+    setExternalPluginsList: (list: any[]) => void;
     pluginsSearchQuery: string;
     setPluginsSearchQuery: (query: string) => void;
     pluginsSelectedTags: string[];
@@ -503,6 +505,8 @@ export const useAppStore = create<AppState>()(
             setPluginsViewMode: (mode) => set({ pluginsViewMode: mode }),
             selectedPluginId: null,
             setSelectedPluginId: (id) => set({ selectedPluginId: id }),
+            externalPluginsList: [],
+            setExternalPluginsList: (list) => set({ externalPluginsList: list }),
             pluginsSearchQuery: '',
             setPluginsSearchQuery: (query) => set({ pluginsSearchQuery: query }),
             pluginsSelectedTags: [],

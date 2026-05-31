@@ -1,12 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { MOCK_PLUGINS } from './PluginStore';
 
 const PluginDetail: React.FC = () => {
     const selectedPluginId = useAppStore(state => state.selectedPluginId);
     const setSelectedPluginId = useAppStore(state => state.setSelectedPluginId);
+    const externalPluginsList = useAppStore(state => state.externalPluginsList);
     
-    const plugin = MOCK_PLUGINS.find(p => p.id === selectedPluginId);
+    const pluginsArray = Array.isArray(externalPluginsList) ? externalPluginsList : [];
+    const pluginData = pluginsArray.find((p: any) => p.id === selectedPluginId);
+
+    // Transform raw JSON plugin into the expected format
+    const plugin = pluginData ? {
+        id: pluginData.id,
+        name: pluginData.name,
+        description: pluginData.description,
+        fullDescription: pluginData.description, // Fallback
+        author: pluginData.author,
+        version: pluginData.versionNote || '1.0.0',
+        tags: pluginData.categories ? [...pluginData.categories] : [],
+        color: 'primary', // default color
+        icon: pluginData.image || 'extension',
+        repo: pluginData.githubRepo,
+        installed: false,
+        active: false
+    } : undefined;
     
     const [githubStats, setGithubStats] = useState<{ stars: number | string; forks: number | string; contributors: number | string } | null>(null);
     const [loadingStats, setLoadingStats] = useState(false);
