@@ -6,7 +6,7 @@ const PLUGIN_REGISTRY_URL = 'https://raw.githubusercontent.com/Kobar-Project/kob
 const PluginStore: React.FC = () => {
     const externalPluginsList = useAppStore(state => state.externalPluginsList);
     const setExternalPluginsList = useAppStore(state => state.setExternalPluginsList);
-    const [isFetchingRegistry, setIsFetchingRegistry] = useState(false);
+    const [, setIsFetchingRegistry] = useState(false);
     const t = useAppStore(state => state.t);
     const pluginsViewMode = useAppStore(state => state.pluginsViewMode);
     const setPluginsViewMode = useAppStore(state => state.setPluginsViewMode);

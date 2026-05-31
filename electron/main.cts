@@ -209,7 +209,7 @@ function createWindow() {
             teleportToPrimaryCenter(!isHidden);
 
             if (!isHidden) {
-                mainWindow.show(); mainWindow.webContents.openDevTools({ mode: 'detach' });
+                mainWindow.show();
             }
             mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
             if (isMac) {
@@ -311,7 +311,7 @@ function teleportToPrimaryCenter(showWindow = true) {
     mainWindow.setPosition(pos.x, pos.y);
 
     if (showWindow) {
-        mainWindow.show(); mainWindow.webContents.openDevTools({ mode: 'detach' });
+        mainWindow.show();
         if (mainWindow.isMinimized()) mainWindow.restore();
         mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
         mainWindow.focus();
@@ -363,7 +363,7 @@ function startClipboardPolling() {
                     lastClipboardImageDataUrl = currentDataUrl;
 
                     if (!mainWindow.isVisible()) {
-                        mainWindow.show(); mainWindow.webContents.openDevTools({ mode: 'detach' });
+                        mainWindow.show();
                     }
                     if (mainWindow.isMinimized()) mainWindow.restore();
                     mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
@@ -1285,7 +1285,7 @@ if (-not $isDown) { [K]::keybd_event(0x11, 0, 2, 0) }
 
                 // Restore KoBar
                 if (mainWindow) {
-                    mainWindow.show(); mainWindow.webContents.openDevTools({ mode: 'detach' });
+                    mainWindow.show();
                     mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
                 }
 
@@ -1338,7 +1338,7 @@ ipcMain.on('take-screenshot', (event, hideApp) => {
         } else if (isMac) {
             exec('screencapture -i -c', () => {
                 if (hideApp && mainWindow) {
-                    mainWindow.show(); mainWindow.webContents.openDevTools({ mode: 'detach' });
+                    mainWindow.show();
                     mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
                 }
             });
@@ -1442,7 +1442,7 @@ ipcMain.handle('start-screenshot-capture', async () => {
 
     // 7. Show KoBar back so the overlay React component becomes visible
     if (mainWindow) {
-        mainWindow.show(); mainWindow.webContents.openDevTools({ mode: 'detach' });
+        mainWindow.show();
         mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
     }
 
@@ -1456,7 +1456,7 @@ ipcMain.handle('start-screenshot-capture', async () => {
 ipcMain.on('cancel-screenshot', () => {
     if (mainWindow) {
         if (preScreenshotBounds) mainWindow.setBounds(preScreenshotBounds);
-        mainWindow.show(); mainWindow.webContents.openDevTools({ mode: 'detach' });
+        mainWindow.show();
         mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
     }
 });
@@ -1513,7 +1513,7 @@ ipcMain.on('copy-screenshot-to-clipboard', (_event, dataUrl: string) => {
 ipcMain.on('screenshot-session-complete', () => {
     if (mainWindow) {
         if (preScreenshotBounds) mainWindow.setBounds(preScreenshotBounds);
-        mainWindow.show(); mainWindow.webContents.openDevTools({ mode: 'detach' });
+        mainWindow.show();
         mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
     }
 });
@@ -1755,7 +1755,7 @@ ipcMain.on('register-teleport-shortcut', (event, shortcut) => {
                 mainWindow.setPosition(Math.round(newX), Math.round(newY));
                 mainWindow.webContents.send('teleport-triggered', { x: targetVisualX, y: targetVisualY });
                 
-                if (!mainWindow.isVisible()) mainWindow.show(); mainWindow.webContents.openDevTools({ mode: 'detach' });
+                if (!mainWindow.isVisible()) mainWindow.show();
                 mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
             });
         } catch (e) {
