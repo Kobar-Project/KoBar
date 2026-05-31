@@ -310,12 +310,22 @@ const PluginDetail: React.FC = () => {
             </div>
 
             {/* Full Description */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 mb-8">
                 <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Description</h3>
                 <p className="text-sm text-slate-400 leading-relaxed">
                     {plugin.fullDescription}
                 </p>
             </div>
+
+            {/* Plugin Settings */}
+            {window.KoBarExtensions?.getSettingsPanel(plugin.id) && (
+                <div className="flex flex-col gap-4 mb-8">
+                    <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Settings</h3>
+                    <div className="p-4 rounded-xl bg-black/20 border border-white/5">
+                        {window.KoBarExtensions.getSettingsPanel(plugin.id)?.render()}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

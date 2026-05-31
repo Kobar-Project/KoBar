@@ -13,9 +13,15 @@ export interface ExtensionPanel {
     render: (props: { onClose: () => void; anchorRect: { top: number; left: number; bottom: number; right: number; width: number; height: number; } | null }) => React.ReactNode;
 }
 
+export interface ExtensionSettingsPanel {
+    id: string;
+    render: () => React.ReactNode;
+}
+
 class ExtensionRegistry {
     private buttons: ExtensionButton[] = [];
     private panels: Map<string, ExtensionPanel> = new Map();
+    private settingsPanels: Map<string, ExtensionSettingsPanel> = new Map();
     private manifests: Map<string, any> = new Map();
     private listeners: Set<() => void> = new Set();
 
@@ -38,12 +44,21 @@ class ExtensionRegistry {
         this.notify();
     }
 
+    registerSettingsPanel(panelId: string, panel: ExtensionSettingsPanel) {
+        this.settingsPanels.set(panelId, panel);
+        this.notify();
+    }
+
     getButtons() {
         return this.buttons;
     }
 
     getPanel(panelId: string) {
         return this.panels.get(panelId);
+    }
+
+    getSettingsPanel(panelId: string) {
+        return this.settingsPanels.get(panelId);
     }
 
     subscribe(listener: () => void) {
@@ -60,6 +75,7 @@ class ExtensionRegistry {
     clear() {
         this.buttons = [];
         this.panels.clear();
+        this.settingsPanels.clear();
         this.manifests.clear();
         this.notify();
     }
