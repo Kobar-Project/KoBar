@@ -2129,44 +2129,62 @@ function saveExtensionsConfig(config: Record<string, boolean>) {
 
 ipcMain.handle('get-installed-extensions', async () => {
     try {
-        if (!fs.existsSync(extensionsDir)) {
-            return [];
-        }
-        const dirs = fs.readdirSync(extensionsDir);
         const config = getExtensionsConfig();
         const installed: any[] = [];
 
-        for (const dirName of dirs) {
-            const dirPath = path.join(extensionsDir, dirName);
-            if (!fs.statSync(dirPath).isDirectory()) continue;
+        const loadFromDir = (baseDir: string, isPlayground: boolean) => {
+            if (!fs.existsSync(baseDir)) return;
+            const dirs = fs.readdirSync(baseDir);
+            for (const dirName of dirs) {
+                const dirPath = path.join(baseDir, dirName);
+                if (!fs.statSync(dirPath).isDirectory()) continue;
 
-            const manifestPath = path.join(dirPath, 'manifest.json');
-            if (fs.existsSync(manifestPath)) {
-                try {
-                    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-                    const entryPath = path.join(dirPath, manifest.entry || 'index.js');
-                    let code = '';
-                    if (fs.existsSync(entryPath)) {
-                        code = fs.readFileSync(entryPath, 'utf8');
+                const manifestPath = path.join(dirPath, 'manifest.json');
+                if (fs.existsSync(manifestPath)) {
+                    try {
+                        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                        const entryPath = path.join(dirPath, manifest.entry || 'index.js');
+                        let code = '';
+                        if (fs.existsSync(entryPath)) {
+                            code = fs.readFileSync(entryPath, 'utf8');
+                        }
+
+                        let extName = manifest.name || dirName;
+                        if (isPlayground) {
+                            extName = `[DEV] ${extName}`;
+                        }
+
+                        installed.push({
+                            id: manifest.id || dirName,
+                            name: extName,
+                            version: manifest.version || '1.0.0',
+                            description: manifest.description || '',
+                            icon: manifest.icon || 'extension',
+                            image: manifest.image || '',
+                            isBeta: manifest.isBeta === true,
+                            storeImage: Array.isArray(manifest.storeImage) ? manifest.storeImage.slice(0, 3) : [],
+                            categories: manifest.categories || [],
+                            versionNote: manifest.versionNote || '',
+                            githubRepo: manifest.githubRepo || manifest.githubLink || '',
+                            enabled: config[manifest.id] !== false, // default to enabled
+                            code: code
+                        });
+                    } catch (err) {
+                        console.error(`Failed to load manifest for extension ${dirName} in ${baseDir}:`, err);
                     }
-                    installed.push({
-                        id: manifest.id || dirName,
-                        name: manifest.name || dirName,
-                        version: manifest.version || '1.0.0',
-                        description: manifest.description || '',
-                        icon: manifest.icon || 'extension',
-                        image: manifest.image || '',
-                        categories: manifest.categories || [],
-                        versionNote: manifest.versionNote || '',
-                        githubRepo: manifest.githubRepo || manifest.githubLink || '',
-                        enabled: config[manifest.id] !== false, // default to enabled if not explicitly disabled
-                        code: code
-                    });
-                } catch (err) {
-                    console.error(`Failed to load manifest for extension ${dirName}:`, err);
                 }
             }
-        }
+        };
+
+        // 1. Load regular extensions
+        loadFromDir(extensionsDir, false);
+
+        // 2. Load playground extensions
+        const playgroundDir = isDev 
+            ? path.join(__dirname, '../pluginsPlayground')
+            : path.join(app.getAppPath(), 'pluginsPlayground');
+        loadFromDir(playgroundDir, true);
+
         return installed;
     } catch (e) {
         console.error('Failed to get installed extensions:', e);

@@ -6,8 +6,25 @@ const PluginDetail: React.FC = () => {
     const setSelectedPluginId = useAppStore(state => state.setSelectedPluginId);
     const externalPluginsList = useAppStore(state => state.externalPluginsList);
     
+    const [localPlugins, setLocalPlugins] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchLocal = async () => {
+            if (window.api && window.api.getInstalledExtensions) {
+                const exts = await window.api.getInstalledExtensions();
+                setLocalPlugins(exts);
+            }
+        };
+        fetchLocal();
+    }, []);
+
     const pluginsArray = Array.isArray(externalPluginsList) ? externalPluginsList : [];
-    const pluginData = pluginsArray.find((p: any) => p.id === selectedPluginId);
+    let pluginData = pluginsArray.find((p: any) => p.id === selectedPluginId);
+    let isLocalSource = false;
+    if (!pluginData) {
+        pluginData = localPlugins.find((p: any) => p.id === selectedPluginId);
+        if (pluginData) isLocalSource = true;
+    }
 
     // Transform raw JSON plugin into the expected format
     const plugin = pluginData ? {
@@ -15,14 +32,16 @@ const PluginDetail: React.FC = () => {
         name: pluginData.name,
         description: pluginData.description,
         fullDescription: pluginData.description, // Fallback
-        author: pluginData.author,
-        version: pluginData.versionNote || '1.0.0',
+        author: pluginData.author || (isLocalSource ? 'Local Extension' : ''),
+        version: pluginData.versionNote || pluginData.version || '1.0.0',
         tags: pluginData.categories ? [...pluginData.categories] : [],
         color: 'primary', // default color
-        icon: pluginData.image || 'extension',
+        icon: pluginData.icon || pluginData.image || 'extension',
         repo: pluginData.githubRepo,
-        installed: false,
-        active: false
+        installed: isLocalSource || false,
+        active: isLocalSource ? pluginData.enabled : false,
+        isBeta: pluginData.isBeta,
+        storeImage: pluginData.storeImage || []
     } : undefined;
     
     const [githubStats, setGithubStats] = useState<{ stars: number | string; forks: number | string; contributors: number | string } | null>(null);
@@ -30,6 +49,7 @@ const PluginDetail: React.FC = () => {
     const [installProgress, setInstallProgress] = useState<number | null>(null);
     const [isLocalInstalled, setIsLocalInstalled] = useState(false);
     const [isLocalActive, setIsLocalActive] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     useEffect(() => {
         if (plugin) {
@@ -70,7 +90,26 @@ const PluginDetail: React.FC = () => {
         }
     }, [plugin]);
 
-    if (!plugin) return null;
+    if (!plugin) {
+        return (
+            <div className="flex flex-col h-full relative no-drag-region overflow-y-auto custom-scrollbar">
+                <div className="flex items-center gap-3 px-2 mb-4 sticky top-0 bg-black/40 backdrop-blur-md z-50 py-2 -mx-2 px-4 rounded-b-xl border-b border-white/5">
+                    <button 
+                        onClick={() => setSelectedPluginId(null)}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+                    </button>
+                    <div className="flex-1">
+                        <span className="text-sm font-semibold text-slate-200">Back to Store</span>
+                    </div>
+                </div>
+                <div className="flex-1 flex items-center justify-center text-slate-500">
+                    Loading plugin details...
+                </div>
+            </div>
+        );
+    }
 
     const handleInstall = async () => {
         if (!plugin) return;
@@ -127,10 +166,49 @@ const PluginDetail: React.FC = () => {
 
             {/* Media Gallery / Banner */}
             <div className={`w-full aspect-video rounded-2xl bg-gradient-to-br ${colors.gradient} relative overflow-hidden flex-shrink-0 mb-6 border border-white/5`}>
-                <div className="absolute inset-0 flex items-center justify-center flex-col gap-2">
-                    <span className="material-symbols-outlined text-white/20 text-7xl">image</span>
-                    <span className="text-white/30 text-sm">Media Gallery (Coming Soon)</span>
-                </div>
+                {plugin.storeImage && plugin.storeImage.length > 0 ? (
+                    <>
+                        <img 
+                            key={plugin.storeImage[currentImageIndex]} 
+                            src={plugin.storeImage[currentImageIndex]} 
+                            alt={`${plugin.name} screenshot ${currentImageIndex + 1}`} 
+                            className="w-full h-full object-cover" 
+                        />
+                        
+                        {/* Navigation Arrows */}
+                        {plugin.storeImage.length > 1 && (
+                            <>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => (prev === 0 ? plugin.storeImage.length - 1 : prev - 1)); }}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors border border-white/10"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                                </button>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => (prev === plugin.storeImage.length - 1 ? 0 : prev + 1)); }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors border border-white/10"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                                </button>
+                                
+                                {/* Dots indicator */}
+                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 p-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+                                    {plugin.storeImage.map((_: string, idx: number) => (
+                                        <div 
+                                            key={idx} 
+                                            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${idx === currentImageIndex ? 'bg-white w-3' : 'bg-white/40'}`}
+                                        />
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </>
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center flex-col gap-2">
+                        <span className="material-symbols-outlined text-white/20 text-7xl">image</span>
+                        <span className="text-white/30 text-sm">Media Gallery (Coming Soon)</span>
+                    </div>
+                )}
             </div>
 
             {/* Plugin Header Info */}
@@ -171,7 +249,13 @@ const PluginDetail: React.FC = () => {
                             Uninstall
                         </button>
                         <button 
-                            onClick={() => setIsLocalActive(!isLocalActive)}
+                            onClick={async () => {
+                                const newState = !isLocalActive;
+                                setIsLocalActive(newState);
+                                if (window.api?.toggleExtensionEnabled) {
+                                    await window.api.toggleExtensionEnabled(plugin.id, newState);
+                                }
+                            }}
                             className={`flex-1 py-2 rounded-lg transition-colors text-sm font-semibold flex items-center justify-center gap-2 shadow-lg ${
                                 isLocalActive 
                                     ? 'bg-primary text-slate-900 shadow-primary/20' 

@@ -263,7 +263,8 @@ const PluginStore: React.FC = () => {
                 installed: true,
                 active: meta.isEnabled,
                 onToggle: meta.onToggle,
-                isInternal: true
+                isInternal: true,
+                isBeta: false
             };
         }).filter(Boolean);
 
@@ -273,10 +274,11 @@ const PluginStore: React.FC = () => {
                 ...ext,
                 icon: ext.icon || 'extension',
                 color: 'blue-500',
-                tags: installedPlugin ? ['Installed'] : ['Not Installed'],
+                tags: (installedPlugin ? ['Installed'] : ['Not Installed']).concat(ext.isBeta ? ['Beta'] : []),
                 installed: !!installedPlugin,
                 active: installedPlugin ? installedPlugin.enabled : false,
                 isInternal: false,
+                isBeta: ext.isBeta === true,
                 version: installedPlugin ? installedPlugin.version : undefined
             };
         });
@@ -286,14 +288,15 @@ const PluginStore: React.FC = () => {
             ...inst,
             author: inst.author || 'Local Extension',
             color: 'emerald-500',
-            tags: ['Installed'],
+            tags: ['Installed'].concat(inst.isBeta ? ['Beta'] : []),
             installed: true,
             active: inst.enabled,
-            isInternal: false
+            isInternal: false,
+            isBeta: inst.isBeta === true
         }));
 
         return [...internals, ...externals, ...localOnlyExtensions];
-    }, [featureOrder, isShortcutsEnabled, isCopyPasteEnabled, isScreenshotEnabled, isFocusModeEnabled, isCalculatorEnabled, isColorPickerEnabled, isTodoListEnabled, isKoCalendarEnabled, isPinInjectorEnabled, isKoBoxEnabled, isSnippetVaultEnabled, isAiHubEnabled, isKoPlayerEnabled, installedExtensions]);
+    }, [featureOrder, isShortcutsEnabled, isCopyPasteEnabled, isScreenshotEnabled, isFocusModeEnabled, isCalculatorEnabled, isColorPickerEnabled, isTodoListEnabled, isKoCalendarEnabled, isPinInjectorEnabled, isKoBoxEnabled, isSnippetVaultEnabled, isAiHubEnabled, isKoPlayerEnabled, installedExtensions, externalPluginsList]);
 
     const tags = ['All', "KoBar's plugins", 'Installed', 'Not Installed', 'Beta'];
 
@@ -541,11 +544,18 @@ const PluginStore: React.FC = () => {
                                 <div className={`h-2/3 w-full bg-gradient-to-br ${colors.gradient} relative`}>
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         {plugin.image ? (
-                                            <img src={plugin.image} alt={plugin.name} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                            <img key={plugin.image} src={plugin.image} alt={plugin.name} className="w-full h-full object-cover" onLoad={(e) => (e.currentTarget.style.display = '')} onError={(e) => (e.currentTarget.style.display = 'none')} />
                                         ) : (
                                             <span className="material-symbols-outlined text-white/20 text-5xl">extension</span>
                                         )}
                                     </div>
+
+                                    {/* Beta Badge Overlay */}
+                                    {plugin.isBeta && (
+                                        <div className="absolute top-3 left-3 z-20">
+                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/80 text-white shadow-sm border border-purple-400/30 backdrop-blur-md">BETA</span>
+                                        </div>
+                                    )}
 
                                     {/* Action button overlay */}
                                     {plugin.installed && (
@@ -591,7 +601,7 @@ const PluginStore: React.FC = () => {
                                 <div className="flex items-center justify-between relative z-10">
                                     <div className="flex items-center gap-4 flex-1 min-w-0">
                                         {plugin.image ? (
-                                            <img src={plugin.image} alt={plugin.name} className="w-12 h-12 rounded-xl object-cover shrink-0" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                            <img key={plugin.image} src={plugin.image} alt={plugin.name} className="w-12 h-12 rounded-xl object-cover shrink-0" onLoad={(e) => (e.currentTarget.style.display = '')} onError={(e) => (e.currentTarget.style.display = 'none')} />
                                         ) : (
                                             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                                                 <span className={`material-symbols-outlined ${colors.text} text-[24px]`}>{plugin.icon}</span>
@@ -602,6 +612,9 @@ const PluginStore: React.FC = () => {
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-semibold text-slate-200 truncate">{plugin.name}</span>
                                                 {plugin.version && <span className="text-[10px] font-mono text-slate-500 shrink-0">v{plugin.version}</span>}
+                                                {plugin.isBeta && (
+                                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 shrink-0">BETA</span>
+                                                )}
                                                 {plugin.githubRepo && (
                                                     <button onClick={(e) => handleGithubClick(e, `https://github.com/${plugin.githubRepo}`)} className="text-slate-400 hover:text-primary transition-colors flex items-center" title="View on GitHub">
                                                         <span className="material-symbols-outlined text-[14px]">link</span>
