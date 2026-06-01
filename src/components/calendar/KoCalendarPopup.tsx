@@ -704,7 +704,7 @@ const KoCalendarPopup: React.FC = () => {
                                         const isEvSelected = isSameDay(eventDate, selectedDate);
                                         
                                         return (
-                                            <div key={ev.id} className="flex justify-between items-center text-sm group/event hover:bg-white/5 rounded px-2 py-1.5 transition-colors" style={{ backgroundColor: isEvSelected ? `color-mix(in srgb, ${ev.colorId || koCalendarColor} 5%, transparent)` : 'transparent' }}>
+                                            <div key={`${ev.id}-${ev.startTime}`} className="flex justify-between items-center text-sm group/event hover:bg-white/5 rounded px-2 py-1.5 transition-colors" style={{ backgroundColor: isEvSelected ? `color-mix(in srgb, ${ev.colorId || koCalendarColor} 5%, transparent)` : 'transparent' }}>
                                                 <div className="flex items-start gap-2.5 flex-1 min-w-0 mr-3 mt-1">
                                                     <div className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ backgroundColor: isEvSelected ? (ev.colorId || koCalendarColor) : isEvToday ? 'var(--theme-primary)' : 'var(--theme-text-faded)' }} />
                                                     <div className="flex flex-col min-w-0 flex-1">
