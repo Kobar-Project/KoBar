@@ -1,35 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+const React = window.React;
+const { useState, useEffect, useRef } = React;
+const useAppStore = window.useAppStore;
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, format, isSameMonth, isSameDay, addMonths, subMonths, eachDayOfInterval, parseISO, addDays } from 'date-fns';
 
-interface HolidayData {
-    date: string;
-    name?: string;
-    type?: string[];
-}
-
-const KoCalendarPopup: React.FC = () => {
+const KoCalendarPluginPanel = (props) => {
+    const { onClose, anchorRect } = props;
+    
     const edgePosition = useAppStore(state => state.edgePosition);
-    const koCalendarAnchorRect = useAppStore(state => state.koCalendarAnchorRect);
-    const setIsKoCalendarOpen = useAppStore(state => state.setIsKoCalendarOpen);
     const design = useAppStore(state => state.design);
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const screenBounds = useAppStore(state => state.screenBounds);
     const isSmartPositioning = useAppStore(state => state.isPopupSmartPositioning);
     const isMac = useAppStore(state => state.isMac);
     
-    const todos = useAppStore(state => state.todos);
-    const localEvents = useAppStore(state => state.localEvents);
-    const addCalendarEvent = useAppStore(state => state.addCalendarEvent);
-    const updateCalendarEvent = useAppStore(state => state.updateCalendarEvent);
-    const deleteCalendarEvent = useAppStore(state => state.deleteCalendarEvent);
-    const koCalendarColor = useAppStore(state => state.koCalendarColor);
-    const t = useAppStore(state => state.t);
+    const todos = useAppStore(state => state.todos || []);
+    const localEvents = useAppStore(state => state.localEvents || []);
+    const addCalendarEvent = useAppStore(state => state.addCalendarEvent || (() => {}));
+    const updateCalendarEvent = useAppStore(state => state.updateCalendarEvent || (() => {}));
+    const deleteCalendarEvent = useAppStore(state => state.deleteCalendarEvent || (() => {}));
+    
+    // Default color if koCalendarColor doesn't exist in store
+    const koCalendarColor = useAppStore(state => state.koCalendarColor) || '#60a5fa';
+    const setKoCalendarColor = useAppStore(state => state.setKoCalendarColor) || (() => {});
+    const t = useAppStore(state => state.t) || ((k) => k);
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [editingEventDate, setEditingEventDate] = useState<Date | null>(null);
-    const [editingEventId, setEditingEventId] = useState<string | null>(null);
+    const [editingEventDate, setEditingEventDate] = useState(null);
+    const [editingEventId, setEditingEventId] = useState(null);
     const [newEventTitle, setNewEventTitle] = useState('');
     const [newEventDescription, setNewEventDescription] = useState('');
     const [newEventMeetingLink, setNewEventMeetingLink] = useState('');
@@ -37,31 +35,24 @@ const KoCalendarPopup: React.FC = () => {
     const [newEventMinutes, setNewEventMinutes] = useState('00');
     const [newEventNotification, setNewEventNotification] = useState(true);
     const [newEventColor, setNewEventColor] = useState(koCalendarColor);
-    const [pendingHolidays, setPendingHolidays] = useState<HolidayData[] | null>(null);
-    const [importColor, setImportColor] = useState<string>(koCalendarColor);
+    const [pendingHolidays, setPendingHolidays] = useState(null);
+    const [importColor, setImportColor] = useState(koCalendarColor);
     const [isPickerMode, setIsPickerMode] = useState(false);
 
-    useEffect(() => {
-        // Just keeping anchor rect check
-        if (!koCalendarAnchorRect) return; 
-    }, [koCalendarAnchorRect]);
-
-    // We need sidebarPosition because if it exists, our wrapper is absolute, which shifts the coordinate space.
     const sidebarPosition = useAppStore(state => state.sidebarPosition);
-
     const orientation = useAppStore(state => state.orientation);
 
-    const getPopupStyle = (): React.CSSProperties => {
-        if (!koCalendarAnchorRect) return { display: 'none' };
+    const getPopupStyle = () => {
+        if (!anchorRect) return { display: 'none' };
         
-        const popupHeight = 620; // Calendar is taller
+        const popupHeight = 620;
         const popupWidth = 440;
         const screenHeight = screenBounds?.height ?? 800;
         const screenWidth = screenBounds?.width ?? 1200;
         const offsetTop = sidebarPosition ? sidebarPosition.y : 0;
         const offsetLeft = sidebarPosition ? sidebarPosition.x : 0;
 
-        const style: React.CSSProperties = {
+        const style = {
             position: 'absolute',
             width: popupWidth,
             zIndex: 99999,
@@ -79,7 +70,7 @@ const KoCalendarPopup: React.FC = () => {
         const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
 
         if (orientation === "horizontal") {
-            let adjustedLeft = (koCalendarAnchorRect.left - offsetLeft) + (koCalendarAnchorRect.width / 2) - (popupWidth / 2);
+            let adjustedLeft = (anchorRect.left - offsetLeft) + (anchorRect.width / 2) - (popupWidth / 2);
             const maxLeft = screenXInViewport + (screenWidth - offsetLeft) - popupWidth - 20;
             const minLeft = screenXInViewport - offsetLeft + 20;
             if (adjustedLeft < minLeft) adjustedLeft = minLeft;
@@ -100,7 +91,7 @@ const KoCalendarPopup: React.FC = () => {
                 style.marginBottom = '12px';
             }
         } else {
-            let adjustedTop = (koCalendarAnchorRect.top - offsetTop) - 20 + (koCalendarAnchorRect.height / 2) - (popupHeight / 2);
+            let adjustedTop = (anchorRect.top - offsetTop) - 20 + (anchorRect.height / 2) - (popupHeight / 2);
             const maxTop = screenYInViewport + (screenHeight - offsetTop) - popupHeight - 20;
             const minTop = screenYInViewport - offsetTop + 20;
             if (adjustedTop < minTop) adjustedTop = minTop;
@@ -124,60 +115,56 @@ const KoCalendarPopup: React.FC = () => {
         return style;
     };
 
-    const popupRef = React.useRef<HTMLDivElement>(null);
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const isSmartRef = React.useRef(isSmartPositioning);
-    React.useEffect(() => { isSmartRef.current = isSmartPositioning; }, [isSmartPositioning]);
+    const popupRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const isSmartRef = useRef(isSmartPositioning);
+    useEffect(() => { isSmartRef.current = isSmartPositioning; }, [isSmartPositioning]);
 
-    React.useEffect(() => {
-        const onDrag = (e: Event) => {
-            const customEvent = e as CustomEvent<{ x: number; y: number }>;
-            if (!popupRef.current || !koCalendarAnchorRect || !isSmartRef.current) return;
-            const newX = customEvent.detail.x;
-            const newY = customEvent.detail.y;
+    useEffect(() => {
+        const onDrag = (e) => {
+            if (!popupRef.current || !anchorRect || !isSmartRef.current) return;
+            const newX = e.detail.x;
+            const newY = e.detail.y;
             const popupHeight = 620;
             const popupWidth = 440;
             
             const screenXInViewport = (screenBounds?.x ?? 0) - window.screenX;
-        const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
+            const screenYInViewport = (screenBounds?.y ?? 0) - window.screenY;
 
-        if (orientation === "horizontal") {
+            if (orientation === "horizontal") {
                 const screenWidth = screenBounds?.width ?? 1200;
-                let adjustedLeft = (koCalendarAnchorRect.left - newX) + (koCalendarAnchorRect.width / 2) - (popupWidth / 2);
+                let adjustedLeft = (anchorRect.left - newX) + (anchorRect.width / 2) - (popupWidth / 2);
                 const maxLeft = screenXInViewport + (screenWidth - newX) - popupWidth - 20;
                 const minLeft = screenXInViewport - newX + 20;
                 if (adjustedLeft < minLeft) adjustedLeft = minLeft;
                 if (adjustedLeft > maxLeft) adjustedLeft = maxLeft;
                 popupRef.current.style.left = `${adjustedLeft}px`;
-
             } else {
                 const screenHeight = screenBounds?.height ?? 800;
-                let adjustedTop = (koCalendarAnchorRect.top - newY) - 20 + (koCalendarAnchorRect.height / 2) - (popupHeight / 2);
+                let adjustedTop = (anchorRect.top - newY) - 20 + (anchorRect.height / 2) - (popupHeight / 2);
                 const maxTop = screenYInViewport + (screenHeight - newY) - popupHeight - 20;
                 const minTop = screenYInViewport - newY + 20;
                 if (adjustedTop < minTop) adjustedTop = minTop;
                 if (adjustedTop > maxTop) adjustedTop = maxTop;
                 popupRef.current.style.top = `${adjustedTop}px`;
-
             }
         };
         document.addEventListener('kobar-drag', onDrag);
         return () => document.removeEventListener('kobar-drag', onDrag);
-    }, [koCalendarAnchorRect, screenBounds, orientation]);
-
+    }, [anchorRect, screenBounds, orientation]);
 
     const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
     const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
     const handleToday = () => setCurrentDate(new Date());
 
-    const handleImportHolidays = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImportHolidays = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                const json = JSON.parse(event.target?.result as string);
+                const json = JSON.parse(event.target?.result);
                 if (json && json.holidays && Array.isArray(json.holidays)) {
                     setPendingHolidays(json.holidays);
                     setImportColor(koCalendarColor);
@@ -192,9 +179,8 @@ const KoCalendarPopup: React.FC = () => {
         }
     };
 
-    // Generate Calendar Grid
     const monthStart = startOfMonth(currentDate);
-    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday start
+    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
     // Force exactly 42 days (6 weeks) to prevent height flickering
     const dayIntervals = Array.from({ length: 42 }).map((_, i) => addDays(startDate, i));
 
@@ -204,25 +190,23 @@ const KoCalendarPopup: React.FC = () => {
             className="border shadow-2xl pointer-events-auto animate-in fade-in zoom-in duration-200 overflow-hidden flex flex-col rounded-xl"
             style={getPopupStyle()}
         >
-            {/* Header */}
             <div className="flex justify-between items-center p-4 pb-2 border-b border-white/5 drag-region">
                 <div className="flex items-center gap-2 min-w-0 max-w-[250px]">
                     <span 
                         onClick={() => setIsPickerMode(!isPickerMode)}
                         className="text-sm font-bold text-slate-200 whitespace-nowrap truncate shrink-0 cursor-pointer hover:text-white transition-colors flex items-center gap-1 no-drag-region"
-                        title={(t as any)('jumpToDate') || "Jump to Date"}
+                        title={t('jumpToDate') || "Jump to Date"}
                     >
-                        {(t as (key: string) => string)(`month_${currentDate.getMonth()}`)} {currentDate.getFullYear()}
+                        {t(`month_${currentDate.getMonth()}`)} {currentDate.getFullYear()}
                         <span className="material-symbols-outlined text-[16px] text-slate-400">
                             {isPickerMode ? 'arrow_drop_up' : 'arrow_drop_down'}
                         </span>
                     </span>
-                    {/* Tiny Color Picker */}
                     <div className="flex gap-1 ml-1 no-drag-region shrink-0">
                         {['#60a5fa', '#f87171', '#4ade80', '#fbbf24', '#a78bfa'].map(color => (
                             <button 
                                 key={color}
-                                onClick={() => useAppStore.getState().setKoCalendarColor(color)}
+                                onClick={() => setKoCalendarColor(color)}
                                 className={`w-2 h-2 rounded-full transition-transform hover:scale-150 ${koCalendarColor === color ? 'ring-1 ring-white scale-125' : 'opacity-50 hover:opacity-100'}`}
                                 style={{ backgroundColor: color }}
                             />
@@ -230,7 +214,7 @@ const KoCalendarPopup: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex gap-1 shrink-0 no-drag-region">
-                    <button onClick={() => fileInputRef.current?.click()} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all" title={(t as (k: string) => string)('importHolidays') || "Import Holidays"}>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all" title={t('importHolidays') || "Import Holidays"}>
                         <span className="material-symbols-outlined text-[18px]">download</span>
                     </button>
                     <input 
@@ -248,7 +232,7 @@ const KoCalendarPopup: React.FC = () => {
                         <span className="material-symbols-outlined text-[18px]">chevron_right</span>
                     </button>
                     <div className="w-[1px] h-5 bg-white/10 my-auto mx-1" />
-                    <button onClick={() => setIsKoCalendarOpen(false)} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-red-500/20 flex items-center justify-center transition-all">
+                    <button onClick={() => onClose()} className="w-7 h-7 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-red-500/20 flex items-center justify-center transition-all">
                         <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>
                 </div>
@@ -298,30 +282,26 @@ const KoCalendarPopup: React.FC = () => {
                                 className={`rounded-xl flex items-center justify-center font-bold text-sm h-12 transition-all hover:scale-105 active:scale-95
                                     ${currentDate.getMonth() === i ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
                             >
-                                {(t as any)(`month_${i}`)}
+                                {t(`month_${i}`)}
                             </button>
                         ))}
                     </div>
                 </div>
             ) : (
             <>
-            {/* Grid Days Header */}
             <div className="grid grid-cols-7 gap-1 p-2 pb-0 pt-3">
                 {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
                     <div key={i} className="text-center text-xs font-bold text-slate-500 uppercase">{d}</div>
                 ))}
             </div>
 
-            {/* Grid Body */}
             <div className="grid grid-cols-7 gap-1 p-2 custom-scrollbar overflow-y-auto">
                 {dayIntervals.map((day, i) => {
                     const isCurrentMonth = isSameMonth(day, monthStart);
                     const isToday = isSameDay(day, new Date());
                     const isSelected = isSameDay(day, selectedDate);
                     
-                    // Match events
                     const dayEvents = localEvents.filter(ev => ev.startTime && isSameDay(parseISO(ev.startTime), day));
-                    // Match todos
                     const dayTodos = todos.filter(t => t.dueDate && isSameDay(parseISO(t.dueDate), day));
 
                     return (
@@ -335,8 +315,12 @@ const KoCalendarPopup: React.FC = () => {
                             className={`flex flex-col h-[70px] p-1.5 rounded-md border border-transparent hover:border-white/10 transition-colors relative cursor-pointer group
                                 ${!isCurrentMonth ? 'opacity-30' : 'bg-white/5'}
                                 ${isToday ? 'border-primary/30 bg-primary/5' : ''}
-                                ${isSelected ? `border-[${koCalendarColor}]/50 bg-[${koCalendarColor}]/10` : ''}
+                                ${isSelected ? 'bg-white/10' : ''}
                                 ${editingEventDate && isSameDay(day, editingEventDate) ? 'ring-1 ring-primary overflow-visible z-10' : ''}`}
+                            style={{ 
+                                borderColor: isSelected ? koCalendarColor : undefined,
+                                backgroundColor: isSelected ? `color-mix(in srgb, ${koCalendarColor} 10%, transparent)` : undefined
+                            }}
                         >
                             <div className="flex justify-between items-center px-1 mb-1">
                                 <span className="text-xs font-bold" style={{ color: isToday ? 'var(--theme-primary)' : isSelected ? koCalendarColor : isCurrentMonth ? '#fff' : 'var(--theme-text-faded)' }}>
@@ -345,7 +329,6 @@ const KoCalendarPopup: React.FC = () => {
                                 {isSelected && <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: koCalendarColor }} />}
                             </div>
 
-                            {/* Event Indicators */}
                             <div className="flex flex-col gap-[3px] mt-auto overflow-hidden">
                                 {dayEvents.slice(0, 2).map((ev, ei) => (
                                     <div key={ei} className="w-full h-1 rounded-full" style={{ backgroundColor: ev.colorId || koCalendarColor, opacity: 0.8 }} title={ev.title} />
@@ -361,12 +344,11 @@ const KoCalendarPopup: React.FC = () => {
                 })}
             </div>
             
-            {/* Quick Agenda View / Add Event View at the bottom */}
             {pendingHolidays ? (
                 <div className="p-3 border-t border-white/5 bg-black/40 flex flex-col gap-2 flex-1 animate-in slide-in-from-bottom-2">
                     <div className="flex justify-between items-center mb-1">
                         <span className="text-sm font-semibold text-slate-300">
-                            {(t as (k: string) => string)('importHolidays') || "Import Holidays"}
+                            {t('importHolidays') || "Import Holidays"}
                         </span>
                         <button onClick={() => setPendingHolidays(null)} className="w-6 h-6 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
                             <span className="material-symbols-outlined text-[16px]">close</span>
@@ -389,10 +371,10 @@ const KoCalendarPopup: React.FC = () => {
                     <div className="mt-auto pt-2 flex justify-end">
                         <button 
                             onClick={() => {
-                                const currentEvents = useAppStore.getState().localEvents;
-                                const addedKeys = new Set<string>();
+                                const currentEvents = useAppStore.getState().localEvents || [];
+                                const addedKeys = new Set();
 
-                                pendingHolidays.forEach((holiday: HolidayData) => {
+                                pendingHolidays.forEach((holiday) => {
                                     if (holiday.date) {
                                         const date = new Date(holiday.date);
                                         date.setHours(0, 0, 0, 0);
@@ -427,7 +409,7 @@ const KoCalendarPopup: React.FC = () => {
                 <div className="p-3 border-t border-white/5 bg-black/40 flex flex-col gap-2 flex-1 animate-in slide-in-from-bottom-2">
                     <div className="flex justify-between items-center">
                         <span className="text-xs font-semibold text-slate-300">
-                            {editingEventId ? t('editEvent') : t('addEvent')}: {format(editingEventDate, 'MMM d, yyyy')}
+                            {editingEventId ? (t('editEvent') || 'Edit Event') : (t('addEvent') || 'Add Event')}: {format(editingEventDate, 'MMM d, yyyy')}
                         </span>
                         <button onClick={() => { 
                             setEditingEventDate(null); 
@@ -479,7 +461,7 @@ const KoCalendarPopup: React.FC = () => {
                                 <input
                                     autoFocus
                                     type="text"
-                                    placeholder={(t as (k: string) => string)('eventTitle') || 'Event Title'}
+                                    placeholder={t('eventTitle') || 'Event Title'}
                                     value={newEventTitle}
                                     onChange={(e) => setNewEventTitle(e.target.value)}
                                     className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-primary no-drag-region pr-10"
@@ -489,7 +471,7 @@ const KoCalendarPopup: React.FC = () => {
                                 </div>
                             </div>
                             <textarea
-                                placeholder={(t as (k: string) => string)('eventDescription') || 'Description (optional)'}
+                                placeholder={t('eventDescription') || 'Description (optional)'}
                                 value={newEventDescription}
                                 onChange={(e) => setNewEventDescription(e.target.value)}
                                 className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-primary no-drag-region resize-none custom-scrollbar"
@@ -498,7 +480,7 @@ const KoCalendarPopup: React.FC = () => {
                             <div className="relative">
                                 <input
                                     type="text"
-                                    placeholder={(t as (k: string) => string)('meetingLink') || 'Meeting Link (optional)'}
+                                    placeholder={t('meetingLink') || 'Meeting Link (optional)'}
                                     value={newEventMeetingLink}
                                     onChange={(e) => setNewEventMeetingLink(e.target.value)}
                                     className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 pl-8 text-white text-xs focus:outline-none focus:border-primary no-drag-region"
@@ -548,7 +530,7 @@ const KoCalendarPopup: React.FC = () => {
                                 <span className={`material-symbols-outlined text-[16px] ${newEventNotification ? 'animate-wiggle' : ''}`}>
                                     {newEventNotification ? 'notifications_active' : 'notifications_off'}
                                 </span>
-                                {newEventNotification ? t('alertOn') : t('noAlert')}
+                                {newEventNotification ? (t('alertOn') || 'Alert On') : (t('noAlert') || 'No Alert')}
                             </button>
                         </div>
 
@@ -565,7 +547,7 @@ const KoCalendarPopup: React.FC = () => {
                                 ))}
                             </div>
                             <button type="submit" disabled={!newEventTitle.trim()} className="ml-auto px-6 py-1.5 rounded-lg bg-primary text-black text-sm font-bold hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                {editingEventId ? t('updateEvent') : t('saveEvent')}
+                                {editingEventId ? (t('updateEvent') || 'Update') : (t('saveEvent') || 'Save')}
                             </button>
                         </div>
                     </form>
@@ -573,20 +555,19 @@ const KoCalendarPopup: React.FC = () => {
             ) : (
                 <div className="p-3 border-t border-white/5 bg-black/20 flex flex-col gap-2 flex-1 relative group overflow-hidden">
                     {(() => {
-                        // Filter events starting from the start of the selected date
                         const targetStartOfDay = new Date(selectedDate);
                         targetStartOfDay.setHours(0,0,0,0);
                         const agendaData = localEvents
                             .filter(e => e.startTime && new Date(e.startTime) >= targetStartOfDay)
-                            .sort((a, b) => new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime());
+                            .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
                         
-                        const selectedDayHasEvent = agendaData.length > 0 && isSameDay(parseISO(agendaData[0].startTime!), selectedDate);
+                        const selectedDayHasEvent = agendaData.length > 0 && isSameDay(parseISO(agendaData[0].startTime), selectedDate);
                         
                         return (
                             <>
                                 <div className="flex justify-between items-center pr-1">
                                     <span className="text-xs font-bold text-slate-200 uppercase tracking-widest">
-                                        {selectedDayHasEvent ? `${format(selectedDate, 'MMM d')} - ${t('events')}` : t('upcomingEvents')}
+                                        {selectedDayHasEvent ? `${format(selectedDate, 'MMM d')} - ${t('events') || 'Events'}` : (t('upcomingEvents') || 'Upcoming Events')}
                                     </span>
                                     <button onClick={() => {
                                         setEditingEventDate(selectedDate);
@@ -597,7 +578,7 @@ const KoCalendarPopup: React.FC = () => {
                                 </div>
                                 <div className="flex flex-col gap-1 overflow-y-auto overflow-x-hidden custom-scrollbar h-[160px] animate-in fade-in slide-in-from-top-1 pr-1">
                                     {agendaData.slice(0, 8).map(ev => {
-                                        const eventDate = parseISO(ev.startTime!);
+                                        const eventDate = parseISO(ev.startTime);
                                         const isEvToday = isSameDay(eventDate, new Date());
                                         const isEvSelected = isSameDay(eventDate, selectedDate);
                                         
@@ -609,7 +590,7 @@ const KoCalendarPopup: React.FC = () => {
                                                         <div className="flex items-center gap-1">
                                                             <span className="truncate" style={{ color: isEvSelected ? (ev.colorId || koCalendarColor) : '#fff', fontWeight: isEvSelected ? '600' : '400' }}>{ev.title}</span>
                                                             {ev.meetingLink && (
-                                                                <button onClick={(e) => { e.stopPropagation(); window.api?.openExternal?.(ev.meetingLink!); }} className="text-blue-400 hover:text-blue-300 ml-1 shrink-0 bg-blue-400/10 rounded-full w-5 h-5 flex items-center justify-center transition-colors" title={(t as (k: string) => string)('joinMeeting') || 'Join Meeting'}>
+                                                                <button onClick={(e) => { e.stopPropagation(); window.api?.openExternal?.(ev.meetingLink); }} className="text-blue-400 hover:text-blue-300 ml-1 shrink-0 bg-blue-400/10 rounded-full w-5 h-5 flex items-center justify-center transition-colors" title={t('joinMeeting') || 'Join Meeting'}>
                                                                     <span className="material-symbols-outlined text-[12px]">videocam</span>
                                                                 </button>
                                                             )}
@@ -628,7 +609,7 @@ const KoCalendarPopup: React.FC = () => {
                                                     </span>
                                                     <button 
                                                         onClick={() => {
-                                                            const d = parseISO(ev.startTime!);
+                                                            const d = parseISO(ev.startTime);
                                                             setEditingEventDate(d);
                                                             setEditingEventId(ev.id);
                                                             setNewEventTitle(ev.title);
@@ -655,7 +636,7 @@ const KoCalendarPopup: React.FC = () => {
                                     })}
                                     {agendaData.length === 0 && (
                                         <div className="flex flex-col items-center justify-center h-full opacity-30 mt-1">
-                                           <span className="text-[10px] text-slate-500 italic">{t('noEventsFound')}</span>
+                                           <span className="text-[10px] text-slate-500 italic">{t('noEventsFound') || 'No events found'}</span>
                                         </div>
                                     )}
                                 </div>
@@ -670,4 +651,26 @@ const KoCalendarPopup: React.FC = () => {
     );
 };
 
-export default KoCalendarPopup;
+window.KoBarExtensions.registerPanel('ko-calender-plugin-panel', {
+    id: 'ko-calender-plugin-panel',
+    render: (props) => React.createElement(KoCalendarPluginPanel, props)
+});
+
+window.KoBarExtensions.registerSidebarButton({
+    id: 'ko-calender-plugin-btn',
+    icon: 'calendar_month',
+    label: 'KoCalendar',
+    onClick: (e, anchorRect) => {
+        const state = window.useAppStore.getState();
+        if (state.activeExtensionPanelId === 'ko-calender-plugin-panel') {
+            state.closeAllUtilityPopups?.();
+            window.useAppStore.setState({ activeExtensionPanelId: null, activeExtensionAnchorRect: null });
+        } else {
+            state.closeAllUtilityPopups?.();
+            window.useAppStore.setState({ 
+                activeExtensionPanelId: 'ko-calender-plugin-panel',
+                activeExtensionAnchorRect: anchorRect
+            });
+        }
+    }
+});

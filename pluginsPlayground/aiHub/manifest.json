@@ -1,0 +1,14 @@
+{
+  "id": "com.kobar.aihub",
+  "name": "AI Hub",
+  "version": "1.0.0",
+  "description": "A versatile, multi-model AI assistant integrated directly into KoBar. Supports multiple providers (Anthropic, OpenAI, Gemini) and Local LLMs.",
+  "author": "KoBar Core",
+  "entry": "index.js",
+  "icon": "smart_toy",
+  "categories": ["Utility", "Productivity", "AI"],
+  "isBeta": false,
+  "githubRepo": "Kobar-Project/aihub-plugin",
+  "languages": ["en"],
+  "versionNote": "Initial Release"
+}
