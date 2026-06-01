@@ -18,10 +18,16 @@ export interface ExtensionSettingsPanel {
     render: () => React.ReactNode;
 }
 
+export interface ExtensionInlineWidget {
+    id: string;
+    render: () => React.ReactNode;
+}
+
 class ExtensionRegistry {
     private buttons: ExtensionButton[] = [];
     private panels: Map<string, ExtensionPanel> = new Map();
     private settingsPanels: Map<string, ExtensionSettingsPanel> = new Map();
+    private inlineWidgets: Map<string, ExtensionInlineWidget> = new Map();
     private manifests: Map<string, any> = new Map();
     private listeners: Set<() => void> = new Set();
 
@@ -61,6 +67,15 @@ class ExtensionRegistry {
         return this.settingsPanels.get(panelId);
     }
 
+    registerInlineWidget(widgetId: string, widget: ExtensionInlineWidget) {
+        this.inlineWidgets.set(widgetId, widget);
+        this.notify();
+    }
+
+    getInlineWidgets() {
+        return Array.from(this.inlineWidgets.values());
+    }
+
     subscribe(listener: () => void) {
         this.listeners.add(listener);
         return () => {
@@ -76,6 +91,7 @@ class ExtensionRegistry {
         this.buttons = [];
         this.panels.clear();
         this.settingsPanels.clear();
+        this.inlineWidgets.clear();
         this.manifests.clear();
         this.notify();
     }

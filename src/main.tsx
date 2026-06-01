@@ -1,4 +1,5 @@
 import React, { StrictMode } from 'react'
+import ReactDOM from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import 'material-symbols/outlined.css'
 import './index.css'
@@ -8,6 +9,7 @@ import { useAppStore } from './store/useAppStore'
 import './components/extensions/extensionRegistry'
 
 window.React = React;
+window.ReactDOM = ReactDOM;
 window.useAppStore = useAppStore;
 
 const urlParams = new URLSearchParams(window.location.search);

@@ -1254,6 +1254,16 @@ if (-not $isDown) { [K]::keybd_event(0x11, 0, 2, 0) }
         if (psProcess && psProcess.stdin) {
             psProcess.stdin.write(psPaste + '\n');
         }
+
+        // Re-register shortcut ONLY AFTER the simulated keystroke has fully resolved.
+        // On Windows, PowerShell stdin write has unpredictable latency, so we wait 400ms.
+        setTimeout(() => {
+            if (isGlobalPasteModeActive) {
+                globalShortcut.register('CommandOrControl+V', () => {
+                    if (mainWindow) mainWindow.webContents.send('request-next-paste');
+                });
+            }
+        }, 400);
     } else if (isMac) {
         // macOS: Check Accessibility permission (required for keystroke injection)
         const macSysPrefs = require('electron').systemPreferences;
@@ -1308,7 +1318,7 @@ if (-not $isDown) { [K]::keybd_event(0x11, 0, 2, 0) }
                 if (mainWindow) mainWindow.webContents.send('request-next-paste');
             });
         }
-    }, 200);
+    }, 600);
 });
 
 // ─── Screenshot Studio: Custom In-App Capture ─────────────────────

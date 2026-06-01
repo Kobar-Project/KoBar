@@ -685,11 +685,7 @@ const Sidebar: React.FC = () => {
                                     </div>
                                 );
                             case 'copypaste':
-                                return isCopyPasteEnabled ? (
-                                    <div key="copypaste" className="w-full no-drag-region">
-                                        <ClipboardSlots />
-                                    </div>
-                                ) : null;
+                                return null; // Removed in favor of the plugin
                             case 'screenshot':
                                 return isScreenshotEnabled ? (
                                     <div key="screenshot" className="w-full flex justify-center no-drag-region">
@@ -897,7 +893,14 @@ const Sidebar: React.FC = () => {
                         );
                     });
 
-                    const allFeatures = [...features, ...extFeatures];
+                    const dynamicInlineWidgets = extensionsRegistry.getInlineWidgets();
+                    const extInlineFeatures = dynamicInlineWidgets.map((widget: any) => (
+                        <div key={widget.id} className="w-full flex justify-center no-drag-region">
+                            {widget.render()}
+                        </div>
+                    ));
+
+                    const allFeatures = [...features, ...extFeatures, ...extInlineFeatures];
 
                     return allFeatures.map((feat, idx) => (
                         <React.Fragment key={idx}>
