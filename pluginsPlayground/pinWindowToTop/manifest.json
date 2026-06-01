@@ -1,0 +1,11 @@
+{
+  "id": "com.kobar.pinwindowtotop",
+  "name": "Pin Window to Top",
+  "version": "1.0.0",
+  "description": "KoBar arayüzünde üçüncü parti pencereleri her zaman üstte kalacak şekilde sabitlemenizi sağlar.",
+  "author": "KoBar Core",
+  "entry": "index.js",
+  "icon": "push_pin",
+  "categories": ["Utility"],
+  "isBeta": false
+}

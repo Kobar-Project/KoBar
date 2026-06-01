@@ -1421,9 +1421,9 @@ ipcMain.handle('start-screenshot-capture', async () => {
     const sources = await desktopCapturer.getSources({
         types: ['screen'],
         thumbnailSize: {
-            // Use the largest display's scaled dimensions to get max quality
-            width: Math.max(...displays.map(d => Math.round(d.bounds.width * d.scaleFactor))),
-            height: Math.max(...displays.map(d => Math.round(d.bounds.height * d.scaleFactor))),
+            // Use logical bounds instead of scaleFactor to prevent memory limits and empty thumbnails
+            width: Math.max(...displays.map(d => d.bounds.width)),
+            height: Math.max(...displays.map(d => d.bounds.height)),
         }
     });
 
@@ -1436,6 +1436,10 @@ ipcMain.handle('start-screenshot-capture', async () => {
             source = sources.find((s: any) => s.name === `Screen ${display.id}`) || sources[0];
         }
         const thumbnail = source.thumbnail;
+        
+        if (thumbnail.isEmpty()) {
+            console.error(`[KoBar] WARNING: desktopCapturer returned empty thumbnail for display ${display.id}`);
+        }
 
         return {
             displayId: display.id.toString(),
