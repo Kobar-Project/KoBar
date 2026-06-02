@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const PluginDetail: React.FC = () => {
     const selectedPluginId = useAppStore(state => state.selectedPluginId);
     const setSelectedPluginId = useAppStore(state => state.setSelectedPluginId);
     const externalPluginsList = useAppStore(state => state.externalPluginsList);
+    const triggerExtensionReload = useAppStore(state => state.triggerExtensionReload);
     
     const [localPlugins, setLocalPlugins] = useState<any[]>([]);
 
@@ -20,29 +21,33 @@ const PluginDetail: React.FC = () => {
 
     const pluginsArray = Array.isArray(externalPluginsList) ? externalPluginsList : [];
     let pluginData = pluginsArray.find((p: any) => p.id === selectedPluginId);
-    let isLocalSource = false;
-    if (!pluginData) {
-        pluginData = localPlugins.find((p: any) => p.id === selectedPluginId);
-        if (pluginData) isLocalSource = true;
+    let localData = localPlugins.find((p: any) => p.id === selectedPluginId);
+    
+    if (!pluginData && localData) {
+        pluginData = localData;
     }
 
     // Transform raw JSON plugin into the expected format
-    const plugin = pluginData ? {
-        id: pluginData.id,
-        name: pluginData.name,
-        description: pluginData.description,
-        fullDescription: pluginData.description, // Fallback
-        author: pluginData.author || (isLocalSource ? 'Local Extension' : ''),
-        version: pluginData.versionNote || pluginData.version || '1.0.0',
-        tags: pluginData.categories ? [...pluginData.categories] : [],
-        color: 'primary', // default color
-        icon: pluginData.icon || pluginData.image || 'extension',
-        repo: pluginData.githubRepo,
-        installed: isLocalSource || false,
-        active: isLocalSource ? pluginData.enabled : false,
-        isBeta: pluginData.isBeta,
-        storeImage: pluginData.storeImage || []
-    } : undefined;
+    const plugin = useMemo(() => {
+        const isInstalledLocally = !!localData;
+        return pluginData ? {
+            id: pluginData.id,
+            name: pluginData.name,
+            description: pluginData.description,
+            fullDescription: pluginData.description, // Fallback
+            author: pluginData.author || ((isInstalledLocally && !pluginsArray.find((p:any)=>p.id===pluginData.id)) ? 'Local Extension' : ''),
+            version: localData?.version || pluginData.versionNote || pluginData.version || '1.0.0',
+            tags: pluginData.categories ? [...pluginData.categories] : [],
+            color: 'primary', // default color
+            icon: pluginData.icon || pluginData.image || 'extension',
+            repo: pluginData.githubRepo,
+            downloads: pluginData.downloads || 0,
+            installed: isInstalledLocally,
+            active: isInstalledLocally ? localData.enabled : false,
+            isBeta: pluginData.isBeta,
+            storeImage: pluginData.storeImage || []
+        } : undefined;
+    }, [pluginData, localData, pluginsArray]);
     
     const [githubStats, setGithubStats] = useState<{ stars: number | string; forks: number | string; contributors: number | string } | null>(null);
     const [loadingStats, setLoadingStats] = useState(false);
@@ -71,24 +76,43 @@ const PluginDetail: React.FC = () => {
     useEffect(() => {
         if (plugin?.repo) {
             setLoadingStats(true);
+            
+            // Format protection (just in case full URL is provided)
+            let repoPath = plugin.repo;
+            if (repoPath.includes('github.com/')) {
+                const parts = repoPath.split('github.com/');
+                repoPath = parts[1].replace('.git', '').trim();
+            }
+
             // Fetch repo stats
-            fetch(`https://api.github.com/repos/${plugin.repo}`)
+            fetch(`https://api.github.com/repos/${repoPath}`)
                 .then(res => res.json())
                 .then(data => {
                     setGithubStats(prev => ({
                         ...prev,
-                        stars: data.stargazers_count,
-                        forks: data.forks_count,
-                        contributors: prev?.contributors || '10+' // Mocked contributors
+                        stars: data.stargazers_count !== undefined ? data.stargazers_count : '-',
+                        forks: data.forks_count !== undefined ? data.forks_count : '-',
+                        contributors: prev?.contributors || '-'
                     }));
                     setLoadingStats(false);
+
+                    // Fetch contributors count
+                    fetch(`https://api.github.com/repos/${repoPath}/contributors?per_page=100`)
+                        .then(cRes => cRes.json())
+                        .then(cData => {
+                            setGithubStats(current => ({
+                                ...current!,
+                                contributors: Array.isArray(cData) ? (cData.length === 100 ? '100+' : cData.length) : (current?.contributors || '-')
+                            }));
+                        })
+                        .catch(() => {});
                 })
                 .catch(() => {
                     setGithubStats({ stars: '-', forks: '-', contributors: '-' });
                     setLoadingStats(false);
                 });
         }
-    }, [plugin]);
+    }, [plugin?.repo]);
 
     if (!plugin) {
         return (
@@ -119,6 +143,11 @@ const PluginDetail: React.FC = () => {
             const result = await window.api.installExtensionFromGithub(plugin.id, plugin.repo);
             if (result.success) {
                 setIsLocalInstalled(true);
+                triggerExtensionReload();
+                if (window.api?.getInstalledExtensions) {
+                    const exts = await window.api.getInstalledExtensions();
+                    setLocalPlugins(exts);
+                }
             } else {
                 console.error('Install failed:', result.reason);
                 alert(`Installation failed: ${result.reason}`);
@@ -244,7 +273,21 @@ const PluginDetail: React.FC = () => {
             <div className="flex items-center gap-3 mb-8 p-3 rounded-xl bg-black/20 border border-white/5">
                 {isLocalInstalled ? (
                     <>
-                        <button className="flex-1 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors text-sm font-semibold flex items-center justify-center gap-2">
+                        <button 
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if (window.api?.uninstallExtension) {
+                                    await window.api.uninstallExtension(plugin.id);
+                                    setIsLocalInstalled(false);
+                                    setIsLocalActive(false);
+                                    triggerExtensionReload();
+                                    if (window.api?.getInstalledExtensions) {
+                                        const exts = await window.api.getInstalledExtensions();
+                                        setLocalPlugins(exts);
+                                    }
+                                }
+                            }}
+                            className="flex-1 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors text-sm font-semibold flex items-center justify-center gap-2">
                             <span className="material-symbols-outlined text-[18px]">delete</span>
                             Uninstall
                         </button>
@@ -254,6 +297,11 @@ const PluginDetail: React.FC = () => {
                                 setIsLocalActive(newState);
                                 if (window.api?.toggleExtensionEnabled) {
                                     await window.api.toggleExtensionEnabled(plugin.id, newState);
+                                    triggerExtensionReload();
+                                    if (window.api?.getInstalledExtensions) {
+                                        const exts = await window.api.getInstalledExtensions();
+                                        setLocalPlugins(exts);
+                                    }
                                 }
                             }}
                             className={`flex-1 py-2 rounded-lg transition-colors text-sm font-semibold flex items-center justify-center gap-2 shadow-lg ${
