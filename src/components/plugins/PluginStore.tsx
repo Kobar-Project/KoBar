@@ -7,7 +7,7 @@ const PluginStore: React.FC = () => {
     const externalPluginsList = useAppStore(state => state.externalPluginsList);
     const setExternalPluginsList = useAppStore(state => state.setExternalPluginsList);
     const [, setIsFetchingRegistry] = useState(false);
-    const t = useAppStore(state => state.t);
+
     const pluginsViewMode = useAppStore(state => state.pluginsViewMode);
     const setPluginsViewMode = useAppStore(state => state.setPluginsViewMode);
     const pluginsSearchQuery = useAppStore(state => state.pluginsSearchQuery);
@@ -27,35 +27,7 @@ const PluginStore: React.FC = () => {
     const [installMessage, setInstallMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [installedExtensions, setInstalledExtensions] = useState<any[]>([]);
 
-    // Feature Toggles from AppStore
-    const isShortcutsEnabled = useAppStore(state => state.isShortcutsEnabled);
-    const setIsShortcutsEnabled = useAppStore(state => state.setIsShortcutsEnabled);
-    const isCopyPasteEnabled = useAppStore(state => state.isCopyPasteEnabled);
-    const setIsCopyPasteEnabled = useAppStore(state => state.setIsCopyPasteEnabled);
-    const isScreenshotEnabled = useAppStore(state => state.isScreenshotEnabled);
-    const setIsScreenshotEnabled = useAppStore(state => state.setIsScreenshotEnabled);
-    const isFocusModeEnabled = useAppStore(state => state.isFocusModeEnabled);
-    const setIsFocusModeEnabled = useAppStore(state => state.setIsFocusModeEnabled);
-    const isCalculatorEnabled = useAppStore(state => state.isCalculatorEnabled);
-    const setIsCalculatorEnabled = useAppStore(state => state.setIsCalculatorEnabled);
-    const isColorPickerEnabled = useAppStore(state => state.isColorPickerEnabled);
-    const setIsColorPickerEnabled = useAppStore(state => state.setIsColorPickerEnabled);
-    const isTodoListEnabled = useAppStore(state => state.isTodoListEnabled);
-    const setIsTodoListEnabled = useAppStore(state => state.setIsTodoListEnabled);
-    const isKoCalendarEnabled = useAppStore(state => state.isKoCalendarEnabled);
-    const setIsKoCalendarEnabled = useAppStore(state => state.setIsKoCalendarEnabled);
-    const isPinInjectorEnabled = useAppStore(state => state.isPinInjectorEnabled);
-    const setIsPinInjectorEnabled = useAppStore(state => state.setIsPinInjectorEnabled);
-    const isKoBoxEnabled = useAppStore(state => state.isKoBoxEnabled);
-    const setIsKoBoxEnabled = useAppStore(state => state.setIsKoBoxEnabled);
-    const isSnippetVaultEnabled = useAppStore(state => state.isSnippetVaultEnabled);
-    const setIsSnippetVaultEnabled = useAppStore(state => state.setIsSnippetVaultEnabled);
-    const isAiHubEnabled = useAppStore(state => state.isAiHubEnabled);
-    const setIsAiHubEnabled = useAppStore(state => state.setIsAiHubEnabled);
-    const isKoPlayerEnabled = useAppStore(state => state.isKoPlayerEnabled);
-    const setIsKoPlayerEnabled = useAppStore(state => state.setIsKoPlayerEnabled);
 
-    const featureOrder = useAppStore(state => state.featureOrder);
 
     const loadExtensionsData = async () => {
         try {
@@ -229,44 +201,10 @@ const PluginStore: React.FC = () => {
         }
     };
 
-    const getFeatureMeta = (id: string): any => {
-        switch (id) {
-            case 'shortcuts': return { icon: 'bolt', name: (typeof t === 'function' ? t('shortcuts') : undefined) || 'Shortcuts', isEnabled: isShortcutsEnabled, onToggle: () => setIsShortcutsEnabled(!isShortcutsEnabled), description: 'Drag and drop files, folders, apps, or links for instant access.' };
-            case 'copypaste': return { icon: 'content_paste', name: (typeof t === 'function' ? t('copyAndPaste') : undefined) || 'Copy & Paste', isEnabled: isCopyPasteEnabled, onToggle: () => setIsCopyPasteEnabled(!isCopyPasteEnabled), description: 'Multi-slot clipboard manager.' };
-            case 'screenshot': return { icon: 'photo_camera', name: (typeof t === 'function' ? t('screenshot') : undefined) || 'Screenshot', isEnabled: isScreenshotEnabled, onToggle: () => setIsScreenshotEnabled(!isScreenshotEnabled), description: 'Quickly capture and save screen regions.' };
-            case 'focusmode': return { icon: 'hourglass_empty', name: (typeof t === 'function' ? t('focusMode') : undefined) || 'Focus Mode', isEnabled: isFocusModeEnabled, onToggle: () => setIsFocusModeEnabled(!isFocusModeEnabled), description: 'Pomodoro-style focus timer.' };
-            case 'calculator': return { icon: 'calculate', name: (typeof t === 'function' ? t('calculator') : undefined) || 'Calculator', isEnabled: isCalculatorEnabled, onToggle: () => setIsCalculatorEnabled(!isCalculatorEnabled), description: 'Quick-access calculator for everyday math.' };
-            case 'colorpicker': return { icon: 'palette', name: (typeof t === 'function' ? t('colorPicker') : undefined) || 'Color Picker', isEnabled: isColorPickerEnabled, onToggle: () => setIsColorPickerEnabled(!isColorPickerEnabled), description: 'Screen color picker and palette manager.' };
-            case 'todolist': return { icon: 'checklist', name: (typeof t === 'function' ? t('todoList') : undefined) || 'To-Do List', isEnabled: isTodoListEnabled, onToggle: () => setIsTodoListEnabled(!isTodoListEnabled), description: 'Manage your tasks directly from the sidebar.' };
-            case 'kocalendar': return { icon: 'calendar_month', name: (typeof t === 'function' ? t('koCalendar') : undefined) || 'Calendar', isEnabled: isKoCalendarEnabled, onToggle: () => setIsKoCalendarEnabled(!isKoCalendarEnabled), description: 'Manage your local events and schedule.' };
-            case 'pininjector': return { icon: 'push_pin', name: (typeof t === 'function' ? t('pinToTop') : undefined) || 'Pin to Top', isEnabled: isPinInjectorEnabled, onToggle: () => setIsPinInjectorEnabled(!isPinInjectorEnabled), description: 'Pin any desktop window to the top.' };
-            case 'kobox': return { icon: 'inventory_2', name: (typeof t === 'function' ? t('kobox') : undefined) || 'KoBox', isEnabled: isKoBoxEnabled, onToggle: () => setIsKoBoxEnabled(!isKoBoxEnabled), description: 'Temporary file drop zone.' };
-            case 'snippetvault': return { icon: 'library_books', name: (typeof t === 'function' ? t('snippetVault') : undefined) || 'Snippet Vault', isEnabled: isSnippetVaultEnabled, onToggle: () => setIsSnippetVaultEnabled(!isSnippetVaultEnabled), description: 'Save and reuse text snippets.' };
-            case 'aihub': return { icon: 'smart_toy', name: (typeof t === 'function' ? t('aiHub') : undefined) || 'AI Hub', isEnabled: isAiHubEnabled, onToggle: () => setIsAiHubEnabled(!isAiHubEnabled), description: 'Quick access to AI assistants.' };
-            case 'koplayer': return { icon: 'music_note', name: 'KoPlayer', isEnabled: isKoPlayerEnabled, onToggle: () => setIsKoPlayerEnabled(!isKoPlayerEnabled), description: 'Global media controller.' };
-            default: return null;
-        }
-    };
+
 
     const allPlugins = useMemo(() => {
-        const internals = (featureOrder || []).map(id => {
-            const meta = getFeatureMeta(id);
-            if (!meta) return null;
-            return {
-                id,
-                name: meta.name,
-                author: 'KoBar Team',
-                description: meta.description,
-                icon: meta.icon,
-                color: 'primary',
-                tags: ["KoBar's plugins", 'Installed'],
-                installed: true,
-                active: meta.isEnabled,
-                onToggle: meta.onToggle,
-                isInternal: true,
-                isBeta: false
-            };
-        }).filter(Boolean);
+
 
         const externals = (Array.isArray(externalPluginsList) ? externalPluginsList : []).map((ext: any) => {
             const installedPlugin = (installedExtensions || []).find(i => i.id === ext.id);
@@ -295,8 +233,8 @@ const PluginStore: React.FC = () => {
             isBeta: inst.isBeta === true
         }));
 
-        return [...internals, ...externals, ...localOnlyExtensions];
-    }, [featureOrder, isShortcutsEnabled, isCopyPasteEnabled, isScreenshotEnabled, isFocusModeEnabled, isCalculatorEnabled, isColorPickerEnabled, isTodoListEnabled, isKoCalendarEnabled, isPinInjectorEnabled, isKoBoxEnabled, isSnippetVaultEnabled, isAiHubEnabled, isKoPlayerEnabled, installedExtensions, externalPluginsList]);
+        return [...externals, ...localOnlyExtensions];
+    }, [installedExtensions, externalPluginsList]);
 
     const tags = ['All', "KoBar's plugins", 'Installed', 'Not Installed', 'Beta'];
 
