@@ -77,12 +77,20 @@ const PluginDetail: React.FC = () => {
         if (plugin?.repo) {
             setLoadingStats(true);
             
-            // Format protection (just in case full URL is provided)
-            let repoPath = plugin.repo;
-            if (repoPath.includes('github.com/')) {
-                const parts = repoPath.split('github.com/');
-                repoPath = parts[1].replace('.git', '').trim();
+            // Normalize repo path safely (supports either "owner/repo" or full GitHub URL)
+            let repoPath = (plugin.repo || '').trim();
+            try {
+                if (/^https?:\/\//i.test(repoPath)) {
+                    const parsed = new URL(repoPath);
+                    const host = parsed.hostname.toLowerCase();
+                    if (host === 'github.com' || host === 'www.github.com') {
+                        repoPath = parsed.pathname.replace(/^\/+/, '');
+                    }
+                }
+            } catch {
+                // Keep original value if URL parsing fails
             }
+            repoPath = repoPath.replace(/\.git$/i, '').trim();
 
             // Fetch repo stats
             fetch(`https://api.github.com/repos/${repoPath}`)
