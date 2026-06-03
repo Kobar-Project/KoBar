@@ -18,6 +18,7 @@ import KoPlayerPopup from './components/layout/KoPlayerPopup';
 import KoCalendarPopup from './components/calendar/KoCalendarPopup';
 import { useScreenshotStore } from './store/useScreenshotStore';
 import { useExtensionRegistry } from './components/extensions/extensionRegistry';
+import { isEventOccurringOnDate, getEventOccurrenceOnDate } from './utils/calendarUtils';
 
 // Global flag: when true, the ghost-window logic won't steal focus
 // Exported so ResizerHandle can set it during drags
@@ -174,6 +175,73 @@ const App: React.FC = () => {
         state.stopFocusMode();
       }
     }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calendar Event Notification Check
+  useEffect(() => {
+    const notifiedEvents = new Set<string>(); // Keep track of already notified event occurrences during this session
+    
+    const checkNotifications = () => {
+      const state = useAppStore.getState();
+      if (!state.isKoCalendarEnabled) return;
+      
+      const now = new Date();
+      const localEvents = state.localEvents;
+      
+      // Check events occurring today and tomorrow (in case of midnight/timezone boundaries)
+      const targetDays = [now, new Date(now.getTime() + 24 * 60 * 60 * 1000)];
+      
+      targetDays.forEach(day => {
+        const dayEvents = localEvents.filter(ev => isEventOccurringOnDate(ev, day));
+        
+        dayEvents.forEach(event => {
+          if (!event.notificationEnabled) return;
+          
+          const occurrence = getEventOccurrenceOnDate(event, day);
+          const startTime = new Date(occurrence.startTime);
+          
+          const minutesBefore = event.notificationMinutes ?? 15;
+          const notificationTime = new Date(startTime.getTime() - minutesBefore * 60 * 1000);
+          
+          // Unique key for this specific occurrence: event ID + start time ISO
+          const occurrenceKey = `${event.id}_${occurrence.startTime}`;
+          
+          // If current time is past notification time but before start time (plus a 5 minute grace window)
+          // and we haven't notified it yet
+          if (now >= notificationTime && now <= new Date(startTime.getTime() + 5 * 60 * 1000)) {
+            if (!notifiedEvents.has(occurrenceKey)) {
+              notifiedEvents.add(occurrenceKey);
+              
+              // Format start time nicely
+              const timeStr = startTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+              const bodyMsg = `${state.t('eventStartingSoon') || 'Event starting soon'} at ${timeStr}`;
+              window.api?.sendNotification?.(event.title, bodyMsg);
+            }
+          }
+        });
+      });
+      
+      // Memory cleanup: remove keys that are older than 1 hour in the past to keep the set small
+      notifiedEvents.forEach(key => {
+        const parts = key.split('_');
+        if (parts.length > 1) {
+          const startTimeStr = parts[1];
+          try {
+            const startTime = new Date(startTimeStr);
+            if (now.getTime() - startTime.getTime() > 60 * 60 * 1000) {
+              notifiedEvents.delete(key);
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      });
+    };
+    
+    // Check immediately on mount, then check every 30 seconds
+    checkNotifications();
+    const interval = setInterval(checkNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
