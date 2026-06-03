@@ -237,12 +237,12 @@ const NotePanel: React.FC = () => {
                             {/* Icon: emoji or Material icon */}
                             <span
                                 onClick={(e) => {
-                                    if (note.isSettings) return;
+                                    if (note.isSettings || note.isPlugins) return;
                                     toggleEmojiPicker(e, note.id);
                                 }}
                                 onMouseDown={(e) => e.stopPropagation()}
-                                className={`emoji-trigger ${note.isSettings ? '' : 'cursor-pointer hover:scale-110 transition-transform'}`}
-                                title={note.isSettings ? '' : t('changeIcon')}
+                                className={`emoji-trigger ${note.isSettings || note.isPlugins ? '' : 'cursor-pointer hover:scale-110 transition-transform'}`}
+                                title={note.isSettings || note.isPlugins ? '' : t('changeIcon')}
                             >
                                 {note.emoji ? (
                                     <span className="text-[18px] pointer-events-none">{note.emoji}</span>

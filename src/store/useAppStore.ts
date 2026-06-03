@@ -727,7 +727,7 @@ export const useAppStore = create<AppState>()(
             todoListAnchorRect: null,
             setTodoListAnchorRect: (rect) => set({ todoListAnchorRect: rect }),
             isTodoListEnabled: true,
-            isPopupSmartPositioning: true,
+            isPopupSmartPositioning: false,
             setIsTodoListEnabled: (val: boolean) => set({ isTodoListEnabled: val }),
             setIsPopupSmartPositioning: (val: boolean) => set({ isPopupSmartPositioning: val }),
             todos: [],
