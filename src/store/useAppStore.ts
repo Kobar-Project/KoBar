@@ -99,6 +99,12 @@ export interface CalendarEvent {
     colorId?: string;
     notificationEnabled?: boolean;
     notificationMinutes?: number;
+    recurrence?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+    recurrenceEndDate?: string; // ISO string
+    recurrenceCount?: number;
+    recurrenceDays?: number[];
+    recurrenceDates?: number[];
+    recurrenceExceptions?: string[]; // Date strings format 'yyyy-MM-dd'
 }
 
 export interface Snippet {

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import type { CalendarEvent } from '../../store/useAppStore';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, format, isSameMonth, isSameDay, addMonths, subMonths, eachDayOfInterval, parseISO } from 'date-fns';
+import { getEventsForDate, getUpcomingOccurrences } from '../../utils/calendarUtils';
 
 interface HolidayData {
     date: string;
@@ -37,6 +39,13 @@ const KoCalendarPopup: React.FC = () => {
     const [newEventMinutes, setNewEventMinutes] = useState('00');
     const [newEventNotification, setNewEventNotification] = useState(true);
     const [newEventColor, setNewEventColor] = useState(koCalendarColor);
+    const [newEventRecurrence, setNewEventRecurrence] = useState<'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'>('none');
+    const [newEventRecurrenceEndDate, setNewEventRecurrenceEndDate] = useState<string>('');
+    const [newEventRecurrenceEndType, setNewEventRecurrenceEndType] = useState<'never' | 'date' | 'count'>('never');
+    const [newEventRecurrenceCount, setNewEventRecurrenceCount] = useState<number>(10);
+    const [newEventRecurrenceDays, setNewEventRecurrenceDays] = useState<number[]>([]);
+    const [newEventRecurrenceDatesInput, setNewEventRecurrenceDatesInput] = useState<string>('');
+    const [deletingOccurrence, setDeletingOccurrence] = useState<{ event: CalendarEvent, date: Date } | null>(null);
     const [pendingHolidays, setPendingHolidays] = useState<HolidayData[] | null>(null);
     const [importColor, setImportColor] = useState<string>(koCalendarColor);
 
@@ -262,7 +271,7 @@ const KoCalendarPopup: React.FC = () => {
                     const isSelected = isSameDay(day, selectedDate);
                     
                     // Match events
-                    const dayEvents = localEvents.filter(ev => ev.startTime && isSameDay(parseISO(ev.startTime), day));
+                    const dayEvents = getEventsForDate(localEvents, day);
                     // Match todos
                     const dayTodos = todos.filter(t => t.dueDate && isSameDay(parseISO(t.dueDate), day));
 
@@ -377,6 +386,12 @@ const KoCalendarPopup: React.FC = () => {
                             setNewEventTitle(''); 
                             setNewEventDescription('');
                             setNewEventMeetingLink('');
+                            setNewEventRecurrence('none');
+                            setNewEventRecurrenceEndDate('');
+                            setNewEventRecurrenceEndType('never');
+                            setNewEventRecurrenceCount(10);
+                            setNewEventRecurrenceDays([]);
+                            setNewEventRecurrenceDatesInput('');
                         }} className="w-5 h-5 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all">
                             <span className="material-symbols-outlined text-[12px]">close</span>
                         </button>
@@ -388,6 +403,22 @@ const KoCalendarPopup: React.FC = () => {
                             eventStart.setMinutes(parseInt(newEventMinutes, 10));
                             eventStart.setSeconds(0);
                             
+                            const recEndDateISO = newEventRecurrence !== 'none' && newEventRecurrenceEndType === 'date' && newEventRecurrenceEndDate 
+                                ? new Date(newEventRecurrenceEndDate + 'T23:59:59').toISOString() 
+                                : undefined;
+
+                            const recCount = newEventRecurrence !== 'none' && newEventRecurrenceEndType === 'count'
+                                ? newEventRecurrenceCount
+                                : undefined;
+
+                            const recDays = newEventRecurrence === 'weekly' && newEventRecurrenceDays.length > 0
+                                ? newEventRecurrenceDays
+                                : undefined;
+
+                            const recDates = newEventRecurrence === 'monthly' && newEventRecurrenceDatesInput.trim()
+                                ? newEventRecurrenceDatesInput.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 1 && n <= 31)
+                                : undefined;
+
                             if (editingEventId) {
                                 updateCalendarEvent(editingEventId, {
                                     title: newEventTitle.trim(),
@@ -396,7 +427,12 @@ const KoCalendarPopup: React.FC = () => {
                                     startTime: eventStart.toISOString(),
                                     endTime: eventStart.toISOString(),
                                     notificationEnabled: newEventNotification,
-                                    colorId: newEventColor
+                                    colorId: newEventColor,
+                                    recurrence: newEventRecurrence,
+                                    recurrenceEndDate: recEndDateISO,
+                                    recurrenceCount: recCount,
+                                    recurrenceDays: recDays,
+                                    recurrenceDates: recDates
                                 });
                             } else {
                                 addCalendarEvent({
@@ -407,12 +443,23 @@ const KoCalendarPopup: React.FC = () => {
                                     endTime: eventStart.toISOString(),
                                     notificationEnabled: newEventNotification,
                                     notificationMinutes: 15,
-                                    colorId: newEventColor
+                                    colorId: newEventColor,
+                                    recurrence: newEventRecurrence,
+                                    recurrenceEndDate: recEndDateISO,
+                                    recurrenceCount: recCount,
+                                    recurrenceDays: recDays,
+                                    recurrenceDates: recDates
                                 });
                             }
                             setNewEventTitle('');
                             setNewEventDescription('');
                             setNewEventMeetingLink('');
+                            setNewEventRecurrence('none');
+                            setNewEventRecurrenceEndDate('');
+                            setNewEventRecurrenceEndType('never');
+                            setNewEventRecurrenceCount(10);
+                            setNewEventRecurrenceDays([]);
+                            setNewEventRecurrenceDatesInput('');
                             setEditingEventDate(null);
                             setEditingEventId(null);
                     }} className="flex flex-col gap-2">
@@ -494,6 +541,119 @@ const KoCalendarPopup: React.FC = () => {
                             </button>
                         </div>
 
+                        <div className="flex items-center gap-2">
+                            {/* Recurrence Selector */}
+                            <div className="flex items-center gap-1 bg-black/20 border border-white/10 rounded-lg p-1 text-xs select-none">
+                                <span className="material-symbols-outlined text-[14px] text-slate-500 ml-1">repeat</span>
+                                <select
+                                    value={newEventRecurrence}
+                                    onChange={(e) => setNewEventRecurrence(e.target.value as any)}
+                                    className="bg-transparent text-white border-0 outline-none font-semibold text-xs py-0.5 px-1 cursor-pointer"
+                                >
+                                    <option value="none" className="bg-slate-900 text-white">{t('recurrenceNone') || 'Does not repeat'}</option>
+                                    <option value="daily" className="bg-slate-900 text-white">{t('recurrenceDaily') || 'Daily'}</option>
+                                    <option value="weekly" className="bg-slate-900 text-white">{t('recurrenceWeekly') || 'Weekly'}</option>
+                                    <option value="monthly" className="bg-slate-900 text-white">{t('recurrenceMonthly') || 'Monthly'}</option>
+                                    <option value="yearly" className="bg-slate-900 text-white">{t('recurrenceYearly') || 'Yearly'}</option>
+                                </select>
+                            </div>
+
+                             {/* Recurrence End Conditions Selector & Inputs */}
+                            {newEventRecurrence !== 'none' && (
+                                <>
+                                    <div className="flex items-center gap-1 bg-black/20 border border-white/10 rounded-lg p-1 text-xs select-none">
+                                        <span className="material-symbols-outlined text-[14px] text-slate-500 ml-1">event_busy</span>
+                                        <select
+                                            value={newEventRecurrenceEndType}
+                                            onChange={(e) => setNewEventRecurrenceEndType(e.target.value as any)}
+                                            className="bg-transparent text-white border-0 outline-none font-semibold text-xs py-0.5 px-1 cursor-pointer"
+                                        >
+                                            <option value="never" className="bg-slate-900 text-white">{t('recurrenceEndsNever') || 'Never'}</option>
+                                            <option value="date" className="bg-slate-900 text-white">{t('recurrenceEndsOn') || 'On Date'}</option>
+                                            <option value="count" className="bg-slate-900 text-white">{t('recurrenceEndsAfter') || 'After'}</option>
+                                        </select>
+                                    </div>
+
+                                    {newEventRecurrenceEndType === 'date' && (
+                                        <div className="flex items-center gap-1 bg-black/20 border border-white/10 rounded-lg p-1 text-xs">
+                                            <input
+                                                type="date"
+                                                value={newEventRecurrenceEndDate}
+                                                onChange={(e) => setNewEventRecurrenceEndDate(e.target.value)}
+                                                className="bg-transparent text-white border-0 outline-none font-semibold text-xs py-0.5 px-1 cursor-pointer [color-scheme:dark]"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {newEventRecurrenceEndType === 'count' && (
+                                        <div className="flex items-center gap-1 bg-black/20 border border-white/10 rounded-lg p-1 text-xs">
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                value={newEventRecurrenceCount}
+                                                onChange={(e) => setNewEventRecurrenceCount(parseInt(e.target.value, 10) || 1)}
+                                                className="w-8 bg-transparent text-center text-white border-0 outline-none font-bold text-xs"
+                                            />
+                                            <span className="text-slate-400 text-[10px] pr-1">{t('occurrences') || 'occurrences'}</span>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        {/* Weekly: Select days of the week */}
+                        {newEventRecurrence === 'weekly' && (
+                            <div className="flex flex-col gap-1 mt-1 bg-black/20 border border-white/10 rounded-lg p-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Repeat on</span>
+                                <div className="flex gap-1.5">
+                                    {[
+                                        { label: 'M', value: 1 },
+                                        { label: 'T', value: 2 },
+                                        { label: 'W', value: 3 },
+                                        { label: 'T', value: 4 },
+                                        { label: 'F', value: 5 },
+                                        { label: 'S', value: 6 },
+                                        { label: 'S', value: 0 },
+                                    ].map(day => {
+                                        const isSelected = newEventRecurrenceDays.includes(day.value);
+                                        return (
+                                            <button
+                                                key={day.value}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (isSelected) {
+                                                        setNewEventRecurrenceDays(newEventRecurrenceDays.filter(d => d !== day.value));
+                                                    } else {
+                                                        setNewEventRecurrenceDays([...newEventRecurrenceDays, day.value]);
+                                                    }
+                                                }}
+                                                className={`w-6 h-6 rounded-full text-[10px] font-bold transition-all flex items-center justify-center border
+                                                    ${isSelected 
+                                                        ? 'bg-primary border-primary text-black font-extrabold' 
+                                                        : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'}`}
+                                            >
+                                                {day.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Monthly: Comma-separated days of month */}
+                        {newEventRecurrence === 'monthly' && (
+                            <div className="flex flex-col gap-1 mt-1 bg-black/20 border border-white/10 rounded-lg p-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Repeat on dates (e.g. 1, 15)</span>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. 1, 15"
+                                    value={newEventRecurrenceDatesInput}
+                                    onChange={(e) => setNewEventRecurrenceDatesInput(e.target.value)}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-white text-xs focus:outline-none focus:border-primary no-drag-region"
+                                />
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-2 mt-1">
                             <div className="flex gap-1.5 bg-black/20 border border-white/10 rounded-lg p-1.5">
                                 {['#60a5fa', '#f87171', '#4ade80', '#fbbf24', '#a78bfa'].map(color => (
@@ -518,9 +678,9 @@ const KoCalendarPopup: React.FC = () => {
                         // Filter events starting from the start of the selected date
                         const targetStartOfDay = new Date(selectedDate);
                         targetStartOfDay.setHours(0,0,0,0);
-                        const agendaData = localEvents
-                            .filter(e => e.startTime && new Date(e.startTime) >= targetStartOfDay)
-                            .sort((a, b) => new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime());
+                        
+                        const agendaData = getUpcomingOccurrences(localEvents, targetStartOfDay, 30)
+                            .sort((a, b) => parseISO(a.startTime!).getTime() - parseISO(b.startTime!).getTime());
                         
                         const selectedDayHasEvent = agendaData.length > 0 && isSameDay(parseISO(agendaData[0].startTime!), selectedDate);
                         
@@ -544,12 +704,15 @@ const KoCalendarPopup: React.FC = () => {
                                         const isEvSelected = isSameDay(eventDate, selectedDate);
                                         
                                         return (
-                                            <div key={ev.id} className="flex justify-between items-center text-sm group/event hover:bg-white/5 rounded px-2 py-1.5 transition-colors" style={{ backgroundColor: isEvSelected ? `color-mix(in srgb, ${ev.colorId || koCalendarColor} 5%, transparent)` : 'transparent' }}>
+                                            <div key={`${ev.id}-${ev.startTime}`} className="flex justify-between items-center text-sm group/event hover:bg-white/5 rounded px-2 py-1.5 transition-colors" style={{ backgroundColor: isEvSelected ? `color-mix(in srgb, ${ev.colorId || koCalendarColor} 5%, transparent)` : 'transparent' }}>
                                                 <div className="flex items-start gap-2.5 flex-1 min-w-0 mr-3 mt-1">
                                                     <div className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ backgroundColor: isEvSelected ? (ev.colorId || koCalendarColor) : isEvToday ? 'var(--theme-primary)' : 'var(--theme-text-faded)' }} />
                                                     <div className="flex flex-col min-w-0 flex-1">
                                                         <div className="flex items-center gap-1">
                                                             <span className="truncate" style={{ color: isEvSelected ? (ev.colorId || koCalendarColor) : '#fff', fontWeight: isEvSelected ? '600' : '400' }}>{ev.title}</span>
+                                                            {ev.recurrence && ev.recurrence !== 'none' && (
+                                                                <span className="material-symbols-outlined text-[12px] text-slate-400 shrink-0" title={t('recurrence') || 'Recurring'}>repeat</span>
+                                                            )}
                                                             {ev.meetingLink && (
                                                                 <button onClick={(e) => { e.stopPropagation(); window.api?.openExternal?.(ev.meetingLink!); }} className="text-blue-400 hover:text-blue-300 ml-1 shrink-0 bg-blue-400/10 rounded-full w-5 h-5 flex items-center justify-center transition-colors" title={(t as (k: string) => string)('joinMeeting') || 'Join Meeting'}>
                                                                     <span className="material-symbols-outlined text-[12px]">videocam</span>
@@ -570,23 +733,41 @@ const KoCalendarPopup: React.FC = () => {
                                                     </span>
                                                     <button 
                                                         onClick={() => {
-                                                            const d = parseISO(ev.startTime!);
+                                                            const originalEvent = useAppStore.getState().localEvents.find(e => e.id === ev.id) || ev;
+                                                            const d = parseISO(originalEvent.startTime);
                                                             setEditingEventDate(d);
-                                                            setEditingEventId(ev.id);
-                                                            setNewEventTitle(ev.title);
-                                                            setNewEventDescription(ev.description || '');
-                                                            setNewEventMeetingLink(ev.meetingLink || '');
-                                                            setNewEventHours(format(d, 'HH'));
-                                                            setNewEventMinutes(format(d, 'mm'));
-                                                            setNewEventNotification(!!ev.notificationEnabled);
-                                                            setNewEventColor(ev.colorId || koCalendarColor);
+                                                            setEditingEventId(originalEvent.id);
+                                                            setNewEventTitle(originalEvent.title);
+                                                            setNewEventDescription(originalEvent.description || '');
+                                                            setNewEventMeetingLink(originalEvent.meetingLink || '');
+                                                            setNewEventHours(format(parseISO(ev.startTime!), 'HH'));
+                                                            setNewEventMinutes(format(parseISO(ev.startTime!), 'mm'));
+                                                            setNewEventNotification(!!originalEvent.notificationEnabled);
+                                                            setNewEventColor(originalEvent.colorId || koCalendarColor);
+                                                            setNewEventRecurrence(originalEvent.recurrence || 'none');
+                                                            setNewEventRecurrenceEndDate(originalEvent.recurrenceEndDate ? format(parseISO(originalEvent.recurrenceEndDate), 'yyyy-MM-dd') : '');
+                                                            const recEndType = originalEvent.recurrenceCount !== undefined
+                                                                ? 'count'
+                                                                : originalEvent.recurrenceEndDate
+                                                                    ? 'date'
+                                                                    : 'never';
+                                                            setNewEventRecurrenceEndType(recEndType);
+                                                            setNewEventRecurrenceCount(originalEvent.recurrenceCount || 10);
+                                                            setNewEventRecurrenceDays(originalEvent.recurrenceDays || []);
+                                                            setNewEventRecurrenceDatesInput(originalEvent.recurrenceDates ? originalEvent.recurrenceDates.join(', ') : '');
                                                         }}
                                                         className="hidden group-hover/event:flex w-4 h-4 items-center justify-center text-blue-400 hover:text-blue-300 bg-blue-400/10 rounded"
                                                     >
                                                         <span className="material-symbols-outlined text-[12px]">edit</span>
                                                     </button>
                                                     <button 
-                                                        onClick={() => deleteCalendarEvent(ev.id)}
+                                                        onClick={() => {
+                                                            if (ev.recurrence && ev.recurrence !== 'none') {
+                                                                setDeletingOccurrence({ event: ev, date: parseISO(ev.startTime!) });
+                                                            } else {
+                                                                deleteCalendarEvent(ev.id);
+                                                            }
+                                                        }}
                                                         className="hidden group-hover/event:flex w-4 h-4 items-center justify-center text-red-400 hover:text-red-300 bg-red-400/10 rounded"
                                                     >
                                                         <span className="material-symbols-outlined text-[12px]">delete</span>
@@ -604,6 +785,89 @@ const KoCalendarPopup: React.FC = () => {
                             </>
                         );
                     })()}
+                </div>
+            )}
+
+            {deletingOccurrence && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 select-none animate-in fade-in duration-200">
+                    <div className="bg-slate-900/90 border border-white/10 rounded-xl p-4 w-full max-w-[340px] flex flex-col gap-3 shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-xs font-bold text-slate-200 uppercase tracking-widest">
+                                {t('deleteOccurrencePromptTitle') || 'Delete Recurring Event'}
+                            </span>
+                            <span className="text-[10px] text-slate-400 truncate" title={deletingOccurrence.event.title}>
+                                "{deletingOccurrence.event.title}"
+                            </span>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <button
+                                                                onClick={() => {
+                                                                    const { event, date } = deletingOccurrence;
+                                                                    const year = date.getFullYear();
+                                                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                                    const day = String(date.getDate()).padStart(2, '0');
+                                                                    const exceptionDateStr = `${year}-${month}-${day}`;
+                                                                    
+                                                                    const originalEvent = useAppStore.getState().localEvents.find(e => e.id === event.id);
+                                                                    if (originalEvent) {
+                                                                        const exceptions = originalEvent.recurrenceExceptions || [];
+                                                                        updateCalendarEvent(event.id, {
+                                                                            recurrenceExceptions: [...exceptions, exceptionDateStr]
+                                                                        });
+                                                                    }
+                                                                    setDeletingOccurrence(null);
+                                                                }}
+                                                                className="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                                                            >
+                                                                {t('deleteOnlyThisOccurrence') || 'Only this occurrence'}
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    const { event, date } = deletingOccurrence;
+                                                                    const originalEvent = useAppStore.getState().localEvents.find(e => e.id === event.id);
+                                                                    if (originalEvent) {
+                                                                        const eventStart = parseISO(originalEvent.startTime);
+                                                                        const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                                                                        const compareStart = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+                                                                        
+                                                                        if (compareDate.getTime() <= compareStart.getTime()) {
+                                                                            deleteCalendarEvent(event.id);
+                                                                        } else {
+                                                                            const prevDay = new Date(date.getTime() - 24 * 60 * 60 * 1000);
+                                                                            prevDay.setHours(23, 59, 59, 999);
+                                                                            updateCalendarEvent(event.id, {
+                                                                                recurrenceEndDate: prevDay.toISOString()
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                    setDeletingOccurrence(null);
+                                                                }}
+                                                                className="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                                                            >
+                                                                {t('deleteThisAndFollowingOccurrences') || 'This and all following events'}
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    const { event } = deletingOccurrence;
+                                                                    deleteCalendarEvent(event.id);
+                                                                    setDeletingOccurrence(null);
+                                                                }}
+                                                                className="w-full text-left px-3 py-2 text-xs font-bold rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:text-red-100 hover:bg-red-500/30 transition-colors"
+                                                            >
+                                                                {t('deleteAllOccurrences') || 'All events in the series'}
+                                                            </button>
+                        </div>
+                        <div className="flex justify-end border-t border-white/5 pt-2">
+                            <button
+                                onClick={() => setDeletingOccurrence(null)}
+                                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                            >
+                                {t('cancel') || 'Cancel'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
