@@ -147,6 +147,8 @@ const SettingsPanel: React.FC = () => {
     const setIsPopupSmartPositioning = useAppStore(state => state.setIsPopupSmartPositioning);
     const orientation = useAppStore(state => state.orientation);
     const setOrientation = useAppStore(state => state.setOrientation);
+    const preferredNoteEditor = useAppStore(state => state.preferredNoteEditor);
+    const setPreferredNoteEditor = useAppStore(state => state.setPreferredNoteEditor);
 
     // Workspaces
     const workspaces = useAppStore(state => state.workspaces);
@@ -2064,6 +2066,22 @@ const SettingsPanel: React.FC = () => {
                 {/* General Settings Area */}
                 <Accordion title={t('settings')} icon="tune" defaultOpen={true}>
                     <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3">
+                            <label className="text-sm text-slate-400 font-medium">{(t as any)('noteEditorEngine') || 'Note Editor Engine'}</label>
+                            <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 no-drag-region">
+                                <button onClick={() => setPreferredNoteEditor('tiptap')}
+                                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${preferredNoteEditor === 'tiptap' ? 'bg-primary text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                                    {(t as any)('editorTiptap') || 'Tiptap (Rich Text)'}
+                                </button>
+                                <button onClick={() => setPreferredNoteEditor('editorjs')}
+                                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${preferredNoteEditor === 'editorjs' ? 'bg-primary text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                                    {(t as any)('editorEditorJs') || 'Editor.js (Block)'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="w-full h-px opacity-50" style={{ backgroundColor: 'var(--theme-border)' }}></div>
+
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-slate-400 text-[20px]">power_settings_new</span>
