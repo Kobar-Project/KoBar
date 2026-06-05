@@ -23,6 +23,7 @@ const Sidebar: React.FC = () => {
 
 
     const featureOrder = useAppStore(state => state.featureOrder);
+    const setFeatureOrder = useAppStore(state => state.setFeatureOrder);
     const featureSpacing = useAppStore(state => state.featureSpacing);
 
     const design = useAppStore(state => state.design);
@@ -50,6 +51,64 @@ const Sidebar: React.FC = () => {
     const eyeButtonRef = React.useRef<HTMLButtonElement>(null);
     const innerEyeRef = React.useRef<HTMLSpanElement>(null);
     const sidebarContainerRef = React.useRef<HTMLDivElement>(null);
+
+    const [reorderMode, setReorderMode] = React.useState<boolean>(false);
+    const longPressTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [dragOverId, setDragOverId] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        const handleGlobalClick = () => {
+            if (reorderMode) setReorderMode(false);
+        };
+        window.addEventListener('click', handleGlobalClick);
+        return () => window.removeEventListener('click', handleGlobalClick);
+    }, [reorderMode]);
+
+    const handlePluginMouseDown = (e: React.MouseEvent) => {
+        if (e.button !== 0 || reorderMode) return;
+        longPressTimeout.current = setTimeout(() => {
+            setReorderMode(true);
+            setIsDragScrolling(false);
+        }, 500);
+    };
+
+    const handlePluginMouseUp = () => {
+        if (longPressTimeout.current) {
+            clearTimeout(longPressTimeout.current);
+            longPressTimeout.current = null;
+        }
+    };
+
+    const onPluginDragStart = (e: React.DragEvent, id: string) => {
+        e.dataTransfer.setData('text/plain', id);
+        e.dataTransfer.effectAllowed = 'move';
+        e.stopPropagation();
+    };
+
+    const onPluginDragOver = (e: React.DragEvent, id: string) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dragOverId !== id) {
+            setDragOverId(id);
+        }
+    };
+
+    const onPluginDrop = (e: React.DragEvent, targetId: string) => {
+        e.preventDefault();
+        setDragOverId(null);
+        const sourceId = e.dataTransfer.getData('text/plain');
+        if (sourceId && sourceId !== targetId) {
+            const newOrder = [...featureOrder];
+            const sourceIdx = newOrder.indexOf(sourceId);
+            const targetIdx = newOrder.indexOf(targetId);
+            
+            if (sourceIdx !== -1 && targetIdx !== -1) {
+                newOrder.splice(sourceIdx, 1);
+                newOrder.splice(targetIdx, 0, sourceId);
+                setFeatureOrder(newOrder);
+            }
+        }
+    };
 
     const [isDev, setIsDev] = React.useState(false);
 
@@ -539,52 +598,75 @@ const Sidebar: React.FC = () => {
                     <div className={`${orientation === 'horizontal' ? 'h-full flex-row px-1.5' : 'w-full flex-col py-1.5'} flex items-center cursor-default`} style={{ zoom: iconScale, gap: `${featureSpacing}px` }}>
                     {/* Dynamic Feature Order with Separators */}
                     {(() => {
-                        const features = featureOrder.map(featureId => {
-                        switch (featureId) {
-                            default:
-                                return null;
+                        const dynamicButtons = extensionsRegistry.getButtons();
+                        const dynamicInlineWidgets = extensionsRegistry.getInlineWidgets();
+                        
+                        const allExts = [...dynamicButtons, ...dynamicInlineWidgets];
+
+                        // Ensure missing plugins are added to featureOrder implicitly (so they show at the end)
+                        const missing = allExts.map(e => e.id).filter(id => !featureOrder.includes(id));
+                        if (missing.length > 0) {
+                            setTimeout(() => setFeatureOrder([...featureOrder, ...missing]), 0);
                         }
-                    }).filter(Boolean);
 
-                    const dynamicButtons = extensionsRegistry.getButtons();
-                    const extFeatures = dynamicButtons.map((btn: any) => {
-                        const isOpen = activeExtensionPanelId === btn.id;
-                        return (
-                            <div key={btn.id} className="w-full flex justify-center no-drag-region">
-                                <TooltipButton
-                                    label={btn.label}
-                                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg
-                                        ${isOpen ? 'bg-primary/20 text-primary border-primary/50' : 'bg-white/5 text-slate-400 hover:text-primary hover:bg-white/10'}`}
-                                    style={{ borderWidth: isOpen ? '1px' : '0px' }}
-                                    onClick={(e) => {
-                                        const rect = sidebarContainerRef.current?.getBoundingClientRect() || e.currentTarget.getBoundingClientRect();
-                                        btn.onClick(e as any, rect);
-                                    }}
-                                >
-                                    <span className="material-symbols-outlined text-[24px]">{btn.icon}</span>
-                                </TooltipButton>
-                            </div>
-                        );
-                    });
+                        // Sort all plugins according to featureOrder
+                        const sortedFeatures = [...allExts].sort((a, b) => {
+                            const idxA = featureOrder.indexOf(a.id);
+                            const idxB = featureOrder.indexOf(b.id);
+                            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                            if (idxA !== -1 && idxB === -1) return -1;
+                            if (idxA === -1 && idxB !== -1) return 1;
+                            return 0;
+                        });
 
-                    const dynamicInlineWidgets = extensionsRegistry.getInlineWidgets();
-                    const extInlineFeatures = dynamicInlineWidgets.map((widget: any) => (
-                        <div key={widget.id} className="w-full flex justify-center no-drag-region">
-                            {widget.render()}
-                        </div>
-                    ));
-
-                    const allFeatures = [...features, ...extFeatures, ...extInlineFeatures];
-
-                    return allFeatures.map((feat, idx) => (
-                        <React.Fragment key={idx}>
-                            {feat}
-                            {(idx < allFeatures.length - 1) && (
-                                <div className={`${orientation === 'horizontal' ? 'h-10 w-px' : 'w-10 h-px'} bg-white/5 no-drag-region shrink-0`} />
-                            )}
-                        </React.Fragment>
-                    ));
-                })()}
+                        return sortedFeatures.map((feat: any, idx) => {
+                            const isWidget = !!feat.render;
+                            const id = feat.id;
+                            const isDragOver = dragOverId === id;
+                            
+                            return (
+                                <React.Fragment key={id}>
+                                    <div 
+                                        draggable={reorderMode}
+                                        onDragStart={(e) => onPluginDragStart(e, id)}
+                                        onDragOver={(e) => onPluginDragOver(e, id)}
+                                        onDrop={(e) => onPluginDrop(e, id)}
+                                        onDragLeave={() => setDragOverId(null)}
+                                        onMouseDown={handlePluginMouseDown}
+                                        onMouseUp={handlePluginMouseUp}
+                                        onMouseLeave={handlePluginMouseUp}
+                                        className={`w-full flex justify-center no-drag-region transition-all ${reorderMode ? 'cursor-grab hover:scale-105 active:cursor-grabbing' : ''} ${reorderMode && !isDragScrolling ? 'animate-pulse' : ''}`}
+                                        style={{ 
+                                            transform: isDragOver ? (orientation === 'horizontal' ? 'translateX(10px)' : 'translateY(10px)') : 'none',
+                                            opacity: isDragOver ? 0.5 : 1
+                                        }}
+                                    >
+                                        {isWidget ? (
+                                            feat.render()
+                                        ) : (
+                                            <TooltipButton
+                                                label={reorderMode ? (t('dragToReorder' as any) || 'Drag to reorder') : feat.label}
+                                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg
+                                                    ${!reorderMode ? 'hover:scale-110 active:scale-95' : ''}
+                                                    ${activeExtensionPanelId === id ? 'bg-primary/20 text-primary border-primary/50' : 'bg-white/5 text-slate-400 hover:text-primary hover:bg-white/10'}`}
+                                                style={{ borderWidth: activeExtensionPanelId === id ? '1px' : '0px', pointerEvents: reorderMode ? 'none' : 'auto' }}
+                                                onClick={(e) => {
+                                                    if (reorderMode) return;
+                                                    const rect = sidebarContainerRef.current?.getBoundingClientRect() || e.currentTarget.getBoundingClientRect();
+                                                    feat.onClick(e as any, rect);
+                                                }}
+                                            >
+                                                <span className="material-symbols-outlined text-[24px]">{feat.icon}</span>
+                                            </TooltipButton>
+                                        )}
+                                    </div>
+                                    {(idx < sortedFeatures.length - 1) && (
+                                        <div className={`${orientation === 'horizontal' ? 'h-10 w-px' : 'w-10 h-px'} bg-white/5 no-drag-region shrink-0`} />
+                                    )}
+                                </React.Fragment>
+                            );
+                        });
+                    })()}
                     </div>
                 </div> {/* End scrollable container */}
 
@@ -604,11 +686,11 @@ const Sidebar: React.FC = () => {
                             <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
                                 <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">visibility</span>
                             </span>
-                            {isDev && (
+                            {/* isDev && (
                                 <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
                                     dev
                                 </span>
-                            )}
+                            ) */}
                         </TooltipButton>
                     </div>
                 </div>

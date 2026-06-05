@@ -121,37 +121,58 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isHydrated) return;
 
-    // Clear old extensions state
-    window.KoBarExtensions?.clear();
-    const oldScripts = document.querySelectorAll('script[data-extension-id]');
-    oldScripts.forEach(s => s.remove());
-
     if (window.api?.getInstalledExtensions) {
+      // Suspend UI updates during the reload process
+      (window.KoBarExtensions as any)?.suspendNotifications?.();
+      
       window.api.getInstalledExtensions().then(exts => {
-        exts.forEach(ext => {
+        // Clear old extensions state right before injecting new ones
+        window.KoBarExtensions?.clear();
+        const oldScripts = document.querySelectorAll('script[data-extension-id]');
+        oldScripts.forEach(s => s.remove());
+
+        const promises = exts.map(ext => {
           if (ext.enabled && ext.code) {
-            try {
-              window.KoBarExtensions?.registerManifest?.(ext.id, ext);
-              const blob = new Blob([`(() => {\n${ext.code}\n})();`], { type: 'application/javascript' });
-              const url = URL.createObjectURL(blob);
-              const script = document.createElement('script');
-              script.src = url;
-              script.dataset.extensionId = ext.id;
-              script.onload = () => {
-                URL.revokeObjectURL(url);
-              };
-              document.head.appendChild(script);
-            } catch (err) {
-              console.error(`Failed to load extension ${ext.id}:`, err);
-            }
+            return new Promise<void>((resolve) => {
+              try {
+                window.KoBarExtensions?.registerManifest?.(ext.id, ext);
+                const blob = new Blob([`(() => {\n${ext.code}\n})();`], { type: 'application/javascript' });
+                const url = URL.createObjectURL(blob);
+                const script = document.createElement('script');
+                script.src = url;
+                script.dataset.extensionId = ext.id;
+                script.onload = () => {
+                  URL.revokeObjectURL(url);
+                  resolve();
+                };
+                script.onerror = () => {
+                  URL.revokeObjectURL(url);
+                  console.error(`Failed to load extension script ${ext.id}`);
+                  resolve();
+                };
+                document.head.appendChild(script);
+              } catch (err) {
+                console.error(`Failed to inject extension ${ext.id}:`, err);
+                resolve();
+              }
+            });
           }
+          return Promise.resolve();
         });
-      }).catch(err => console.error('Failed to query extensions:', err));
+
+        Promise.all(promises).then(() => {
+          // Resume notifications after all scripts have executed
+          (window.KoBarExtensions as any)?.resumeNotifications?.();
+        });
+      }).catch(err => {
+        console.error('Failed to query extensions:', err);
+        (window.KoBarExtensions as any)?.resumeNotifications?.();
+      });
     }
 
     return () => {
-      const scripts = document.querySelectorAll('script[data-extension-id]');
-      scripts.forEach(s => s.remove());
+      // Intentionally avoiding removing scripts on unmount if it's just a re-render.
+      // The reload trigger handles cleanup explicitly above.
     };
   }, [isHydrated, extensionReloadTrigger]);
 

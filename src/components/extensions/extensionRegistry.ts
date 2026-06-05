@@ -30,6 +30,7 @@ class ExtensionRegistry {
     private inlineWidgets: Map<string, ExtensionInlineWidget> = new Map();
     private manifests: Map<string, any> = new Map();
     private listeners: Set<() => void> = new Set();
+    private isSuspended = false;
 
     registerManifest(id: string, manifest: any) {
         this.manifests.set(id, manifest);
@@ -84,7 +85,18 @@ class ExtensionRegistry {
     }
 
     notify() {
-        this.listeners.forEach(l => l());
+        if (!this.isSuspended) {
+            this.listeners.forEach(l => l());
+        }
+    }
+
+    suspendNotifications() {
+        this.isSuspended = true;
+    }
+
+    resumeNotifications() {
+        this.isSuspended = false;
+        this.notify();
     }
 
     clear() {
