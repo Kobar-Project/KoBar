@@ -74,19 +74,9 @@ export interface PinnedApp {
     tag?: string;
 }
 
-export interface FocusSettings {
-    minutes: number;
-    seconds: number;
-    melody: string;
-    loop: boolean;
-}
 
-export interface Todo {
-    id: string;
-    text: string;
-    completed: boolean;
-    dueDate?: string;
-}
+
+
 
 export interface CalendarEvent {
     id: string;
@@ -100,30 +90,20 @@ export interface CalendarEvent {
     notificationMinutes?: number;
 }
 
-export interface Snippet {
-    id: string;
-    title: string;
-    content: string;
-    tags: string[];
-    password?: string;
-    color?: string;
-}
+
 
 export interface WorkspaceConfig {
     id: string;
     name: string;
 
 
-    isColorPickerEnabled: boolean;
+
     isPinInjectorEnabled: boolean;
     isKoBoxEnabled: boolean;
-    isSnippetVaultEnabled: boolean;
     isAiHubEnabled: boolean;
     isKoCalendarEnabled: boolean;
-    isTodoListEnabled: boolean;
 
     koBoxCleanupMode: '24h' | 'quit';
-    autoCopyColor: boolean;
 
     toggleWidth: number;
     sidebarWidth: number;
@@ -219,20 +199,11 @@ interface AppState {
 
 
 
-    isFocusModeEnabled: boolean;
-    setIsFocusModeEnabled: (val: boolean) => void;
 
 
 
-    isColorPickerEnabled: boolean;
-    setIsColorPickerEnabled: (val: boolean) => void;
 
-    isColorPickerOpen: boolean;
-    setIsColorPickerOpen: (val: boolean) => void;
-    colorPickerAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    setColorPickerAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
-    eyeDropperOffset: { x: number, y: number };
-    setEyeDropperOffset: (offset: { x: number, y: number }) => void;
+
 
     isPinInjectorEnabled: boolean;
     setIsPinInjectorEnabled: (val: boolean) => void;
@@ -247,20 +218,6 @@ interface AppState {
     koBoxCleanupMode: '24h' | 'quit';
     setKoBoxCleanupMode: (val: '24h' | 'quit') => void;
 
-    // Snippet Vault feature
-    isSnippetVaultOpen: boolean;
-    setIsSnippetVaultOpen: (val: boolean) => void;
-    snippetVaultAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    setSnippetVaultAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
-
-    isSnippetVaultEnabled: boolean;
-    setIsSnippetVaultEnabled: (val: boolean) => void;
-    isSnippetVaultCompact: boolean;
-    setIsSnippetVaultCompact: (val: boolean) => void;
-    snippets: Snippet[];
-    addSnippet: (snippet: Omit<Snippet, 'id'>) => void;
-    updateSnippet: (id: string, snippet: Partial<Snippet>) => void;
-    deleteSnippet: (id: string) => void;
 
     // AI Hub Feature
     isAiHubOpen: boolean;
@@ -289,32 +246,12 @@ interface AppState {
     koCalendarColor: string;
     setKoCalendarColor: (color: string) => void;
 
-    // Todo List feature
-    isTodoListOpen: boolean;
-    setIsTodoListOpen: (val: boolean) => void;
-    todoListAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    setTodoListAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
-    isTodoListEnabled: boolean;
-    setIsTodoListEnabled: (val: boolean) => void;
+
     isPopupSmartPositioning: boolean;
     setIsPopupSmartPositioning: (val: boolean) => void;
-    todos: Todo[];
-    addTodo: () => void;
-    updateTodoText: (id: string, text: string) => void;
-    updateTodoDate: (id: string, dueDate: string | undefined) => void;
-    toggleTodo: (id: string) => void;
-    deleteTodo: (id: string) => void;
-    reorderTodos: (startIndex: number, endIndex: number) => void;
 
-    currentColor: string;
-    setCurrentColor: (hex: string) => void;
-    colorPalettes: { id: string, name: string, colors: string[] }[];
-    addPalette: (palette: { id: string, name: string, colors: string[] }) => void;
-    updatePalette: (id: string, palette: Partial<{ name: string, colors: string[] }>) => void;
-    deletePalette: (id: string) => void;
-    duplicatePalette: (id: string) => void;
-    autoCopyColor: boolean;
-    setAutoCopyColor: (val: boolean) => void;
+
+
 
     featureOrder: string[];
     setFeatureOrder: (order: string[]) => void;
@@ -432,10 +369,6 @@ export const useAppStore = create<AppState>()(
         (set, get) => ({
             isMac: window.api?.getPlatform ? window.api.getPlatform() === 'darwin' : false,
             closeAllUtilityPopups: () => set({ 
- 
-                isColorPickerOpen: false, 
-                isTodoListOpen: false, 
-                isSnippetVaultOpen: false, 
 
                 isKoCalendarOpen: false,
                 activeExtensionPanelId: null
@@ -544,21 +477,9 @@ export const useAppStore = create<AppState>()(
 
             // Feature Toggles (Initial State)
 
-            isColorPickerEnabled: false,
-            setIsColorPickerEnabled: (val: boolean) => set({ isColorPickerEnabled: val }),
-
-            isColorPickerOpen: false,
-            setIsColorPickerOpen: (val: boolean) => {
-                if (val) get().closeAllUtilityPopups();
-                set({ isColorPickerOpen: val });
-            },
-            colorPickerAnchorRect: null,
-            setColorPickerAnchorRect: (rect) => set({ colorPickerAnchorRect: rect }),
-            eyeDropperOffset: { x: 0, y: 0 },
-            setEyeDropperOffset: (offset) => set({ eyeDropperOffset: offset }),
-
             isPinInjectorEnabled: false,
             setIsPinInjectorEnabled: (val: boolean) => set({ isPinInjectorEnabled: val }),
+
             isTargetingMode: false,
             setIsTargetingMode: (val: boolean) => set({ isTargetingMode: val }),
             pinnedWindowHwnd: null,
@@ -569,22 +490,7 @@ export const useAppStore = create<AppState>()(
             koBoxCleanupMode: '24h',
             setKoBoxCleanupMode: (val: '24h' | 'quit') => set({ koBoxCleanupMode: val }),
 
-            isSnippetVaultOpen: false,
-            setIsSnippetVaultOpen: (val: boolean) => {
-                if (val) get().closeAllUtilityPopups();
-                set({ isSnippetVaultOpen: val });
-            },
-            snippetVaultAnchorRect: null,
-            setSnippetVaultAnchorRect: (rect) => set({ snippetVaultAnchorRect: rect }),
 
-            isSnippetVaultEnabled: true,
-            setIsSnippetVaultEnabled: (val: boolean) => set({ isSnippetVaultEnabled: val }),
-            isSnippetVaultCompact: false,
-            setIsSnippetVaultCompact: (val: boolean) => set({ isSnippetVaultCompact: val }),
-            snippets: [],
-            addSnippet: (snippet) => set((state) => ({ snippets: [{ ...snippet, id: crypto.randomUUID() }, ...state.snippets] })),
-            updateSnippet: (id, snippet) => set((state) => ({ snippets: state.snippets.map(s => s.id === id ? { ...s, ...snippet } : s) })),
-            deleteSnippet: (id) => set((state) => ({ snippets: state.snippets.filter(s => s.id !== id) })),
 
             isAiHubOpen: false,
             setIsAiHubOpen: (val: boolean) => set({ isAiHubOpen: val }),
@@ -624,60 +530,13 @@ export const useAppStore = create<AppState>()(
             koCalendarColor: '#60a5fa', // Global default/fallback
             setKoCalendarColor: (color: string) => set({ koCalendarColor: color }),
 
-            isTodoListOpen: false,
-            setIsTodoListOpen: (val: boolean) => {
-                if (val) get().closeAllUtilityPopups();
-                set({ isTodoListOpen: val });
-            },
-            todoListAnchorRect: null,
-            setTodoListAnchorRect: (rect) => set({ todoListAnchorRect: rect }),
-            isTodoListEnabled: true,
+
             isPopupSmartPositioning: false,
-            setIsTodoListEnabled: (val: boolean) => set({ isTodoListEnabled: val }),
             setIsPopupSmartPositioning: (val: boolean) => set({ isPopupSmartPositioning: val }),
-            todos: [],
-            addTodo: () => set((state) => ({ 
-                todos: [{ id: Date.now().toString(), text: '', completed: false }, ...state.todos] 
-            })),
-            updateTodoText: (id, text) => set((state) => ({
-                todos: state.todos.map(t => t.id === id ? { ...t, text } : t)
-            })),
-            updateTodoDate: (id, dueDate) => set((state) => ({
-                todos: state.todos.map(t => t.id === id ? { ...t, dueDate } : t)
-            })),
-            toggleTodo: (id) => set((state) => ({
-                todos: state.todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
-            })),
-            deleteTodo: (id) => set((state) => ({
-                todos: state.todos.filter(t => t.id !== id)
-            })),
-            reorderTodos: (startIndex, endIndex) => set((state) => {
-                const result = Array.from(state.todos);
-                const [removed] = result.splice(startIndex, 1);
-                result.splice(endIndex, 0, removed);
-                return { todos: result };
-            }),
 
-            currentColor: '#237B5E',
-            setCurrentColor: (hex: string) => set({ currentColor: hex }),
-            colorPalettes: [],
-            addPalette: (palette) => set((state) => ({ colorPalettes: [...state.colorPalettes, palette] })),
-            updatePalette: (id, palette) => set((state) => ({
-                colorPalettes: state.colorPalettes.map(p => p.id === id ? { ...p, ...palette } : p)
-            })),
-            deletePalette: (id) => set((state) => ({
-                colorPalettes: state.colorPalettes.filter(p => p.id !== id)
-            })),
-            duplicatePalette: (id) => set((state) => {
-                const palette = state.colorPalettes.find(p => p.id === id);
-                if (!palette) return state;
-                const newPalette = { ...palette, id: Date.now().toString(), name: `${palette.name} (Copy)` };
-                return { colorPalettes: [...state.colorPalettes, newPalette] };
-            }),
-            autoCopyColor: true,
-            setAutoCopyColor: (val: boolean) => set({ autoCopyColor: val }),
 
-            featureOrder: ['aihub', 'kocalendar', 'todolist', 'snippetvault', 'pininjector', 'kobox', 'colorpicker', 'calculator'],
+
+            featureOrder: ['aihub', 'kocalendar', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'],
             setFeatureOrder: (order) => set({ featureOrder: order }),
 
             settingsFeatureViewMode: 'cards',
@@ -871,16 +730,12 @@ export const useAppStore = create<AppState>()(
                     id: Date.now().toString(),
                     name,
 
-                    isColorPickerEnabled: state.isColorPickerEnabled,
                     isPinInjectorEnabled: state.isPinInjectorEnabled,
                     isKoBoxEnabled: state.isKoBoxEnabled,
-                    isSnippetVaultEnabled: state.isSnippetVaultEnabled,
                     isAiHubEnabled: state.isAiHubEnabled,
                     isKoCalendarEnabled: state.isKoCalendarEnabled,
-                    isTodoListEnabled: state.isTodoListEnabled,
 
                     koBoxCleanupMode: state.koBoxCleanupMode,
-                    autoCopyColor: state.autoCopyColor,
 
                     toggleWidth: state.toggleWidth,
                     sidebarWidth: state.sidebarWidth,
@@ -911,16 +766,12 @@ export const useAppStore = create<AppState>()(
                 }
                 return {
 
-                    isColorPickerEnabled: ws.isColorPickerEnabled,
                     isPinInjectorEnabled: ws.isPinInjectorEnabled,
                     isKoBoxEnabled: ws.isKoBoxEnabled,
-                    isSnippetVaultEnabled: ws.isSnippetVaultEnabled,
                     isAiHubEnabled: ws.isAiHubEnabled,
                     isKoCalendarEnabled: ws.isKoCalendarEnabled,
-                    isTodoListEnabled: ws.isTodoListEnabled,
 
                     koBoxCleanupMode: ws.koBoxCleanupMode,
-                    autoCopyColor: ws.autoCopyColor,
 
                     toggleWidth: ws.toggleWidth,
                     sidebarWidth: ws.sidebarWidth,
@@ -948,17 +799,13 @@ export const useAppStore = create<AppState>()(
                 workspaces: state.workspaces.map(w => w.id === id ? {
                     ...w,
 
-                    isColorPickerEnabled: state.isColorPickerEnabled,
                     isPinInjectorEnabled: state.isPinInjectorEnabled,
                     isKoBoxEnabled: state.isKoBoxEnabled,
-                    isSnippetVaultEnabled: state.isSnippetVaultEnabled,
                     isAiHubEnabled: state.isAiHubEnabled,
                     isKoCalendarEnabled: state.isKoCalendarEnabled,
-                    isTodoListEnabled: state.isTodoListEnabled,
                     isPopupSmartPositioning: state.isPopupSmartPositioning,
 
                     koBoxCleanupMode: state.koBoxCleanupMode,
-                    autoCopyColor: state.autoCopyColor,
 
                     toggleWidth: state.toggleWidth,
                     sidebarWidth: state.sidebarWidth,
@@ -1011,29 +858,32 @@ export const useAppStore = create<AppState>()(
                 
                 // version 1 migration for colorpicker
                 if (version <= 1) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('colorpicker')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'colorpicker'];
-                    }
-                    if (persistedState.isColorPickerEnabled === undefined) {
-                        persistedState.isColorPickerEnabled = true;
-                    }
-                    if (!persistedState.colorPalettes) {
-                        persistedState.colorPalettes = [];
+                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('kobar-colorpicker-plugin-btn')) {
+                        persistedState.featureOrder = [...persistedState.featureOrder, 'kobar-colorpicker-plugin-btn'];
                     }
                 }
+                
+                if (persistedState.featureOrder) {
+                    persistedState.featureOrder = persistedState.featureOrder.map((f: string) => f === 'colorpicker' ? 'kobar-colorpicker-plugin-btn' : f);
+                }
+                
+                delete persistedState.isColorPickerEnabled;
+                delete persistedState.colorPalettes;
+                delete persistedState.currentColor;
 
                 // version 2 migration for todolist
                 if (version <= 2) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('todolist')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'todolist'];
-                    }
-                    if (persistedState.isTodoListEnabled === undefined) {
-                        persistedState.isTodoListEnabled = true;
-                    }
-                    if (!persistedState.todos) {
-                        persistedState.todos = [];
+                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('todolist-plugin-btn')) {
+                        persistedState.featureOrder = [...persistedState.featureOrder, 'todolist-plugin-btn'];
                     }
                 }
+                
+                if (persistedState.featureOrder) {
+                    persistedState.featureOrder = persistedState.featureOrder.map((f) => f === 'todolist' ? 'todolist-plugin-btn' : f);
+                }
+                
+                delete persistedState.isTodoListEnabled;
+                delete persistedState.todos;
 
                 // version 3 migration for pininjector
                 if (version <= 3) {
@@ -1085,8 +935,8 @@ export const useAppStore = create<AppState>()(
 
                 // version 5/6 migration for snippetvault
                 if (version <= 5) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('snippetvault')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'snippetvault'];
+                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('snippetvault-plugin-btn')) {
+                        persistedState.featureOrder = [...persistedState.featureOrder, 'snippetvault-plugin-btn'];
                     }
                     if (persistedState.isSnippetVaultEnabled === undefined) {
                         persistedState.isSnippetVaultEnabled = true;
@@ -1127,7 +977,7 @@ export const useAppStore = create<AppState>()(
                     }
                     // Final sanity check for featureOrder array
                     if (!persistedState.featureOrder) {
-                        persistedState.featureOrder = ['aihub', 'copypaste', 'todolist', 'snippetvault', 'pininjector', 'kobox', 'focusmode', 'colorpicker', 'calculator'];
+                        persistedState.featureOrder = ['aihub', 'copypaste', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'];
                     }
                 }
 
@@ -1157,31 +1007,28 @@ export const useAppStore = create<AppState>()(
                 launchAtStartup: state.launchAtStartup,
                 enableEyeAnimation: state.enableEyeAnimation,
 
-                isCopyPasteEnabled: state.isCopyPasteEnabled,
 
 
-                isColorPickerEnabled: state.isColorPickerEnabled,
+
+
                 isKoCalendarEnabled: state.isKoCalendarEnabled,
-                isTodoListEnabled: state.isTodoListEnabled,
+
                 isPinInjectorEnabled: state.isPinInjectorEnabled,
                 isKoBoxEnabled: state.isKoBoxEnabled,
-                isSnippetVaultEnabled: state.isSnippetVaultEnabled,
                 isAiHubEnabled: state.isAiHubEnabled,
                 koBoxCleanupMode: state.koBoxCleanupMode,
-                autoCopyColor: state.autoCopyColor,
-                colorPalettes: state.colorPalettes,
-                todos: state.todos,
-                snippets: state.snippets,
+
+
+
                 localEvents: state.localEvents,
                 featureOrder: state.featureOrder,
                 design: state.design,
                 glassOpacity: state.glassOpacity,
-                slotCount: state.slotCount,
+
                 aiHubHeight: state.aiHubHeight,
                 koCalendarColor: state.koCalendarColor,
                 workspaces: state.workspaces,
-                isSnippetVaultCompact: state.isSnippetVaultCompact,
-
+                isAiHubOpen: state.isAiHubOpen,
                 settingsFeatureViewMode: state.settingsFeatureViewMode,
                 settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
                 orientation: state.orientation,

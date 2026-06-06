@@ -46,13 +46,6 @@ const FloatingEye: React.FC = () => {
     const dragInitRef = useRef({ dragged: false, offsetX: 0, offsetY: 0 });
     const windowPosRef = useRef({ x: 0, y: 0 });
     const localDisplaysRef = useRef<{ primaryDisplay: any, allDisplays: any[] } | null>(null);
-    const [isDev, setIsDev] = useState(false);
-
-    useEffect(() => {
-        if (window.api?.isDev) {
-            window.api.isDev().then(setIsDev);
-        }
-    }, []);
 
     // If teleport is triggered while already in Mini Mode, update pos to the new cursor center
     useEffect(() => {

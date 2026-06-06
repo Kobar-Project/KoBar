@@ -110,13 +110,7 @@ const Sidebar: React.FC = () => {
         }
     };
 
-    const [isDev, setIsDev] = React.useState(false);
 
-    React.useEffect(() => {
-        if (window.api?.isDev) {
-            window.api.isDev().then(setIsDev);
-        }
-    }, []);
     
     // Drag to scroll logic
     const scrollRef = React.useRef<HTMLDivElement>(null);

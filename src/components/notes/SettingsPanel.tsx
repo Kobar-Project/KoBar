@@ -1,7 +1,58 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore, applyCustomThemeCSS } from '../../store/useAppStore';
 import { getLanguageOptions } from '../../i18n/translations';
-import { hexToHsv, hsvToHex } from '../layout/ColorPickerPopup';
+function hsvToHex(h: number, s: number, v: number): string {
+    s /= 100; v /= 100;
+    let i = Math.floor(h / 60);
+    let f = h / 60 - i;
+    let p = v * (1 - s);
+    let q = v * (1 - f * s);
+    let t = v * (1 - (1 - f) * s);
+    let r = 0, g = 0, b = 0;
+    switch (i % 6) {
+        case 0: r = v; g = t; b = p; break;
+        case 1: r = q; g = v; b = p; break;
+        case 2: r = p; g = v; b = t; break;
+        case 3: r = p; g = q; b = v; break;
+        case 4: r = t; g = p; b = v; break;
+        case 5: r = v; g = p; b = q; break;
+    }
+    const toHex = (x: number) => Math.round(x * 255).toString(16).padStart(2, '0').toUpperCase();
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function hexToHsv(hex: string): [number, number, number] {
+    let hexStr = hex;
+    if (hexStr.length === 4) {
+        hexStr = '#' + hexStr[1] + hexStr[1] + hexStr[2] + hexStr[2] + hexStr[3] + hexStr[3];
+    } else if (hexStr.length !== 7) {
+        return [0, 0, 100];
+    }
+    let r = parseInt(hexStr.slice(1, 3), 16) / 255;
+    let g = parseInt(hexStr.slice(3, 5), 16) / 255;
+    let b = parseInt(hexStr.slice(5, 7), 16) / 255;
+    
+    if (isNaN(r)) r = 0;
+    if (isNaN(g)) g = 0;
+    if (isNaN(b)) b = 0;
+
+    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0, v = max;
+    let d = max - min;
+    s = max === 0 ? 0 : d / max;
+
+    if (max !== min) {
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    } else {
+        h = 0;
+    }
+    return [Math.round(h * 360), Math.round(s * 100), Math.round(v * 100)];
+}
 import { IS_STORE_BUILD } from '../../App';
 import Accordion from './Accordion';
 const isSystemTab = (note: any) => note.isSettings || note.title === 'Welcome to KoBar!';
@@ -18,21 +69,7 @@ const SettingsPanel: React.FC = () => {
     const importSettingsRef = useRef<HTMLInputElement>(null);
     const importDataRef = useRef<HTMLInputElement>(null);
 
-    // --- Custom Theme Color Picker Link ---
-    const currentColor = useAppStore(state => state.currentColor);
-    const isColorPickerOpen = useAppStore(state => state.isColorPickerOpen);
-    const [isThemePickerActive, setIsThemePickerActive] = useState(false);
-    
-    useEffect(() => {
-        if (!isColorPickerOpen) setIsThemePickerActive(false);
-    }, [isColorPickerOpen]);
-    
-    useEffect(() => {
-        if (isThemePickerActive) {
-            setCustomThemeColor(currentColor);
-            applyCustomThemeCSS(currentColor);
-        }
-    }, [currentColor, isThemePickerActive]);
+
     const setLanguage = useAppStore(state => state.setLanguage);
     const t = useAppStore(state => state.t);
     const showTooltips = useAppStore(state => state.showTooltips);
@@ -303,7 +340,6 @@ const SettingsPanel: React.FC = () => {
                 theme: state.theme,
                 customThemeColor: state.customThemeColor,
                 language: state.language,
-                focusSettings: state.focusSettings,
                 showTooltips: state.showTooltips,
                 sidebarWidth: state.sidebarWidth,
                 iconScale: state.iconScale,
@@ -311,24 +347,19 @@ const SettingsPanel: React.FC = () => {
                 launchAtStartup: state.launchAtStartup,
                 enableEyeAnimation: state.enableEyeAnimation,
 
-                isColorPickerEnabled: state.isColorPickerEnabled,
+
                 isKoCalendarEnabled: state.isKoCalendarEnabled,
-                isTodoListEnabled: state.isTodoListEnabled,
                 isPinInjectorEnabled: state.isPinInjectorEnabled,
                 isKoBoxEnabled: state.isKoBoxEnabled,
-                isSnippetVaultEnabled: state.isSnippetVaultEnabled,
                 isAiHubEnabled: state.isAiHubEnabled,
                 koBoxCleanupMode: state.koBoxCleanupMode,
-                autoCopyColor: state.autoCopyColor,
-                colorPalettes: state.colorPalettes,
+
                 featureOrder: state.featureOrder,
                 design: state.design,
                 glassOpacity: state.glassOpacity,
                 aiHubHeight: state.aiHubHeight,
                 koCalendarColor: state.koCalendarColor,
                 workspaces: state.workspaces,
-                isSnippetVaultCompact: state.isSnippetVaultCompact,
-
                 settingsFeatureViewMode: state.settingsFeatureViewMode,
                 settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
                 orientation: state.orientation,
@@ -337,9 +368,6 @@ const SettingsPanel: React.FC = () => {
         } else {
             payload = {
                 notes: state.notes.filter(n => !isSystemTab(n)),
-                pinnedApps: state.pinnedApps,
-                todos: state.todos,
-                snippets: state.snippets,
                 localEvents: state.localEvents,
             };
         }
@@ -386,23 +414,14 @@ const SettingsPanel: React.FC = () => {
                     const filteredImportedNotes = (parsed.notes || []).filter((n: any) => !isSystemTab(n));
                     const importedNotes = filteredImportedNotes.map((n: any) => ({ ...n, id: nextId++ }));
                     
-                    const mergedPinnedApps = [...state.pinnedApps];
-                    (parsed.pinnedApps || []).forEach((app: any) => {
-                        if (!mergedPinnedApps.find(a => a.path === app.path)) {
-                            mergedPinnedApps.push(app);
-                        }
-                    });
 
-                    const mergedTodos = [...state.todos, ...(parsed.todos || []).map((t: any) => ({ ...t, id: Date.now().toString() + Math.random() }))];
-                    const mergedSnippets = [...state.snippets, ...(parsed.snippets || []).map((s: any) => ({ ...s, id: crypto.randomUUID() }))];
+
+
                     const mergedLocalEvents = [...state.localEvents, ...(parsed.localEvents || []).map((ev: any) => ({ ...ev, id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000) }))];
 
                     useAppStore.setState({
                         notes: [...state.notes, ...importedNotes],
                         nextNoteId: nextId,
-                        pinnedApps: mergedPinnedApps,
-                        todos: mergedTodos,
-                        snippets: mergedSnippets,
                         localEvents: mergedLocalEvents
                     });
                 } else {

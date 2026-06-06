@@ -5,11 +5,11 @@ import Sidebar from './components/layout/Sidebar';
 import NotePanel from './components/notes/NotePanel';
 import FloatingEye from './components/layout/FloatingEye';
 
-import ColorPickerPopup from './components/layout/ColorPickerPopup';
-import TodoListPopup from './components/layout/TodoListPopup';
-import { SnippetVaultPopup } from './components/layout/SnippetVaultPopup';
 
-import { AiHubPopup } from './components/chat/AiHubPopup';
+
+
+
+
 import LicenseActivationModal from './components/license/LicenseActivationModal';
 
 
@@ -29,18 +29,18 @@ export const ENABLE_LICENSING = false;
 const App: React.FC = () => {
   const edgePosition = useAppStore(state => state.edgePosition);
   const setEdgePosition = useAppStore(state => state.setEdgePosition);
-  const eyeDropperOffset = useAppStore(state => state.eyeDropperOffset);
+
   const isNotePanelOpen = useAppStore(state => state.isNotePanelOpen);
   const isMiniMode = useAppStore(state => state.isMiniMode);
   const theme = useAppStore(state => state.theme);
   const isLicensed = useAppStore(state => state.isLicensed);
   const setLicensed = useAppStore(state => state.setLicensed);
 
-  const isColorPickerOpen = useAppStore(state => state.isColorPickerOpen);
-  const isTodoListOpen = useAppStore(state => state.isTodoListOpen);
-  const isSnippetVaultOpen = useAppStore(state => state.isSnippetVaultOpen);
 
-  const isAiHubOpen = useAppStore(state => state.isAiHubOpen);
+
+
+
+
 
   const isKoCalendarOpen = useAppStore(state => state.isKoCalendarOpen);
   const setIsTargetingMode = useAppStore(state => state.setIsTargetingMode);
@@ -174,28 +174,7 @@ const App: React.FC = () => {
     };
   }, [isHydrated, extensionReloadTrigger]);
 
-  // Focus Tracker Interval
-  useEffect(() => {
-    let lastTime = useAppStore.getState().focusRemainingTime;
-    const interval = setInterval(() => {
-      const state = useAppStore.getState();
-      const prevTime = lastTime;
-      state.tickFocusTracker();
-      const currTime = state.focusRemainingTime;
-      lastTime = currTime;
 
-      // Trigger notification when timer hits 0
-      if (state.isFocusActive && prevTime > 0 && currTime === 0) {
-        window.api?.sendNotification?.(
-          state.t('focusModeFinished') || 'Focus Mode Finished',
-          state.t('focusModeFinishedDesc') || 'Your focus session has ended. Take a break!'
-        );
-        // Finally stop the focus mode state
-        state.stopFocusMode();
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // KoBox cleanup triggers
   useEffect(() => {
@@ -342,7 +321,7 @@ const App: React.FC = () => {
                     : 'items-start justify-center pt-[20px]'))
         }`}
         style={{
-          transform: `translate(${eyeDropperOffset.x}px, ${eyeDropperOffset.y}px)`
+          transform: `translate(0px, 0px)`
         }}
       >
         <div 
@@ -389,11 +368,11 @@ const App: React.FC = () => {
               )}
 
               {/* Context-bound Popups */}
-              {isAiHubOpen && isLicensed && <AiHubPopup />}
 
-              {isColorPickerOpen && isLicensed && <ColorPickerPopup />}
-              {isTodoListOpen && isLicensed && <TodoListPopup />}
-              {isSnippetVaultOpen && isLicensed && <SnippetVaultPopup />}
+
+
+
+
 
 
               {isKoCalendarOpen && isLicensed && <KoCalendarPopup />}
