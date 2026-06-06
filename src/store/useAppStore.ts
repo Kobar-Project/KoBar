@@ -75,23 +75,6 @@ export interface PinnedApp {
 }
 
 
-
-
-
-export interface CalendarEvent {
-    id: string;
-    title: string;
-    description?: string;
-    meetingLink?: string;
-    startTime: string; // ISO string
-    endTime: string; // ISO string
-    colorId?: string;
-    notificationEnabled?: boolean;
-    notificationMinutes?: number;
-}
-
-
-
 export interface WorkspaceConfig {
     id: string;
     name: string;
@@ -100,8 +83,8 @@ export interface WorkspaceConfig {
 
     isPinInjectorEnabled: boolean;
     isKoBoxEnabled: boolean;
-    isAiHubEnabled: boolean;
-    isKoCalendarEnabled: boolean;
+
+
 
     koBoxCleanupMode: '24h' | 'quit';
 
@@ -196,15 +179,6 @@ interface AppState {
 
 
 
-
-
-
-
-
-
-
-
-
     isPinInjectorEnabled: boolean;
     setIsPinInjectorEnabled: (val: boolean) => void;
     isTargetingMode: boolean;
@@ -219,32 +193,9 @@ interface AppState {
     setKoBoxCleanupMode: (val: '24h' | 'quit') => void;
 
 
-    // AI Hub Feature
-    isAiHubOpen: boolean;
-    setIsAiHubOpen: (val: boolean) => void;
-    isAiHubEnabled: boolean;
-    setIsAiHubEnabled: (val: boolean) => void;
-    aiHubAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    setAiHubAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
-    aiHubWidth: number;
-    setAiHubWidth: (width: number | ((prev: number) => number)) => void;
-    aiHubHeight: number;
-    setAiHubHeight: (height: number | ((prev: number) => number)) => void;
 
-    // KoCalendar Feature
-    isKoCalendarEnabled: boolean;
-    setIsKoCalendarEnabled: (val: boolean) => void;
-    isKoCalendarOpen: boolean;
-    setIsKoCalendarOpen: (val: boolean) => void;
-    koCalendarAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    setKoCalendarAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
-    localEvents: CalendarEvent[];
-    setLocalEvents: (events: CalendarEvent[]) => void;
-    addCalendarEvent: (event: Omit<CalendarEvent, 'id'>) => void;
-    updateCalendarEvent: (id: string, updatedEvent: Partial<CalendarEvent>) => void;
-    deleteCalendarEvent: (id: string) => void;
-    koCalendarColor: string;
-    setKoCalendarColor: (color: string) => void;
+
+
 
 
     isPopupSmartPositioning: boolean;
@@ -368,9 +319,9 @@ export const useAppStore = create<AppState>()(
     persist(
         (set, get) => ({
             isMac: window.api?.getPlatform ? window.api.getPlatform() === 'darwin' : false,
-            closeAllUtilityPopups: () => set({ 
+            closeAllUtilityPopups: () => set({
 
-                isKoCalendarOpen: false,
+
                 activeExtensionPanelId: null
             }),
             activeExtensionPanelId: null,
@@ -431,10 +382,10 @@ export const useAppStore = create<AppState>()(
                 const hex = color.startsWith('#') ? color : `#${color}`;
                 // Double safety: Manual sync write to bypass any async persist issues
                 localStorage.setItem('kobar_force_theme_color', hex);
-                
+
                 document.documentElement.setAttribute('data-theme', 'custom');
                 applyCustomThemeCSS(hex);
-                set({ 
+                set({
                     customThemeColor: hex,
                     theme: 'custom'
                 });
@@ -492,43 +443,9 @@ export const useAppStore = create<AppState>()(
 
 
 
-            isAiHubOpen: false,
-            setIsAiHubOpen: (val: boolean) => set({ isAiHubOpen: val }),
-            isAiHubEnabled: false,
-            setIsAiHubEnabled: (val: boolean) => set({ isAiHubEnabled: val }),
-            aiHubAnchorRect: null,
-            setAiHubAnchorRect: (rect) => set({ aiHubAnchorRect: rect }),
-            aiHubWidth: 800,
-            setAiHubWidth: (width) => set((state) => ({ aiHubWidth: typeof width === 'function' ? width(state.aiHubWidth) : width })),
-            aiHubHeight: 600,
-            setAiHubHeight: (height) => set((state) => ({ aiHubHeight: typeof height === 'function' ? height(state.aiHubHeight) : height })),
 
-            isKoCalendarEnabled: true,
-            setIsKoCalendarEnabled: (val: boolean) => set({ isKoCalendarEnabled: val }),
-            isKoCalendarOpen: false,
-            setIsKoCalendarOpen: (val: boolean) => {
-                if (val) get().closeAllUtilityPopups();
-                set({ isKoCalendarOpen: val });
-            },
-            koCalendarAnchorRect: null,
-            setKoCalendarAnchorRect: (rect) => set({ koCalendarAnchorRect: rect }),
-            localEvents: [],
-            setLocalEvents: (events: CalendarEvent[]) => set({ localEvents: events }),
-            addCalendarEvent: (event) => set((state) => ({ 
-                localEvents: [...state.localEvents, { 
-                    ...event, 
-                    id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000),
-                    colorId: event.colorId || state.koCalendarColor
-                }] 
-            })),
-            updateCalendarEvent: (id, updatedEvent) => set((state) => ({
-                localEvents: state.localEvents.map(e => e.id === id ? { ...e, ...updatedEvent } : e)
-            })),
-            deleteCalendarEvent: (id) => set((state) => ({
-                localEvents: state.localEvents.filter(e => e.id !== id)
-            })),
-            koCalendarColor: '#60a5fa', // Global default/fallback
-            setKoCalendarColor: (color: string) => set({ koCalendarColor: color }),
+
+
 
 
             isPopupSmartPositioning: false,
@@ -536,7 +453,7 @@ export const useAppStore = create<AppState>()(
 
 
 
-            featureOrder: ['aihub', 'kocalendar', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'],
+            featureOrder: ['com.kobar.aihub.btn', 'ko-calender-plugin-btn', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'],
             setFeatureOrder: (order) => set({ featureOrder: order }),
 
             settingsFeatureViewMode: 'cards',
@@ -719,8 +636,8 @@ export const useAppStore = create<AppState>()(
 
             // Scroll Memory
             scrollPositions: {},
-            setScrollPosition: (key: string, pos: number) => set((state) => ({ 
-                scrollPositions: { ...state.scrollPositions, [key]: pos } 
+            setScrollPosition: (key: string, pos: number) => set((state) => ({
+                scrollPositions: { ...state.scrollPositions, [key]: pos }
             })),
 
             // Workspaces
@@ -732,8 +649,8 @@ export const useAppStore = create<AppState>()(
 
                     isPinInjectorEnabled: state.isPinInjectorEnabled,
                     isKoBoxEnabled: state.isKoBoxEnabled,
-                    isAiHubEnabled: state.isAiHubEnabled,
-                    isKoCalendarEnabled: state.isKoCalendarEnabled,
+
+
 
                     koBoxCleanupMode: state.koBoxCleanupMode,
 
@@ -768,8 +685,8 @@ export const useAppStore = create<AppState>()(
 
                     isPinInjectorEnabled: ws.isPinInjectorEnabled,
                     isKoBoxEnabled: ws.isKoBoxEnabled,
-                    isAiHubEnabled: ws.isAiHubEnabled,
-                    isKoCalendarEnabled: ws.isKoCalendarEnabled,
+
+
 
                     koBoxCleanupMode: ws.koBoxCleanupMode,
 
@@ -801,8 +718,8 @@ export const useAppStore = create<AppState>()(
 
                     isPinInjectorEnabled: state.isPinInjectorEnabled,
                     isKoBoxEnabled: state.isKoBoxEnabled,
-                    isAiHubEnabled: state.isAiHubEnabled,
-                    isKoCalendarEnabled: state.isKoCalendarEnabled,
+
+
                     isPopupSmartPositioning: state.isPopupSmartPositioning,
 
                     koBoxCleanupMode: state.koBoxCleanupMode,
@@ -855,18 +772,18 @@ export const useAppStore = create<AppState>()(
                     // Ensure it's enabled by default if not set
 
                 }
-                
+
                 // version 1 migration for colorpicker
                 if (version <= 1) {
                     if (persistedState.featureOrder && !persistedState.featureOrder.includes('kobar-colorpicker-plugin-btn')) {
                         persistedState.featureOrder = [...persistedState.featureOrder, 'kobar-colorpicker-plugin-btn'];
                     }
                 }
-                
+
                 if (persistedState.featureOrder) {
                     persistedState.featureOrder = persistedState.featureOrder.map((f: string) => f === 'colorpicker' ? 'kobar-colorpicker-plugin-btn' : f);
                 }
-                
+
                 delete persistedState.isColorPickerEnabled;
                 delete persistedState.colorPalettes;
                 delete persistedState.currentColor;
@@ -877,11 +794,11 @@ export const useAppStore = create<AppState>()(
                         persistedState.featureOrder = [...persistedState.featureOrder, 'todolist-plugin-btn'];
                     }
                 }
-                
+
                 if (persistedState.featureOrder) {
-                    persistedState.featureOrder = persistedState.featureOrder.map((f) => f === 'todolist' ? 'todolist-plugin-btn' : f);
+                    persistedState.featureOrder = persistedState.featureOrder.map((f: string) => f === 'todolist' ? 'todolist-plugin-btn' : f);
                 }
-                
+
                 delete persistedState.isTodoListEnabled;
                 delete persistedState.todos;
 
@@ -895,30 +812,11 @@ export const useAppStore = create<AppState>()(
                     }
                 }
 
-                if (version <= 10) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('kocalendar')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'kocalendar'];
-                    }
-                    if (persistedState.isKoCalendarEnabled === undefined) {
-                        persistedState.isKoCalendarEnabled = true;
-                    }
-                    // Migrate old calendarEvents to localEvents if any exist
-                    if (persistedState.calendarEvents && !persistedState.localEvents) {
-                        persistedState.localEvents = persistedState.calendarEvents;
-                    }
-                    if (persistedState.localEvents === undefined) {
-                        persistedState.localEvents = [];
-                    }
+                if (persistedState.featureOrder && !persistedState.featureOrder.includes('ko-calender-plugin-btn')) {
+                    persistedState.featureOrder = [...persistedState.featureOrder, 'ko-calender-plugin-btn'];
                 }
 
-                if (version <= 11) {
-                    if (persistedState.koCalendarColor === undefined) {
-                        persistedState.koCalendarColor = '#60a5fa';
-                    }
-                    if (!persistedState.localEvents) {
-                        persistedState.localEvents = [];
-                    }
-                }
+
 
                 // version 4 migration for kobox
                 if (version <= 4) {
@@ -968,16 +866,16 @@ export const useAppStore = create<AppState>()(
 
                 // AI hub migration
                 if (version <= 6) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('aihub')) {
+                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('com.kobar.aihub.btn')) {
                         // Force it to be the first item
-                        persistedState.featureOrder = ['aihub', ...persistedState.featureOrder.filter((f: string) => f !== 'shortcuts' && f !== 'aihub')];
+                        persistedState.featureOrder = ['com.kobar.aihub.btn', ...persistedState.featureOrder.filter((f: string) => f !== 'shortcuts' && f !== 'aihub' && f !== 'com.kobar.aihub.btn')];
                     }
                     if (persistedState.isAiHubEnabled === undefined) {
                         persistedState.isAiHubEnabled = true;
                     }
                     // Final sanity check for featureOrder array
                     if (!persistedState.featureOrder) {
-                        persistedState.featureOrder = ['aihub', 'copypaste', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'];
+                        persistedState.featureOrder = ['com.kobar.aihub.btn', 'copypaste', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'];
                     }
                 }
 
@@ -1011,24 +909,24 @@ export const useAppStore = create<AppState>()(
 
 
 
-                isKoCalendarEnabled: state.isKoCalendarEnabled,
+
 
                 isPinInjectorEnabled: state.isPinInjectorEnabled,
                 isKoBoxEnabled: state.isKoBoxEnabled,
-                isAiHubEnabled: state.isAiHubEnabled,
+
                 koBoxCleanupMode: state.koBoxCleanupMode,
 
 
 
-                localEvents: state.localEvents,
+
                 featureOrder: state.featureOrder,
                 design: state.design,
                 glassOpacity: state.glassOpacity,
 
-                aiHubHeight: state.aiHubHeight,
-                koCalendarColor: state.koCalendarColor,
+
+
                 workspaces: state.workspaces,
-                isAiHubOpen: state.isAiHubOpen,
+
                 settingsFeatureViewMode: state.settingsFeatureViewMode,
                 settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
                 orientation: state.orientation,
@@ -1044,7 +942,7 @@ export const useAppStore = create<AppState>()(
 
                         // Priority 1: Force color from emergency sync storage
                         const forcedColor = localStorage.getItem('kobar_force_theme_color');
-                        
+
                         if (fetchedState.theme === 'custom') {
                             const finalColor = forcedColor || fetchedState.customThemeColor;
                             if (finalColor) {

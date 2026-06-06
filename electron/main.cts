@@ -1476,7 +1476,7 @@ ipcMain.on('cancel-screenshot', () => {
 });
 
 // Save screenshot to file
-ipcMain.handle('save-screenshot', async (_event, data: { buffer: string; format: string; destinationPath?: string }) => {
+ipcMain.handle('save-screenshot', async (_event, data: { buffer: string; format: string; destinationPath?: string; defaultPath?: string }) => {
     const { buffer, format, destinationPath } = data;
 
     // Convert base64 data URL to Buffer
@@ -1492,7 +1492,7 @@ ipcMain.handle('save-screenshot', async (_event, data: { buffer: string; format:
         // Open native save dialog as fallback
         const result = await dialog.showSaveDialog(mainWindow!, {
             title: 'Save Screenshot',
-            defaultPath: path.join(app.getPath('desktop'), `KoBar_Screenshot_${Date.now()}.${format}`),
+            defaultPath: data.defaultPath ? path.join(data.defaultPath, `KoBar_Screenshot_${Date.now()}.${format}`) : path.join(app.getPath('desktop'), `KoBar_Screenshot_${Date.now()}.${format}`),
             filters: [
                 { name: 'Images', extensions: [format] }
             ]

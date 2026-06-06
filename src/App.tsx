@@ -13,7 +13,7 @@ import FloatingEye from './components/layout/FloatingEye';
 import LicenseActivationModal from './components/license/LicenseActivationModal';
 
 
-import KoCalendarPopup from './components/calendar/KoCalendarPopup';
+
 
 import { useExtensionRegistry } from './components/extensions/extensionRegistry';
 
@@ -42,7 +42,7 @@ const App: React.FC = () => {
 
 
 
-  const isKoCalendarOpen = useAppStore(state => state.isKoCalendarOpen);
+
   const setIsTargetingMode = useAppStore(state => state.setIsTargetingMode);
   const design = useAppStore(state => state.design);
   const sidebarWidth = useAppStore(state => state.sidebarWidth);
@@ -375,7 +375,7 @@ const App: React.FC = () => {
 
 
 
-              {isKoCalendarOpen && isLicensed && <KoCalendarPopup />}
+
               
               {/* Dynamic Extensions Popups */}
               {activeExtensionPanelId && isLicensed && (() => {

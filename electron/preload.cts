@@ -132,7 +132,7 @@ contextBridge.exposeInMainWorld('api', {
         windowPosition: { x: number; y: number };
     }>,
     cancelScreenshot: () => ipcRenderer.send('cancel-screenshot'),
-    saveScreenshot: (data: { buffer: string; format: string; destinationPath?: string }) =>
+    saveScreenshot: (data: { buffer: string; format: string; destinationPath?: string; defaultPath?: string }) =>
         ipcRenderer.invoke('save-screenshot', data) as Promise<{ success: boolean; path?: string; reason?: string }>,
     copyScreenshotToClipboard: (dataUrl: string) => ipcRenderer.send('copy-screenshot-to-clipboard', dataUrl),
     screenshotSessionComplete: () => ipcRenderer.send('screenshot-session-complete'),

@@ -8,7 +8,7 @@ interface ResizerHandleProps {
     direction: ResizeDirection;
     onResizeTemp: (width: number, height: number) => void;
     onResizeEnd?: () => void;
-    target?: 'note' | 'aihub';
+    target?: 'note';
 }
 
 const ResizerHandle: React.FC<ResizerHandleProps> = ({ direction, onResizeTemp, onResizeEnd, target = 'note' }) => {

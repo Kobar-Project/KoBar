@@ -3,7 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { setIsResizingGlobal } from '../App';
 
 type ResizeDirection = 'side' | 'bottom' | 'corner';
-type ResizeTarget = 'note' | 'aihub';
+type ResizeTarget = 'note';
 
 interface UseUnifiedResizeOptions {
     target: ResizeTarget;
@@ -32,8 +32,8 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
         window.api?.setIgnoreMouseEvents(false);
 
         const state = useAppStore.getState();
-        const startWidth = target === 'aihub' ? state.aiHubWidth : state.notePanelWidth;
-        const startHeight = target === 'aihub' ? state.aiHubHeight : state.notePanelHeight;
+        const startWidth = state.notePanelWidth;
+        const startHeight = state.notePanelHeight;
 
         startPosRef.current = { x: e.screenX, y: e.screenY };
         startSizeRef.current = { width: startWidth, height: startHeight };
@@ -127,12 +127,10 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
             const clampedHeight = Math.min(Math.max(finalHeight, 200), effectiveMaxH);
 
             if (direction === 'side' || direction === 'corner') {
-                if (target === 'aihub') currentState.setAiHubWidth(clampedWidth);
-                else currentState.setNotePanelWidth(clampedWidth);
+                currentState.setNotePanelWidth(clampedWidth);
             }
             if (direction === 'bottom' || direction === 'corner') {
-                if (target === 'aihub') currentState.setAiHubHeight(clampedHeight);
-                else currentState.setNotePanelHeight(clampedHeight);
+                currentState.setNotePanelHeight(clampedHeight);
             }
 
             onResizeEnd?.();
@@ -146,20 +144,18 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
     const handleDoubleClick = useCallback(() => {
         const state = useAppStore.getState();
         const { screenBounds } = state;
-        const defaultW = target === 'aihub' ? 800 : 400;
-        const defaultH = target === 'aihub' ? Math.min(600, (screenBounds?.height ?? 800) - 40) : Math.min(600, (screenBounds?.height ?? 800) - 40);
+        const defaultW = 400;
+        const defaultH = Math.min(600, (screenBounds?.height ?? 800) - 40);
 
         if (direction === 'side' || direction === 'corner') {
-            if (target === 'aihub') state.setAiHubWidth(defaultW);
-            else state.setNotePanelWidth(defaultW);
+            state.setNotePanelWidth(defaultW);
         }
         if (direction === 'bottom' || direction === 'corner') {
-            if (target === 'aihub') state.setAiHubHeight(defaultH);
-            else state.setNotePanelHeight(defaultH);
+            state.setNotePanelHeight(defaultH);
         }
 
-        const newW = (direction === 'side' || direction === 'corner') ? defaultW : (target === 'aihub' ? state.aiHubWidth : state.notePanelWidth);
-        const newH = (direction === 'bottom' || direction === 'corner') ? defaultH : (target === 'aihub' ? state.aiHubHeight : state.notePanelHeight);
+        const newW = (direction === 'side' || direction === 'corner') ? defaultW : state.notePanelWidth;
+        const newH = (direction === 'bottom' || direction === 'corner') ? defaultH : state.notePanelHeight;
 
         onResizeTemp(newW, newH);
     }, [target, direction, onResizeTemp]);

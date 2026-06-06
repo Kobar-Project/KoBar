@@ -348,17 +348,17 @@ const SettingsPanel: React.FC = () => {
                 enableEyeAnimation: state.enableEyeAnimation,
 
 
-                isKoCalendarEnabled: state.isKoCalendarEnabled,
+
                 isPinInjectorEnabled: state.isPinInjectorEnabled,
                 isKoBoxEnabled: state.isKoBoxEnabled,
-                isAiHubEnabled: state.isAiHubEnabled,
+
                 koBoxCleanupMode: state.koBoxCleanupMode,
 
                 featureOrder: state.featureOrder,
                 design: state.design,
                 glassOpacity: state.glassOpacity,
-                aiHubHeight: state.aiHubHeight,
-                koCalendarColor: state.koCalendarColor,
+
+
                 workspaces: state.workspaces,
                 settingsFeatureViewMode: state.settingsFeatureViewMode,
                 settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
@@ -367,8 +367,7 @@ const SettingsPanel: React.FC = () => {
             };
         } else {
             payload = {
-                notes: state.notes.filter(n => !isSystemTab(n)),
-                localEvents: state.localEvents,
+                notes: state.notes.filter(n => !isSystemTab(n))
             };
         }
 
@@ -417,12 +416,9 @@ const SettingsPanel: React.FC = () => {
 
 
 
-                    const mergedLocalEvents = [...state.localEvents, ...(parsed.localEvents || []).map((ev: any) => ({ ...ev, id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000) }))];
-
                     useAppStore.setState({
                         notes: [...state.notes, ...importedNotes],
-                        nextNoteId: nextId,
-                        localEvents: mergedLocalEvents
+                        nextNoteId: nextId
                     });
                 } else {
                     // Apply parsed settings directly to the store
