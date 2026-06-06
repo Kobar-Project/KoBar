@@ -5,7 +5,6 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { useAppStore } from '../../store/useAppStore';
 import { useChatStore } from '../../store/useChatStore';
-import { useClipboardStore } from '../../store/useClipboardStore';
 import ResizerHandle from '../notes/ResizerHandle';
 
 const MODELS = [
@@ -35,7 +34,6 @@ export const AiHubPopup: React.FC = () => {
     const setScrollPosition = useAppStore(state => state.setScrollPosition);
     const screenBounds = useAppStore(state => state.screenBounds);
     const { chats, activeChatId, apiKeys, setActiveChatId, createChat, deleteChat, addMessage, appendStreamToMessage, updateChatTitle, aiAvatar, userAvatar, setAiAvatar, setUserAvatar } = useChatStore();
-    const forceAddClipboardItem = useClipboardStore(state => state.forceAddClipboardItem);
 
     const [input, setInput] = useState('');
     const [attachments, setAttachments] = useState<{name: string, content: string, type: 'text'|'image'}[]>([]);
@@ -371,7 +369,9 @@ export const AiHubPopup: React.FC = () => {
     };
 
     const handleSendToSlot = (text: string) => {
-        forceAddClipboardItem('text', text);
+        if (window.KoBarClipboardAPI) {
+            window.KoBarClipboardAPI.forceAddClipboardItem('text', text);
+        }
     };
 
     const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'ai' | 'user') => {

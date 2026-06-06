@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { useClipboardStore } from '../../store/useClipboardStore';
 
 function hexToHSL(hex: string): [number, number, number] {
     let r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -110,14 +109,12 @@ const ColorPickerPopup: React.FC = () => {
     const deletePalette = useAppStore(state => state.deletePalette);
     const duplicatePalette = useAppStore(state => state.duplicatePalette);
     const autoCopyColor = useAppStore(state => state.autoCopyColor);
-    const isCopyPasteEnabled = useAppStore(state => state.isCopyPasteEnabled);
     const screenBounds = useAppStore(state => state.screenBounds);
     const isSmartPositioning = useAppStore(state => state.isPopupSmartPositioning);
     const isMac = useAppStore(state => state.isMac);
     const setEyeDropperOffset = useAppStore(state => state.setEyeDropperOffset);
     const eyeDropperOffset = useAppStore(state => state.eyeDropperOffset);
 
-    const { forceAddClipboardItem } = useClipboardStore();
     const [activeTab, setActiveTab] = useState<'wheel' | 'palettes'>('wheel');
     const popupRef = useRef<HTMLDivElement>(null);
 
@@ -350,13 +347,15 @@ const ColorPickerPopup: React.FC = () => {
 
     const copyColor = (hex: string) => {
         navigator.clipboard.writeText(hex);
-        if (autoCopyColor && isCopyPasteEnabled) {
-            forceAddClipboardItem('text', hex);
+        if (autoCopyColor && window.KoBarClipboardAPI) {
+            window.KoBarClipboardAPI.forceAddClipboardItem('text', hex);
         }
     };
 
     const copyColors = (hexes: string[]) => {
-        hexes.forEach(hex => forceAddClipboardItem('text', hex));
+        if (window.KoBarClipboardAPI) {
+            hexes.forEach(hex => window.KoBarClipboardAPI.forceAddClipboardItem('text', hex));
+        }
     };
 
     const generateHarmonies = (hex: string) => {

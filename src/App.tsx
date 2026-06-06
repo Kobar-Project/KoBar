@@ -4,19 +4,17 @@ import { useAppStore } from './store/useAppStore';
 import Sidebar from './components/layout/Sidebar';
 import NotePanel from './components/notes/NotePanel';
 import FloatingEye from './components/layout/FloatingEye';
-import CalculatorPopup from './components/layout/CalculatorPopup';
+
 import ColorPickerPopup from './components/layout/ColorPickerPopup';
 import TodoListPopup from './components/layout/TodoListPopup';
 import { SnippetVaultPopup } from './components/layout/SnippetVaultPopup';
-import ShortcutsPopup from './components/layout/ShortcutsPopup';
+
 import { AiHubPopup } from './components/chat/AiHubPopup';
 import LicenseActivationModal from './components/license/LicenseActivationModal';
-import ScreenshotOverlay from './components/screenshot/ScreenshotOverlay';
-import AnnotationEditor from './components/screenshot/AnnotationEditor';
-import { FocusPopup } from './components/layout/FocusPopup';
-import KoPlayerPopup from './components/layout/KoPlayerPopup';
+
+
 import KoCalendarPopup from './components/calendar/KoCalendarPopup';
-import { useScreenshotStore } from './store/useScreenshotStore';
+
 import { useExtensionRegistry } from './components/extensions/extensionRegistry';
 
 // Global flag: when true, the ghost-window logic won't steal focus
@@ -37,13 +35,13 @@ const App: React.FC = () => {
   const theme = useAppStore(state => state.theme);
   const isLicensed = useAppStore(state => state.isLicensed);
   const setLicensed = useAppStore(state => state.setLicensed);
-  const isCalculatorOpen = useAppStore(state => state.isCalculatorOpen);
+
   const isColorPickerOpen = useAppStore(state => state.isColorPickerOpen);
   const isTodoListOpen = useAppStore(state => state.isTodoListOpen);
   const isSnippetVaultOpen = useAppStore(state => state.isSnippetVaultOpen);
-  const isShortcutsOpen = useAppStore(state => state.isShortcutsOpen);
+
   const isAiHubOpen = useAppStore(state => state.isAiHubOpen);
-  const isKoPlayerOpen = useAppStore(state => state.isKoPlayerOpen);
+
   const isKoCalendarOpen = useAppStore(state => state.isKoCalendarOpen);
   const setIsTargetingMode = useAppStore(state => state.setIsTargetingMode);
   const design = useAppStore(state => state.design);
@@ -294,11 +292,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      const screenshotPhase = useScreenshotStore.getState().phase;
-
-      // If we are currently resizing the UI, or taking a screenshot, ALWAYS KEEP MOUSE EVENTS ACTIVE. 
+      // If we are currently resizing the UI, ALWAYS KEEP MOUSE EVENTS ACTIVE. 
       // Do not allow the OS to steal the mouseup event through the ghost window.
-      if (isResizingGlobal || screenshotPhase !== 'idle') {
+      if (isResizingGlobal) {
         if (lastIgnoreState.current !== false) {
           window.api?.setIgnoreMouseEvents(false);
           lastIgnoreState.current = false;
@@ -394,12 +390,12 @@ const App: React.FC = () => {
 
               {/* Context-bound Popups */}
               {isAiHubOpen && isLicensed && <AiHubPopup />}
-              {isCalculatorOpen && isLicensed && <CalculatorPopup />}
+
               {isColorPickerOpen && isLicensed && <ColorPickerPopup />}
               {isTodoListOpen && isLicensed && <TodoListPopup />}
               {isSnippetVaultOpen && isLicensed && <SnippetVaultPopup />}
-              {isShortcutsOpen && isLicensed && <ShortcutsPopup />}
-              {isKoPlayerOpen && isLicensed && <KoPlayerPopup />}
+
+
               {isKoCalendarOpen && isLicensed && <KoCalendarPopup />}
               
               {/* Dynamic Extensions Popups */}
@@ -412,7 +408,6 @@ const App: React.FC = () => {
                 });
               })()}
 
-              <FocusPopup />
             </>
           )}
         </div>
@@ -424,9 +419,7 @@ const App: React.FC = () => {
         <LicenseActivationModal onSuccess={() => setLicensed(true)} />
       )}
 
-      {/* Screenshot Studio Layers */}
-      <ScreenshotOverlay />
-      <AnnotationEditor />
+
     </>
   );
 };

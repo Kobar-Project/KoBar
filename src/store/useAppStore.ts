@@ -112,24 +112,19 @@ export interface Snippet {
 export interface WorkspaceConfig {
     id: string;
     name: string;
-    isShortcutsEnabled: boolean;
-    isCopyPasteEnabled: boolean;
-    isScreenshotEnabled: boolean;
-    isFocusModeEnabled: boolean;
-    isCalculatorEnabled: boolean;
+
+
     isColorPickerEnabled: boolean;
     isPinInjectorEnabled: boolean;
     isKoBoxEnabled: boolean;
     isSnippetVaultEnabled: boolean;
     isAiHubEnabled: boolean;
-    isKoPlayerEnabled: boolean;
     isKoCalendarEnabled: boolean;
     isTodoListEnabled: boolean;
-    maxShortcuts: number;
-    slotCount: number;
+
     koBoxCleanupMode: '24h' | 'quit';
     autoCopyColor: boolean;
-    hideOnScreenshot: boolean;
+
     toggleWidth: number;
     sidebarWidth: number;
     iconScale: number;
@@ -181,11 +176,7 @@ interface AppState {
     openSettingsTab: () => void;
     openPluginsTab: () => void;
     // App Launcher
-    pinnedApps: PinnedApp[];
-    pinApp: (app: PinnedApp) => void;
-    unpinApp: (id: string) => void;
-    reorderPinnedApps: (startIndex: number, endIndex: number) => void;
-    updateAppTag: (id: string, tag: string | undefined) => void;
+
     // Theme
     theme: ThemeName;
     setTheme: (theme: ThemeName) => void;
@@ -222,24 +213,16 @@ interface AppState {
     setSidebarAnchorRect: (rect: any) => void;
 
     // Feature Toggles
-    isShortcutsEnabled: boolean;
-    setIsShortcutsEnabled: (val: boolean) => void;
-    maxShortcuts: number;
-    setMaxShortcuts: (val: number) => void;
 
-    isCopyPasteEnabled: boolean;
-    setIsCopyPasteEnabled: (val: boolean) => void;
 
-    isScreenshotEnabled: boolean;
-    setIsScreenshotEnabled: (val: boolean) => void;
-    hideOnScreenshot: boolean;
-    setHideOnScreenshot: (val: boolean) => void;
+
+
+
 
     isFocusModeEnabled: boolean;
     setIsFocusModeEnabled: (val: boolean) => void;
 
-    isCalculatorEnabled: boolean;
-    setIsCalculatorEnabled: (val: boolean) => void;
+
 
     isColorPickerEnabled: boolean;
     setIsColorPickerEnabled: (val: boolean) => void;
@@ -269,10 +252,7 @@ interface AppState {
     setIsSnippetVaultOpen: (val: boolean) => void;
     snippetVaultAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
     setSnippetVaultAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
-    isShortcutsOpen: boolean;
-    setIsShortcutsOpen: (val: boolean) => void;
-    shortcutsAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    setShortcutsAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
+
     isSnippetVaultEnabled: boolean;
     setIsSnippetVaultEnabled: (val: boolean) => void;
     isSnippetVaultCompact: boolean;
@@ -350,9 +330,7 @@ interface AppState {
     featureSpacing: number;
     setFeatureSpacing: (val: number) => void;
 
-    // Clipboard Settings
-    slotCount: number;
-    setSlotCount: (val: number) => void;
+
 
     // Launch at Startup
     launchAtStartup: boolean;
@@ -364,37 +342,8 @@ interface AppState {
     setLanguage: (lang: LanguageCode) => void;
     t: (key: TranslationKeys) => string;
 
-    // Focus Mode
-    isFocusPopupOpen: boolean;
-    setIsFocusPopupOpen: (val: boolean) => void;
-    focusAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    setFocusAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
-    focusSettings: FocusSettings;
-    setFocusSettings: (settings: Partial<FocusSettings>) => void;
-    isFocusActive: boolean;
-    focusRemainingTime: number;
-    startFocusMode: () => void;
-    stopFocusMode: () => void;
-    tickFocusTracker: () => void;
-
-    // Calculator Popup State
-    isCalculatorOpen: boolean;
-    setIsCalculatorOpen: (val: boolean) => void;
-    isCalculatorScientific: boolean;
-    setIsCalculatorScientific: (val: boolean) => void;
-    calculatorAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    setCalculatorAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
-
-    // KoPlayer Media Controller
-    isKoPlayerEnabled: boolean;
-    setIsKoPlayerEnabled: (val: boolean) => void;
-    isKoPlayerOpen: boolean;
-    setIsKoPlayerOpen: (val: boolean) => void;
-    koPlayerAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
-    setKoPlayerAnchorRect: (rect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null) => void;
     currentMedia: MediaData | null;
     setCurrentMedia: (data: MediaData | null) => void;
-    // Video PiP — cached from SMTC background browser detection
     activeVideoUrls: string[];
     setActiveVideoUrls: (urls: string[]) => void;
     currentMediaSourceApp: string;
@@ -459,9 +408,9 @@ const defaultNotes: Note[] = [
     <li>📅 <strong>KoCalendar:</strong> A quick-access calendar to easily view your schedule and important dates. Stay organized without leaving your current workflow.</li>
     <li>✅ <strong>To-Do List:</strong> Keep track of your daily tasks with a simple and effective checkable list. Manage your goals efficiently directly from the edge of your screen.</li>
     <li>📝 <strong>Snippet Vault:</strong> Store and manage your frequently used code blocks or text snippets. Copy them to your clipboard instantly whenever you need them.</li>
-    <li>🎵 <strong>KoPlayer:</strong> A lightweight, floating media player to control your music and videos. Enjoy seamless media playback integration while working.</li>
+
     <li>📸 <strong>Screenshot Studio:</strong> Capture your screen instantly with built-in annotation and editing tools. Save or share your screen captures without opening external software.</li>
-    <li>🎯 <strong>Focus Mode:</strong> Minimize distractions with an integrated Pomodoro timer. Track your work and break sessions to maintain high productivity.</li>
+
     <li>🧮 <strong>Calculator:</strong> A sleek, pop-up calculator for quick mathematical operations on the fly.</li>
     <li>🎨 <strong>Color Picker:</strong> Effortlessly pick any color from your screen to get its HEX or RGB values. Perfect for quick design and development tasks.</li>
     <li>🤖 <strong>AI Hub:</strong> Your integrated artificial intelligence assistant for quick queries and brainstorming. Harness the power of AI directly from your desktop.</li>
@@ -483,14 +432,12 @@ export const useAppStore = create<AppState>()(
         (set, get) => ({
             isMac: window.api?.getPlatform ? window.api.getPlatform() === 'darwin' : false,
             closeAllUtilityPopups: () => set({ 
-                isCalculatorOpen: false, 
+ 
                 isColorPickerOpen: false, 
                 isTodoListOpen: false, 
                 isSnippetVaultOpen: false, 
-                isFocusPopupOpen: false, 
-                isKoCalendarOpen: false, 
-                isKoPlayerOpen: false,
-                isShortcutsOpen: false,
+
+                isKoCalendarOpen: false,
                 activeExtensionPanelId: null
             }),
             activeExtensionPanelId: null,
@@ -532,25 +479,7 @@ export const useAppStore = create<AppState>()(
             sidebarPosition: null,
             setSidebarPosition: (pos) => set({ sidebarPosition: pos }),
 
-            // App Launcher State
-            pinnedApps: [],
-            pinApp: (app) => set((state) => ({
-                pinnedApps: [...state.pinnedApps, app]
-            })),
-            unpinApp: (id) => set((state) => ({
-                pinnedApps: state.pinnedApps.filter((a) => a.id !== id),
-            })),
-            reorderPinnedApps: (startIndex, endIndex) => set((state) => {
-                const result = Array.from(state.pinnedApps);
-                const [removed] = result.splice(startIndex, 1);
-                result.splice(endIndex, 0, removed);
-                return { pinnedApps: result };
-            }),
-            updateAppTag: (id, tag) => set((state) => ({
-                pinnedApps: state.pinnedApps.map((a) =>
-                    a.id === id ? { ...a, tag: tag && tag.trim() !== '' ? tag.trim() : undefined } : a
-                ),
-            })),
+
 
             // Theme
             theme: 'midnight',
@@ -614,24 +543,6 @@ export const useAppStore = create<AppState>()(
             setSidebarAnchorRect: (rect) => set({ sidebarAnchorRect: rect }),
 
             // Feature Toggles (Initial State)
-            isShortcutsEnabled: false,
-            setIsShortcutsEnabled: (val) => set({ isShortcutsEnabled: val }),
-            maxShortcuts: 6,
-            setMaxShortcuts: (val) => set({ maxShortcuts: val }),
-
-            isCopyPasteEnabled: true,
-            setIsCopyPasteEnabled: (val) => set({ isCopyPasteEnabled: val }),
-
-            isScreenshotEnabled: false,
-            setIsScreenshotEnabled: (val) => set({ isScreenshotEnabled: val }),
-            hideOnScreenshot: true,
-            setHideOnScreenshot: (val) => set({ hideOnScreenshot: val }),
-
-            isFocusModeEnabled: false,
-            setIsFocusModeEnabled: (val: boolean) => set({ isFocusModeEnabled: val }),
-
-            isCalculatorEnabled: false,
-            setIsCalculatorEnabled: (val: boolean) => set({ isCalculatorEnabled: val }),
 
             isColorPickerEnabled: false,
             setIsColorPickerEnabled: (val: boolean) => set({ isColorPickerEnabled: val }),
@@ -665,13 +576,7 @@ export const useAppStore = create<AppState>()(
             },
             snippetVaultAnchorRect: null,
             setSnippetVaultAnchorRect: (rect) => set({ snippetVaultAnchorRect: rect }),
-            isShortcutsOpen: false,
-            setIsShortcutsOpen: (val: boolean) => {
-                if (val) get().closeAllUtilityPopups();
-                set({ isShortcutsOpen: val });
-            },
-            shortcutsAnchorRect: null,
-            setShortcutsAnchorRect: (rect) => set({ shortcutsAnchorRect: rect }),
+
             isSnippetVaultEnabled: true,
             setIsSnippetVaultEnabled: (val: boolean) => set({ isSnippetVaultEnabled: val }),
             isSnippetVaultCompact: false,
@@ -772,7 +677,7 @@ export const useAppStore = create<AppState>()(
             autoCopyColor: true,
             setAutoCopyColor: (val: boolean) => set({ autoCopyColor: val }),
 
-            featureOrder: ['shortcuts', 'aihub', 'copypaste', 'kocalendar', 'todolist', 'snippetvault', 'pininjector', 'screenshot', 'kobox', 'focusmode', 'colorpicker', 'calculator', 'koplayer'],
+            featureOrder: ['aihub', 'kocalendar', 'todolist', 'snippetvault', 'pininjector', 'kobox', 'colorpicker', 'calculator'],
             setFeatureOrder: (order) => set({ featureOrder: order }),
 
             settingsFeatureViewMode: 'cards',
@@ -785,10 +690,6 @@ export const useAppStore = create<AppState>()(
             setToggleWidth: (val) => set({ toggleWidth: val }),
             featureSpacing: 8, // Feature Spacing
             setFeatureSpacing: (val) => set({ featureSpacing: val }),
-
-            // Clipboard Settings
-            slotCount: 8,
-            setSlotCount: (val) => set({ slotCount: val }),
 
             // Launch at Startup
             launchAtStartup: true,
@@ -808,39 +709,6 @@ export const useAppStore = create<AppState>()(
                 return (translations as Record<string, Record<string, string>>)[lang]?.[key]
                     || (translations as Record<string, Record<string, string>>)['en'][key]
                     || key;
-            },
-
-            // Focus Mode
-            isFocusPopupOpen: false,
-            setIsFocusPopupOpen: (val: boolean) => {
-                if (val) get().closeAllUtilityPopups();
-                set({ isFocusPopupOpen: val });
-            },
-            focusAnchorRect: null,
-            setFocusAnchorRect: (rect) => set({ focusAnchorRect: rect }),
-            focusSettings: { minutes: 25, seconds: 0, melody: 'Calming', loop: false },
-            setFocusSettings: (settings) => set((state) => ({ focusSettings: { ...state.focusSettings, ...settings } })),
-            isFocusActive: false,
-            focusRemainingTime: 0,
-            startFocusMode: () => {
-                const state = get();
-                const totalSeconds = (state.focusSettings.minutes * 60) + state.focusSettings.seconds;
-                if (totalSeconds > 0) {
-                    set({ isFocusActive: true, focusRemainingTime: totalSeconds });
-                }
-            },
-            stopFocusMode: () => set({ isFocusActive: false, focusRemainingTime: 0 }),
-            tickFocusTracker: () => {
-                set((state) => {
-                    if (!state.isFocusActive) return state;
-                    if (state.focusRemainingTime <= 1) {
-                        // Don't set isFocusActive false here! Let FocusButton detect
-                        // focusRemainingTime === 0 while isFocusActive is still true,
-                        // so it can trigger the alarm.
-                        return { focusRemainingTime: 0 };
-                    }
-                    return { focusRemainingTime: state.focusRemainingTime - 1 };
-                });
             },
 
             // Mini Mode
@@ -979,30 +847,8 @@ export const useAppStore = create<AppState>()(
                 };
             }),
 
-            // Calculator Popup State
-            isCalculatorOpen: false,
-            setIsCalculatorOpen: (val: boolean) => {
-                if (val) get().closeAllUtilityPopups();
-                set({ isCalculatorOpen: val });
-            },
-            isCalculatorScientific: false,
-            setIsCalculatorScientific: (val: boolean) => set({ isCalculatorScientific: val }),
-            calculatorAnchorRect: null,
-            setCalculatorAnchorRect: (rect) => set({ calculatorAnchorRect: rect }),
-
-            // KoPlayer Media Controller
-            isKoPlayerEnabled: true,
-            setIsKoPlayerEnabled: (val: boolean) => set({ isKoPlayerEnabled: val }),
-            isKoPlayerOpen: false,
-            setIsKoPlayerOpen: (val: boolean) => {
-                if (val) get().closeAllUtilityPopups();
-                set({ isKoPlayerOpen: val });
-            },
-            koPlayerAnchorRect: null,
-            setKoPlayerAnchorRect: (rect) => set({ koPlayerAnchorRect: rect }),
             currentMedia: null,
             setCurrentMedia: (data) => set({ currentMedia: data }),
-            // Video PiP — cached browser video URLs from background SMTC scan
             activeVideoUrls: [],
             setActiveVideoUrls: (urls) => set({ activeVideoUrls: urls }),
             currentMediaSourceApp: '',
@@ -1024,24 +870,18 @@ export const useAppStore = create<AppState>()(
                 const newWorkspace: WorkspaceConfig = {
                     id: Date.now().toString(),
                     name,
-                    isShortcutsEnabled: state.isShortcutsEnabled,
-                    isCopyPasteEnabled: state.isCopyPasteEnabled,
-                    isScreenshotEnabled: state.isScreenshotEnabled,
-                    isFocusModeEnabled: state.isFocusModeEnabled,
-                    isCalculatorEnabled: state.isCalculatorEnabled,
+
                     isColorPickerEnabled: state.isColorPickerEnabled,
                     isPinInjectorEnabled: state.isPinInjectorEnabled,
                     isKoBoxEnabled: state.isKoBoxEnabled,
                     isSnippetVaultEnabled: state.isSnippetVaultEnabled,
                     isAiHubEnabled: state.isAiHubEnabled,
-                    isKoPlayerEnabled: state.isKoPlayerEnabled,
                     isKoCalendarEnabled: state.isKoCalendarEnabled,
                     isTodoListEnabled: state.isTodoListEnabled,
-                    maxShortcuts: state.maxShortcuts,
-                    slotCount: state.slotCount,
+
                     koBoxCleanupMode: state.koBoxCleanupMode,
                     autoCopyColor: state.autoCopyColor,
-                    hideOnScreenshot: state.hideOnScreenshot,
+
                     toggleWidth: state.toggleWidth,
                     sidebarWidth: state.sidebarWidth,
                     iconScale: state.iconScale,
@@ -1070,24 +910,18 @@ export const useAppStore = create<AppState>()(
                     clearCustomThemeCSS();
                 }
                 return {
-                    isShortcutsEnabled: ws.isShortcutsEnabled,
-                    isCopyPasteEnabled: ws.isCopyPasteEnabled,
-                    isScreenshotEnabled: ws.isScreenshotEnabled,
-                    isFocusModeEnabled: ws.isFocusModeEnabled,
-                    isCalculatorEnabled: ws.isCalculatorEnabled,
+
                     isColorPickerEnabled: ws.isColorPickerEnabled,
                     isPinInjectorEnabled: ws.isPinInjectorEnabled,
                     isKoBoxEnabled: ws.isKoBoxEnabled,
                     isSnippetVaultEnabled: ws.isSnippetVaultEnabled,
                     isAiHubEnabled: ws.isAiHubEnabled,
-                    isKoPlayerEnabled: ws.isKoPlayerEnabled,
                     isKoCalendarEnabled: ws.isKoCalendarEnabled,
                     isTodoListEnabled: ws.isTodoListEnabled,
-                    maxShortcuts: ws.maxShortcuts,
-                    slotCount: ws.slotCount,
+
                     koBoxCleanupMode: ws.koBoxCleanupMode,
                     autoCopyColor: ws.autoCopyColor,
-                    hideOnScreenshot: ws.hideOnScreenshot,
+
                     toggleWidth: ws.toggleWidth,
                     sidebarWidth: ws.sidebarWidth,
                     iconScale: ws.iconScale,
@@ -1113,25 +947,19 @@ export const useAppStore = create<AppState>()(
             updateWorkspaceSettings: (id) => set((state) => ({
                 workspaces: state.workspaces.map(w => w.id === id ? {
                     ...w,
-                    isShortcutsEnabled: state.isShortcutsEnabled,
-                    isCopyPasteEnabled: state.isCopyPasteEnabled,
-                    isScreenshotEnabled: state.isScreenshotEnabled,
-                    isFocusModeEnabled: state.isFocusModeEnabled,
-                    isCalculatorEnabled: state.isCalculatorEnabled,
+
                     isColorPickerEnabled: state.isColorPickerEnabled,
                     isPinInjectorEnabled: state.isPinInjectorEnabled,
                     isKoBoxEnabled: state.isKoBoxEnabled,
                     isSnippetVaultEnabled: state.isSnippetVaultEnabled,
                     isAiHubEnabled: state.isAiHubEnabled,
-                    isKoPlayerEnabled: state.isKoPlayerEnabled,
                     isKoCalendarEnabled: state.isKoCalendarEnabled,
                     isTodoListEnabled: state.isTodoListEnabled,
                     isPopupSmartPositioning: state.isPopupSmartPositioning,
-                    maxShortcuts: state.maxShortcuts,
-                    slotCount: state.slotCount,
+
                     koBoxCleanupMode: state.koBoxCleanupMode,
                     autoCopyColor: state.autoCopyColor,
-                    hideOnScreenshot: state.hideOnScreenshot,
+
                     toggleWidth: state.toggleWidth,
                     sidebarWidth: state.sidebarWidth,
                     iconScale: state.iconScale,
@@ -1178,9 +1006,7 @@ export const useAppStore = create<AppState>()(
                         persistedState.featureOrder = [...persistedState.featureOrder, 'calculator'];
                     }
                     // Ensure it's enabled by default if not set
-                    if (persistedState.isCalculatorEnabled === undefined) {
-                        persistedState.isCalculatorEnabled = true;
-                    }
+
                 }
                 
                 // version 1 migration for colorpicker
@@ -1293,25 +1119,15 @@ export const useAppStore = create<AppState>()(
                 // AI hub migration
                 if (version <= 6) {
                     if (persistedState.featureOrder && !persistedState.featureOrder.includes('aihub')) {
-                        // Force it to be the second item (after shortcuts)
-                        persistedState.featureOrder = ['shortcuts', 'aihub', ...persistedState.featureOrder.filter((f: string) => f !== 'shortcuts' && f !== 'aihub')];
+                        // Force it to be the first item
+                        persistedState.featureOrder = ['aihub', ...persistedState.featureOrder.filter((f: string) => f !== 'shortcuts' && f !== 'aihub')];
                     }
                     if (persistedState.isAiHubEnabled === undefined) {
                         persistedState.isAiHubEnabled = true;
                     }
                     // Final sanity check for featureOrder array
                     if (!persistedState.featureOrder) {
-                        persistedState.featureOrder = ['shortcuts', 'aihub', 'copypaste', 'todolist', 'snippetvault', 'pininjector', 'screenshot', 'kobox', 'focusmode', 'colorpicker', 'calculator'];
-                    }
-                }
-
-                // version 8 migration for KoPlayer
-                if (version <= 7) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('koplayer')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'koplayer'];
-                    }
-                    if (persistedState.isKoPlayerEnabled === undefined) {
-                        persistedState.isKoPlayerEnabled = true;
+                        persistedState.featureOrder = ['aihub', 'copypaste', 'todolist', 'snippetvault', 'pininjector', 'kobox', 'focusmode', 'colorpicker', 'calculator'];
                     }
                 }
 
@@ -1330,24 +1146,20 @@ export const useAppStore = create<AppState>()(
                 nextNoteId: state.nextNoteId,
                 notePanelWidth: state.notePanelWidth,
                 notePanelHeight: state.notePanelHeight,
-                pinnedApps: state.pinnedApps,
+
                 theme: state.theme,
                 customThemeColor: state.customThemeColor,
                 language: state.language,
-                focusSettings: state.focusSettings,
                 showTooltips: state.showTooltips,
                 sidebarWidth: state.sidebarWidth,
                 iconScale: state.iconScale,
                 teleportShortcut: state.teleportShortcut,
                 launchAtStartup: state.launchAtStartup,
                 enableEyeAnimation: state.enableEyeAnimation,
-                isShortcutsEnabled: state.isShortcutsEnabled,
-                maxShortcuts: state.maxShortcuts,
+
                 isCopyPasteEnabled: state.isCopyPasteEnabled,
-                isScreenshotEnabled: state.isScreenshotEnabled,
-                hideOnScreenshot: state.hideOnScreenshot,
-                isFocusModeEnabled: state.isFocusModeEnabled,
-                isCalculatorEnabled: state.isCalculatorEnabled,
+
+
                 isColorPickerEnabled: state.isColorPickerEnabled,
                 isKoCalendarEnabled: state.isKoCalendarEnabled,
                 isTodoListEnabled: state.isTodoListEnabled,
@@ -1355,7 +1167,6 @@ export const useAppStore = create<AppState>()(
                 isKoBoxEnabled: state.isKoBoxEnabled,
                 isSnippetVaultEnabled: state.isSnippetVaultEnabled,
                 isAiHubEnabled: state.isAiHubEnabled,
-                isKoPlayerEnabled: state.isKoPlayerEnabled,
                 koBoxCleanupMode: state.koBoxCleanupMode,
                 autoCopyColor: state.autoCopyColor,
                 colorPalettes: state.colorPalettes,
@@ -1370,7 +1181,7 @@ export const useAppStore = create<AppState>()(
                 koCalendarColor: state.koCalendarColor,
                 workspaces: state.workspaces,
                 isSnippetVaultCompact: state.isSnippetVaultCompact,
-                isCalculatorScientific: state.isCalculatorScientific,
+
                 settingsFeatureViewMode: state.settingsFeatureViewMode,
                 settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
                 orientation: state.orientation,

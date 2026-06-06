@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import CryptoJS from 'crypto-js';
 import { useAppStore } from '../../store/useAppStore';
 import type { Snippet } from '../../store/useAppStore';
-import { useClipboardStore } from '../../store/useClipboardStore';
 
 export const SnippetVaultPopup: React.FC = () => {
     const isSnippetVaultOpen = useAppStore(state => state.isSnippetVaultOpen);
@@ -22,7 +21,6 @@ export const SnippetVaultPopup: React.FC = () => {
     const isCompact = useAppStore(state => state.isSnippetVaultCompact);
     const setIsCompact = useAppStore(state => state.setIsSnippetVaultCompact);
 
-    const forceAddClipboardItem = useClipboardStore(state => state.forceAddClipboardItem);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
@@ -192,7 +190,9 @@ export const SnippetVaultPopup: React.FC = () => {
     };
 
     const handleSendToSlot = (id: string, content: string) => {
-        forceAddClipboardItem('text', content);
+        if (window.KoBarClipboardAPI) {
+            window.KoBarClipboardAPI.forceAddClipboardItem('text', content);
+        }
         setSentId(id);
         setTimeout(() => setSentId(null), 1000);
     };
