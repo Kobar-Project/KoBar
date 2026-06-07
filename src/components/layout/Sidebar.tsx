@@ -5,6 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { setIsResizingGlobal } from '../../App';
 
 import TooltipButton from './TooltipButton';
+import EyeNotification from './EyeNotification';
 import { useExtensionRegistry } from '../extensions/extensionRegistry';
 
 const Sidebar: React.FC = () => {
@@ -33,6 +34,9 @@ const Sidebar: React.FC = () => {
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const orientation = useAppStore(state => state.orientation);
+    const isHighlightingToggleNotes = useAppStore(state => state.isHighlightingToggleNotes);
+
+
     
     // Dynamic Extensions selectors
     const activeExtensionPanelId = useAppStore(state => state.activeExtensionPanelId);
@@ -686,13 +690,16 @@ const Sidebar: React.FC = () => {
                                 </span>
                             ) */}
                         </TooltipButton>
+                        <EyeNotification />
                     </div>
                 </div>
             </div>
 
             <TooltipButton
                 label={t('toggleNotes')}
-                className={`absolute border flex items-center justify-center text-slate-400 hover:text-primary hover:bg-white/5 transition-all shadow-2xl z-[60] ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                className={`absolute border flex items-center justify-center transition-all shadow-2xl z-[60] 
+                    ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}
+                    ${isHighlightingToggleNotes ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 border-primary' : 'text-slate-400 hover:text-primary hover:bg-white/5'}`}
                 style={{ 
                     backgroundColor: design === 'style2' 
                         ? (isMac ? 'transparent' : `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)`) 

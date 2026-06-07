@@ -66,12 +66,30 @@ export interface Note {
     isPlugins?: boolean;
 }
 
+export interface EyeNotificationButton {
+    label: string;
+    color: string;
+    onClick: () => void;
+}
+
+export interface EyeNotificationData {
+    isVisible: boolean;
+    message: string;
+    buttons?: EyeNotificationButton[];
+}
+
 export interface PinnedApp {
     id: string;
     name: string;
     path: string;
     icon: string;
     tag?: string;
+}
+
+export interface TutorialState {
+    version: string;
+    status: 'pending' | 'completed' | 'snoozed';
+    snoozeUntil?: number;
 }
 
 
@@ -131,6 +149,23 @@ interface AppState {
     activeNoteId: number;
     nextNoteId: number;
     setActiveNoteId: (id: number) => void;
+
+    // Tutorial State
+    tutorialState: TutorialState;
+    setTutorialState: (state: Partial<TutorialState>) => void;
+    isManualTutorialTrigger: boolean;
+    setIsManualTutorialTrigger: (val: boolean) => void;
+    isHighlightingToggleNotes: boolean;
+    setIsHighlightingToggleNotes: (val: boolean) => void;
+    isHighlightingSettingsBtn: boolean;
+    setIsHighlightingSettingsBtn: (val: boolean) => void;
+    isHighlightingPluginsBtn: boolean;
+    setIsHighlightingPluginsBtn: (val: boolean) => void;
+
+    // Eye Notification
+    eyeNotification: EyeNotificationData | null;
+    showEyeNotification: (data: Omit<EyeNotificationData, 'isVisible'>) => void;
+    hideEyeNotification: () => void;
     addNote: () => void;
     deleteNote: (id: number) => void;
     updateNoteContent: (id: number, content: string) => void;
@@ -536,11 +571,32 @@ export const useAppStore = create<AppState>()(
                 }
                 return updates;
             }),
-            // Note management
             notes: defaultNotes,
             activeNoteId: 1,
             nextNoteId: 2,
             setActiveNoteId: (id) => set({ activeNoteId: id }),
+
+            // Tutorial State
+            tutorialState: { version: '1.0.0', status: 'pending' },
+            setTutorialState: (updates) => set((state) => {
+                console.log('[Store] Updating tutorial state:', updates);
+                return { tutorialState: { ...state.tutorialState, ...updates } };
+            }),
+            isManualTutorialTrigger: false,
+            setIsManualTutorialTrigger: (val) => set({ isManualTutorialTrigger: val }),
+            isHighlightingToggleNotes: false,
+            setIsHighlightingToggleNotes: (val) => set({ isHighlightingToggleNotes: val }),
+            isHighlightingSettingsBtn: false,
+            setIsHighlightingSettingsBtn: (val) => set({ isHighlightingSettingsBtn: val }),
+            isHighlightingPluginsBtn: false,
+            setIsHighlightingPluginsBtn: (val) => set({ isHighlightingPluginsBtn: val }),
+
+            // Eye Notification
+            eyeNotification: null,
+            showEyeNotification: (data) => set({ eyeNotification: { ...data, isVisible: true } }),
+            hideEyeNotification: () => set((state) => ({ 
+                eyeNotification: state.eyeNotification ? { ...state.eyeNotification, isVisible: false } : null 
+            })),
             addNote: () => set((state) => {
                 const newNote: Note = {
                     id: state.nextNoteId,
@@ -742,8 +798,29 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'kobar-storage',
-            version: 18,
+            version: 20,
             migrate: (persistedState: any, version: number) => {
+                // version 20 migration for tutorial state
+                if (version <= 19) {
+                    if (persistedState.tutorialState === undefined) {
+                        persistedState.tutorialState = { version: '1.0.0', status: 'pending' };
+                    }
+                }
+                // version 19 migration for tutorial state
+                if (version <= 18) {
+                    if (persistedState.tutorialState === undefined) {
+                        persistedState.tutorialState = { version: '1.0.0', status: 'pending' };
+                    }
+                    if (persistedState.isHighlightingToggleNotes === undefined) {
+                        persistedState.isHighlightingToggleNotes = false;
+                    }
+                    if (persistedState.isHighlightingSettingsBtn === undefined) {
+                        persistedState.isHighlightingSettingsBtn = false;
+                    }
+                    if (persistedState.isHighlightingPluginsBtn === undefined) {
+                        persistedState.isHighlightingPluginsBtn = false;
+                    }
+                }
                 // version 18 migration for orientation
                 if (version <= 17) {
                     if (persistedState.orientation === undefined) {
@@ -894,6 +971,7 @@ export const useAppStore = create<AppState>()(
                 nextNoteId: state.nextNoteId,
                 notePanelWidth: state.notePanelWidth,
                 notePanelHeight: state.notePanelHeight,
+                tutorialState: state.tutorialState,
 
                 theme: state.theme,
                 customThemeColor: state.customThemeColor,

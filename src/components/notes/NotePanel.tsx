@@ -19,6 +19,8 @@ const NotePanel: React.FC = () => {
     const deleteNote = useAppStore(state => state.deleteNote);
     const updateNoteEmoji = useAppStore(state => state.updateNoteEmoji);
     const t = useAppStore(state => state.t);
+    const isHighlightingSettingsBtn = useAppStore(state => state.isHighlightingSettingsBtn);
+    const isHighlightingPluginsBtn = useAppStore(state => state.isHighlightingPluginsBtn);
     const openSettingsTab = useAppStore(state => state.openSettingsTab);
     const openPluginsTab = useAppStore(state => state.openPluginsTab);
     const design = useAppStore(state => state.design);
@@ -89,7 +91,7 @@ const NotePanel: React.FC = () => {
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
         const noteToDelete = notes.find(n => n.id === id);
-        if (noteToDelete?.isSettings) {
+        if (noteToDelete?.isSettings || noteToDelete?.isPlugins) {
             deleteNote(id);
             return;
         }
@@ -275,14 +277,14 @@ const NotePanel: React.FC = () => {
                 <div className="mb-2 flex items-center gap-1 pointer-events-auto">
                     <button
                         onClick={openPluginsTab}
-                        className="p-1.5 text-slate-500 hover:text-primary transition-all rounded-lg hover:bg-white/5 flex items-center justify-center"
+                        className={`p-1.5 transition-all flex items-center justify-center ${isHighlightingPluginsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-slate-500 hover:text-primary rounded-lg hover:bg-white/5'}`}
                         title={(t as any)('plugins') || 'Plugins'}
                     >
                         <span className="material-symbols-outlined text-[22px]">extension</span>
                     </button>
                     <button
                         onClick={openSettingsTab}
-                        className="p-1.5 text-slate-500 hover:text-primary transition-all rounded-lg hover:bg-white/5 flex items-center justify-center"
+                        className={`p-1.5 transition-all flex items-center justify-center ${isHighlightingSettingsBtn ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 rounded-full' : 'text-slate-500 hover:text-primary rounded-lg hover:bg-white/5'}`}
                         title={t('settings')}
                     >
                         <span className="material-symbols-outlined text-[22px]">settings</span>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { setIsResizingGlobal } from '../../App';
+import EyeNotification from './EyeNotification';
 
 const FloatingEye: React.FC = () => {
     const edgePosition = useAppStore(state => state.edgePosition);
@@ -270,6 +271,7 @@ const FloatingEye: React.FC = () => {
                     </span>
                 ) */}
             </button>
+            <EyeNotification />
         </div>
     );
 };

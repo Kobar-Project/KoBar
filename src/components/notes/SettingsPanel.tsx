@@ -95,6 +95,8 @@ const SettingsPanel: React.FC = () => {
     const setIsPopupSmartPositioning = useAppStore(state => state.setIsPopupSmartPositioning);
     const orientation = useAppStore(state => state.orientation);
     const setOrientation = useAppStore(state => state.setOrientation);
+    const setTutorialState = useAppStore(state => state.setTutorialState);
+    const setIsManualTutorialTrigger = useAppStore(state => state.setIsManualTutorialTrigger);
 
     // Top-level states for inline custom color picker
     const [inlineHsv, setInlineHsv] = useState<[number, number, number]>([0, 0, 100]);
@@ -810,6 +812,23 @@ const SettingsPanel: React.FC = () => {
                             </button>
                         </div>
 
+                        <div className="w-full h-px opacity-50" style={{ backgroundColor: 'var(--theme-border)' }}></div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-slate-400 text-[20px]">school</span>
+                                <span className="text-sm text-slate-300">Tutorial</span>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setIsManualTutorialTrigger(true);
+                                    setTutorialState({ status: 'pending', snoozeUntil: undefined });
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors text-xs font-medium no-drag-region cursor-pointer"
+                            >
+                                {(t as any)('restartTutorial')}
+                            </button>
+                        </div>
 
                         
                     </div>
@@ -1101,14 +1120,22 @@ const SettingsPanel: React.FC = () => {
                             <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">{appVersion || '...'}</span>
                         </div>
                         
-                        <div className="pt-1">
+                        <div className="pt-1 flex gap-2">
                             <button
                                 onClick={() => window.api?.openExternal('https://patreon.com/kobarproject')}
-                                className="w-full py-2.5 px-4 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all duration-300 active:scale-[0.98] border border-[#FF424D]/30 cursor-pointer"
+                                className="flex-1 py-2.5 px-2 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg transition-all duration-300 active:scale-[0.98] border border-[#FF424D]/30 cursor-pointer"
                                 style={{ background: 'linear-gradient(135deg, #FF424D 0%, #D8313A 100%)' }}
                             >
                                 <span className="material-symbols-outlined text-[16px]">favorite</span>
-                                <span>{t('aboutPatreon')}</span>
+                                <span className="truncate">Patreon</span>
+                            </button>
+                            <button
+                                onClick={() => window.api?.openExternal('https://opencollective.com/kobar')}
+                                className="flex-1 py-2.5 px-2 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg transition-all duration-300 active:scale-[0.98] border border-[#7DB343]/30 cursor-pointer"
+                                style={{ background: 'linear-gradient(135deg, #97CC5D 0%, #7DB343 100%)' }}
+                            >
+                                <span className="material-symbols-outlined text-[16px]">volunteer_activism</span>
+                                <span className="truncate">Open Collective</span>
                             </button>
                         </div>
                     </div>

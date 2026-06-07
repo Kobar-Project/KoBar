@@ -11,6 +11,7 @@ import FloatingEye from './components/layout/FloatingEye';
 
 
 import LicenseActivationModal from './components/license/LicenseActivationModal';
+import TutorialManager from './components/tutorial/TutorialManager';
 
 
 
@@ -173,8 +174,6 @@ const App: React.FC = () => {
       // The reload trigger handles cleanup explicitly above.
     };
   }, [isHydrated, extensionReloadTrigger]);
-
-
 
   // KoBox cleanup triggers
   useEffect(() => {
@@ -398,7 +397,7 @@ const App: React.FC = () => {
         <LicenseActivationModal onSuccess={() => setLicensed(true)} />
       )}
 
-
+      <TutorialManager />
     </>
   );
 };
