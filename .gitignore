@@ -34,7 +34,7 @@ functions/
 firebase.json
 
 # Agent config
-.agent/
+.agents/
 
 # Test and debug artifacts
 test_dims.js

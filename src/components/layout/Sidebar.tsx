@@ -59,6 +59,13 @@ const Sidebar: React.FC = () => {
     const [reorderMode, setReorderMode] = React.useState<boolean>(false);
     const longPressTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const [dragOverId, setDragOverId] = React.useState<string | null>(null);
+    const [isDev, setIsDev] = React.useState(false);
+
+    React.useEffect(() => {
+        if (window.api?.isDev) {
+            window.api.isDev().then(setIsDev).catch(console.warn);
+        }
+    }, []);
 
     React.useEffect(() => {
         const handleGlobalClick = () => {
@@ -684,11 +691,11 @@ const Sidebar: React.FC = () => {
                             <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
                                 <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">visibility</span>
                             </span>
-                            {/* isDev && (
+                            {isDev && (
                                 <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
                                     dev
                                 </span>
-                            ) */}
+                            )}
                         </TooltipButton>
                         <EyeNotification />
                     </div>
