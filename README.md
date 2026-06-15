@@ -26,7 +26,7 @@
 
 Visit our website: [KoBar.org](https://kobar.org/)
 
-Think of it as a Swiss Army knife that floats on your desktop: clipboard manager, notes, AI assistant, screenshot studio, media controller, and more, all in one sleek, customizable sidebar.
+Think of it as a Swiss Army knife that floats on your desktop. With its new **plugin-based architecture**, you can customize KoBar with exactly the tools you need—clipboard managers, AI assistants, screenshot studios, media controllers, and more—all in one sleek, customizable sidebar.
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=KfZmoITxg2E">
@@ -40,71 +40,51 @@ Think of it as a Swiss Army knife that floats on your desktop: clipboard manager
 
 ---
 
-## ✨ Features
+## ✨ Core Features & The Plugin Ecosystem
 
-### 🔲 Modular Sidebar
-- **Always-on-top** transparent overlay — never leaves your sight
-- **Edge docking** — snaps to left or right screen edge with drag-and-drop repositioning
-- **Mini Mode** — collapses into a small floating eye icon to save space
-- **Free-floating mode** — drag the sidebar anywhere on screen, across multiple monitors
-- **Multi-monitor support** — seamless edge detection and snapping across all connected displays
+KoBar has evolved into a powerful **Plugin-Based Architecture**. Instead of a monolithic application, KoBar provides a lightweight, modular core, giving you complete freedom to install only the tools you need or even build your own!
 
-### 📋 Sequential Clipboard Manager
-- **Multi-slot FIFO queue** — 4 to 20 configurable clipboard slots
-- **Copy Mode** — automatically captures consecutive copies into sequential slots
-- **Paste Mode** — pastes slots in order with a global hotkey (`Ctrl+V`)
-- **Image support** — clipboard slots handle both text and images
-- **Double-click to reset** — quickly clear and restart the queue
+### 🔲 Modular Core (Built-in)
+- **Always-on-top** transparent overlay — never leaves your sight.
+- **Edge docking** — snaps to the left or right screen edge with drag-and-drop repositioning.
+- **Mini Mode** — collapses into a small floating eye icon to save space.
+- **Free-floating mode** — drag the sidebar anywhere on the screen, across multiple monitors.
+- **Multi-monitor support** — seamless edge detection and snapping across all connected displays.
 
-### 📝 Rich Notes Panel
-- **Tiptap-powered editor** — rich text with bold, italic, underline, lists, and images
-- **Multi-tab system** — organize notes into separate tabs with custom icons and colors
-- **Voice-to-Text** — built-in speech recognition for hands-free note-taking
-- **Password lock** — protect sensitive notes with a password
-- **Color categories** — tag notes with color labels (Red, Blue, Green, Yellow, Purple, Orange)
-- **Compact & Normal view** — switch between dense and comfortable layouts
+### 🧩 Official Plugins
+Extend KoBar by installing plugins from the community or the core team. Here is the growing list of official plugins maintained by the KoBar Project:
 
-### 🤖 AI Hub
-- **Multi-provider support** — connect to OpenAI (GPT-4o), Google Gemini, Anthropic Claude, and local LLMs (Ollama, LM Studio)
-- **Streaming responses** — real-time token-by-token rendering
-- **File context** — drag & drop TXT, PDF, and images directly into chat
-- **Custom system prompts** — configure AI personality and behavior
-- **Multi-chat management** — maintain separate conversation threads
+- 🤖 **[AI Hub](https://github.com/Kobar-Project/AI-Hub-plugin)**: Multi-provider AI assistant supporting OpenAI, Gemini, Claude, and local LLMs.
+- 📋 **[Clipboard Manager](https://github.com/Kobar-Project/Clipboard-Manager-plugin)**: Multi-slot sequential clipboard (FIFO queue) with image support.
+- 📝 **[Snippet Vault (Notes)](https://github.com/Kobar-Project/SnippetVault-plugin)**: Save and organize text templates, code snippets, and AI prompts.
+- 📸 **[Screenshot Studio](https://github.com/Kobar-Project/Screenshot-plugin)**: Region & full-screen capture with a built-in annotation editor.
+- 🎵 **[KoPlayer](https://github.com/Kobar-Project/KoPlayer-plugin)**: System media controller (Spotify, YouTube, etc.) with album art.
+- 📅 **[KoCalendar](https://github.com/Kobar-Project/KoCalendar-plugin)**: Google Calendar integration and event alerts.
+- ⏱️ **[Focus Mode](https://github.com/Kobar-Project/Focus-Mode-plugin)**: Customizable timer with ambient melodies.
+- 🔢 **[Calculator](https://github.com/Kobar-Project/Calculator-plugin)**: Floating scientific calculator with history.
+- 🎨 **[Color Picker](https://github.com/Kobar-Project/Color-Picker-plugin)**: Pick colors anywhere on your screen with HEX/RGB/HSL values.
+- 📦 **[KoBox](https://github.com/Kobar-Project/KoBox-plugin)**: Drag-and-drop file staging area with auto-cleanup.
+- 📌 **[PinWindowToTop](https://github.com/Kobar-Project/PinWindowToTop-plugin)**: Pin any third-party window to "Always on Top".
+- 🚀 **[Shortcuts](https://github.com/Kobar-Project/Shortcuts-plugin)**: Quick app launcher and shortcut manager.
+- ✅ **[ToDo List](https://github.com/Kobar-Project/ToDoList-plugin)**: Minimal, draggable task list with priority ordering.
 
-### 📸 Screenshot Studio
-- **Region & Full-screen capture** — select any area or capture the entire screen
-- **Annotation Editor** — draw, highlight, add text, arrows, rectangles, and circles with Konva.js
-- **Multi-display support** — captures across all connected monitors
-- **Save or copy** — export to file or send directly to clipboard
-- **Image border** — optional border around captured screenshots
+---
 
-### 🎵 KoPlayer (Media Controller)
-- **System media integration** — controls Spotify, YouTube, and any media player via Windows SMTC
-- **Album art display** — shows current track artwork
-- **Play/Pause/Next/Previous** — full transport controls from the sidebar
+## 🧩 KoBar Plugins Registry
 
-### 📅 KoCalendar
-- **Google Calendar integration** — view and create events directly from the sidebar
-- **Event alerts** — receive desktop notifications for upcoming events
-- **Monthly calendar view** — navigate months and manage events visually
+Plugins are managed through the **[KoBar Plugins Registry](https://github.com/Kobar-Project/kobar-plugins-registry)**. This central database hosts all community and official plugins available in the KoBar marketplace. The registry is fully automated and powered by GitHub Actions.
 
-### ⏱ Focus Mode
-- **Customizable timer** — set minutes and seconds for focus sessions
-- **Ambient melodies** — play background audio during focus sessions
-- **Loop mode** — repeat focus sessions automatically
-- **Desktop notifications** — get notified when your session ends
+### 📥 Installing Plugins
+The KoBar desktop app automatically fetches the lightweight `registry.json` file. You can browse, install, and update plugins instantly from the in-app **Plugin Store** without hitting API rate limits.
 
-### 🧰 More Tools
+### 🛠️ Creating Your Own Plugin
+Want to build a plugin for KoBar? It's easy!
+1. Create a GitHub repository for your plugin and include a `kobar.json` manifest in the root directory.
+2. Publish a GitHub Release (e.g., `v1.0.0`) with your plugin's `.zip` file attached.
+3. Fork the [kobar-plugins-registry](https://github.com/Kobar-Project/kobar-plugins-registry) and add your `Username/RepositoryName` to the `plugins.json` file.
+4. Submit a Pull Request. Once approved, our automated bot will index your plugin, and it will appear in the KoBar app within minutes!
 
-| Tool | Description |
-|------|-------------|
-| **🔢 Calculator** | Floating scientific calculator with history |
-| **🎨 Color Picker** | Pick colors with HEX/RGB/HSL values, auto-send to clipboard slots |
-| **✅ To-Do List** | Minimal, draggable task list with priority ordering |
-| **📌 Pin Injector** | Pin any third-party window to "Always on Top" |
-| **📦 KoBox** | Drag-and-drop file staging area with auto-cleanup (24h or on quit) |
-| **📋 Snippet Vault** | Save and organize text templates, code snippets, and AI prompts |
-| **🚀 App Launcher** | Drag-and-drop shortcuts to pin your favorite apps |
+Check out the [KoBar Plugins Registry](https://github.com/Kobar-Project/kobar-plugins-registry) for detailed submission guidelines and manifest examples.
 
 <p align="center">
   <img src="Assets/GitHub_images/AI-hub.png" alt="Theming and AI Hub" width="100%" />
@@ -160,18 +140,12 @@ KoBar/
 ├── src/                    # React Frontend (Renderer Process)
 │   ├── App.tsx             # Root component & layout orchestration
 │   ├── components/
-│   │   ├── layout/         # Sidebar, Calculator, ColorPicker, Focus, KoPlayer, SnippetVault, TodoList
-│   │   ├── clipboard/      # Multi-slot clipboard FIFO manager
-│   │   ├── notes/          # NotePanel, NoteEditor, SettingsPanel, ResizerHandle
-│   │   ├── screenshot/     # ScreenshotOverlay, AnnotationEditor (Konva.js)
-│   │   ├── chat/           # AiHubPopup (multi-provider LLM client)
-│   │   ├── calendar/       # KoCalendarPopup
+│   │   ├── core/           # Sidebar layout, Window Controls
+│   │   ├── plugins/        # Plugin Manager UI and rendering engine
 │   │   └── license/        # LicenseActivationModal
 │   ├── store/              # Zustand state management
 │   │   ├── useAppStore.ts          # Main application state (~58KB)
-│   │   ├── useClipboardStore.ts    # Clipboard FIFO queue logic
-│   │   ├── useChatStore.ts         # AI Hub chat state
-│   │   └── useScreenshotStore.ts   # Screenshot workflow state
+│   │   └── usePluginStore.ts       # Plugin registry and management state
 │   ├── hooks/              # Custom React hooks
 │   │   ├── useSpeechToText.ts      # Web Speech API integration
 │   │   └── useUnifiedResize.ts     # Cross-platform panel resizing
