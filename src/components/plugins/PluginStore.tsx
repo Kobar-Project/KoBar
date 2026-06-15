@@ -208,15 +208,17 @@ const PluginStore: React.FC = () => {
 
         const externals = (Array.isArray(externalPluginsList) ? externalPluginsList : []).map((ext: any) => {
             const installedPlugin = (installedExtensions || []).find(i => i.id === ext.id);
+            const isPlayground = installedPlugin?.isPlayground === true;
             return {
                 ...ext,
+                name: isPlayground ? installedPlugin.name : ext.name,
                 icon: ext.icon || 'extension',
                 color: 'blue-500',
-                tags: (installedPlugin ? ['Installed'] : ['Not Installed']).concat(ext.isBeta ? ['Beta'] : []),
+                tags: (installedPlugin ? ['Installed'] : ['Not Installed']).concat((ext.isBeta || isPlayground) ? ['Beta'] : []),
                 installed: !!installedPlugin,
                 active: installedPlugin ? installedPlugin.enabled : false,
                 isInternal: false,
-                isBeta: ext.isBeta === true,
+                isBeta: ext.isBeta === true || isPlayground,
                 version: installedPlugin ? installedPlugin.version : undefined
             };
         });
@@ -590,7 +592,7 @@ const PluginStore: React.FC = () => {
                                             </button>
                                         )}
 
-                                        {!plugin.isInternal && plugin.installed && (
+                                        {!plugin.isInternal && plugin.installed && !plugin.isPlayground && (
                                             <button
                                                 onClick={(e) => handleUninstallExtension(e, plugin.id)}
                                                 className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"

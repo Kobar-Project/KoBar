@@ -45,6 +45,7 @@ const PluginDetail: React.FC = () => {
             installed: isInstalledLocally,
             active: isInstalledLocally ? localData.enabled : false,
             isBeta: pluginData.isBeta,
+            isPlayground: localData?.isPlayground || false,
             storeImage: pluginData.storeImage || []
         } : undefined;
     }, [pluginData, localData, pluginsArray]);
@@ -281,24 +282,26 @@ const PluginDetail: React.FC = () => {
             <div className="flex items-center gap-3 mb-8 p-3 rounded-xl bg-black/20 border border-white/5">
                 {isLocalInstalled ? (
                     <>
-                        <button 
-                            onClick={async (e) => {
-                                e.stopPropagation();
-                                if (window.api?.uninstallExtension) {
-                                    await window.api.uninstallExtension(plugin.id);
-                                    setIsLocalInstalled(false);
-                                    setIsLocalActive(false);
-                                    triggerExtensionReload();
-                                    if (window.api?.getInstalledExtensions) {
-                                        const exts = await window.api.getInstalledExtensions();
-                                        setLocalPlugins(exts);
+                        {!plugin.isPlayground && (
+                            <button 
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (window.api?.uninstallExtension) {
+                                        await window.api.uninstallExtension(plugin.id);
+                                        setIsLocalInstalled(false);
+                                        setIsLocalActive(false);
+                                        triggerExtensionReload();
+                                        if (window.api?.getInstalledExtensions) {
+                                            const exts = await window.api.getInstalledExtensions();
+                                            setLocalPlugins(exts);
+                                        }
                                     }
-                                }
-                            }}
-                            className="flex-1 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors text-sm font-semibold flex items-center justify-center gap-2">
-                            <span className="material-symbols-outlined text-[18px]">delete</span>
-                            Uninstall
-                        </button>
+                                }}
+                                className="flex-1 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors text-sm font-semibold flex items-center justify-center gap-2">
+                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                Uninstall
+                            </button>
+                        )}
                         <button 
                             onClick={async () => {
                                 const newState = !isLocalActive;

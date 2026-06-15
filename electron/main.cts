@@ -2164,23 +2164,26 @@ ipcMain.handle('get-installed-extensions', async () => {
                         }
 
                         let extName = manifest.name || dirName;
+                        let extId = manifest.id || dirName;
                         if (isPlayground) {
                             extName = `[DEV] ${extName}`;
+                            extId = `dev-${extId}`;
                         }
 
                         installed.push({
-                            id: manifest.id || dirName,
+                            id: extId,
                             name: extName,
                             version: manifest.version || '1.0.0',
                             description: manifest.description || '',
                             icon: manifest.icon || 'extension',
                             image: manifest.image || '',
-                            isBeta: manifest.isBeta === true,
+                            isBeta: isPlayground ? true : manifest.isBeta === true,
+                            isPlayground: isPlayground,
                             storeImage: Array.isArray(manifest.storeImage) ? manifest.storeImage.slice(0, 3) : [],
                             categories: manifest.categories || [],
                             versionNote: manifest.versionNote || '',
                             githubRepo: manifest.githubRepo || manifest.githubLink || '',
-                            enabled: config[manifest.id] !== false, // default to enabled
+                            enabled: config[extId] !== false, // default to enabled
                             code: code
                         });
                     } catch (err) {
