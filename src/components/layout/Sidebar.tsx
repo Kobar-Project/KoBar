@@ -237,7 +237,7 @@ const Sidebar: React.FC = () => {
                 );
 
                 if (activeDisplay) {
-                    const windowWidth = 6000;
+                    const windowWidth = window.innerWidth;
                     const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
                     const newWinY = activeDisplay.workArea.y;
 
@@ -307,8 +307,8 @@ const Sidebar: React.FC = () => {
                 const physicalCurrentX = physicalOriginX + newX + (orientation === 'horizontal' ? 0 : sidebarWidth / 2);
                 const physicalCurrentY = physicalOriginY + newY + (orientation === 'horizontal' ? sidebarWidth / 2 : 0);
 
-                let activeScreenPhysicalCenter = physicalOriginX + 3000; // Fallback to primary
-                let activeScreenPhysicalCenterY = physicalOriginY + 2000;
+                let activeScreenPhysicalCenter = physicalOriginX + Math.floor(window.innerWidth / 2); // Fallback to primary
+                let activeScreenPhysicalCenterY = physicalOriginY + Math.floor(window.innerHeight / 2);
 
                 const activeMonitor = allDisplays.find(d => 
                     physicalCurrentX >= d.bounds.x && physicalCurrentX < (d.bounds.x + d.bounds.width) &&
@@ -389,11 +389,12 @@ const Sidebar: React.FC = () => {
                     // and ends at 3000 + activeMonitorW / 2.
                     const activeMonitorW = displayBounds?.width ?? screenBounds?.width ?? window.innerWidth;
                     const activeMonitorH = displayBounds?.height ?? screenBounds?.height ?? window.innerHeight;
-                    visibleLeft = 3000 - activeMonitorW / 2;
-                    visibleRight = 3000 + activeMonitorW / 2;
+                    const centerW = window.innerWidth / 2;
+                    visibleLeft = centerW - activeMonitorW / 2;
+                    visibleRight = centerW + activeMonitorW / 2;
                     visibleTop = 0;
                     visibleBottom = activeMonitorH;
-                    activeScreenCenter = 3000;
+                    activeScreenCenter = centerW;
                     activeScreenCenterY = activeMonitorH / 2;
                 }
 

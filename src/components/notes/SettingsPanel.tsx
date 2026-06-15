@@ -430,7 +430,7 @@ const SettingsPanel: React.FC = () => {
                     const state = useAppStore.getState();
                     const visibleHeight = state.screenBounds?.height ?? 800;
                     state.setMiniMode(true, { 
-                        x: state.isMac ? Math.floor(window.innerWidth / 2) : 3000, 
+                        x: Math.floor(window.innerWidth / 2), 
                         y: Math.floor(visibleHeight / 2) 
                     });
                 }

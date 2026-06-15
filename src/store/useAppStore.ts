@@ -353,7 +353,10 @@ const defaultNotes: Note[] = [
 export const useAppStore = create<AppState>()(
     persist(
         (set, get) => ({
-            isMac: window.api?.getPlatform ? window.api.getPlatform() === 'darwin' : false,
+            // isMac: true for macOS AND Linux — both use real screen-sized windows
+            // (as opposed to Windows' oversized 6000x4000 ghost window).
+            // This flag controls frontend layout calculations, NOT OS-specific features.
+            isMac: window.api?.getPlatform ? (window.api.getPlatform() === 'darwin' || window.api.getPlatform() === 'linux') : false,
             closeAllUtilityPopups: () => set({
 
 
@@ -560,8 +563,7 @@ export const useAppStore = create<AppState>()(
 
                             // Recalculate edgePosition so NotePanel/SettingsPanel opens on the correct side
                             const screenW = state.screenBounds?.width ?? 1920;
-                            const isMacPlatform = state.isMac;
-                            const screenCenter = isMacPlatform ? (screenW / 2) : 3000;
+                            const screenCenter = screenW / 2;
                             const sidebarCenterX = sidebarX + (state.sidebarWidth / 2);
                             updates.edgePosition = sidebarCenterX < screenCenter ? 'left' : 'right';
                         }

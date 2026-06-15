@@ -26,7 +26,7 @@ const FloatingEye: React.FC = () => {
     // left edge → slightly inward from the sidebar's expected CSS position
     // right edge → slightly inward from the other side
     const isMac = useAppStore(state => state.isMac);
-    const centerX = isMac ? Math.floor(window.innerWidth / 2) : 3000;
+    const centerX = Math.floor(window.innerWidth / 2);
     const safeDefaultX = edgePosition === 'left'
         ? (centerX - visibleW / 2 + 60)   // Near left edge of visible area within ghost window
         : (centerX + visibleW / 2 - 60);  // Near right edge of visible area within ghost window
@@ -102,7 +102,7 @@ const FloatingEye: React.FC = () => {
                 );
 
                 if (activeDisplay) {
-                    const windowWidth = 6000;
+                    const windowWidth = window.innerWidth;
                     const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
                     const newWinY = activeDisplay.workArea.y;
 

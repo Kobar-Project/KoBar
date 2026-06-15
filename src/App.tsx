@@ -227,9 +227,9 @@ const App: React.FC = () => {
       unsubs.push(window.api.onForceCenterMiniMode(() => {
         const screenBounds = useAppStore.getState().screenBounds;
         const visibleHeight = screenBounds?.height ?? 800;
-        const isMac = useAppStore.getState().isMac;
+
         // Vertically center it inside the visible screen bounds (Y=0 is top of screen)
-        useAppStore.getState().setMiniMode(true, { x: isMac ? Math.floor(window.innerWidth / 2) : 3000, y: Math.floor(visibleHeight / 2) });
+        useAppStore.getState().setMiniMode(true, { x: Math.floor(window.innerWidth / 2), y: Math.floor(visibleHeight / 2) });
       }));
     }
     if (window.api?.onOpenSettings) {

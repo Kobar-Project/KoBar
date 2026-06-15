@@ -8,7 +8,7 @@
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
-    "dev": "concurrently \"vite\" \"tsc -w -p electron/tsconfig.json\" \"wait-on tcp:5173 && wait-on dist-electron/main.cjs && wait-on dist-electron/preload.cjs && wait-on dist-electron/smtc-worker.cjs && electron .\"",
+    "dev": "concurrently \"vite\" \"tsc -w -p electron/tsconfig.json\" \"wait-on tcp:5173 && wait-on dist-electron/main.cjs && wait-on dist-electron/preload.cjs && wait-on dist-electron/smtc-worker.cjs && electron . --no-sandbox\"",
     "build": "tsc -b && vite build && tsc -p electron/tsconfig.json",
     "kobar-build": "node kobar-build.js",
     "lint": "eslint .",
