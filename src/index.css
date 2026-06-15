@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@source "../pluginsPlayground";
+
 
 @theme {
   --color-primary: var(--theme-primary);
