@@ -4,6 +4,7 @@ let SMTCMonitor: any = null;
 let smtcAvailable = false;
 
 const isWin = process.platform === 'win32';
+const isLinux = process.platform === 'linux';
 
 if (isWin) {
     try {
