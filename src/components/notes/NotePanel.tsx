@@ -227,7 +227,7 @@ const NotePanel: React.FC = () => {
                             key={note.id}
                             role="button"
                             onClick={() => handleTabClick(note.id)}
-                            className={`px-5 py-2.5 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 snap-start no-drag-region ${note.id === activeNoteId
+                            className={`group px-5 py-2.5 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 snap-start no-drag-region ${note.id === activeNoteId
                                 ? 'text-slate-200 border border-b-0 relative top-[1px]'
                                 : 'text-slate-400 hover:text-slate-200 cursor-pointer'
                                 }`}
@@ -253,7 +253,7 @@ const NotePanel: React.FC = () => {
                                 )}
                             </span>
                             {note.isSettings ? t('settings') : note.title}
-                            {note.id === activeNoteId && (
+                            <div className={`${note.id === activeNoteId ? 'flex' : 'hidden group-hover:flex'} items-center`}>
                                 <span
                                     onClick={(e) => handleDelete(e, note.id)}
                                     className="material-symbols-outlined text-[16px] ml-2 text-slate-500 hover:text-slate-200 hover:bg-slate-800 rounded-sm transition-all p-0.5"
@@ -261,7 +261,7 @@ const NotePanel: React.FC = () => {
                                 >
                                     close
                                 </span>
-                            )}
+                            </div>
                         </div>
                     ))}
                     <button
