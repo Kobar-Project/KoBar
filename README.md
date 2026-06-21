@@ -72,19 +72,74 @@ Extend KoBar by installing plugins from the community or the core team. Here is 
 
 ## 🧩 KoBar Plugins Registry
 
-Plugins are managed through the **[KoBar Plugins Registry](https://github.com/Kobar-Project/kobar-plugins-registry)**. This central database hosts all community and official plugins available in the KoBar marketplace. The registry is fully automated and powered by GitHub Actions.
+Welcome to the official Plugin Registry for [KoBar](https://github.com/Kobar-Project/KoBar)! 
 
-### 📥 Installing Plugins
-The KoBar desktop app automatically fetches the lightweight `registry.json` file. You can browse, install, and update plugins instantly from the in-app **Plugin Store** without hitting API rate limits.
+This repository serves as the central database for all community-created plugins available in the KoBar marketplace. The registry is fully automated and powered by GitHub Actions.
 
-### 🛠️ Creating Your Own Plugin
-Want to build a plugin for KoBar? It's easy!
-1. Create a GitHub repository for your plugin and include a `kobar.json` manifest in the root directory.
-2. Publish a GitHub Release (e.g., `v1.0.0`) with your plugin's `.zip` file attached.
-3. Fork the [kobar-plugins-registry](https://github.com/Kobar-Project/kobar-plugins-registry) and add your `Username/RepositoryName` to the `plugins.json` file.
-4. Submit a Pull Request. Once approved, our automated bot will index your plugin, and it will appear in the KoBar app within minutes!
+### ⚙️ How It Works
 
-Check out the [KoBar Plugins Registry](https://github.com/Kobar-Project/kobar-plugins-registry) for detailed submission guidelines and manifest examples.
+1. **Source of Truth:** Developers submit their GitHub repository names to the `plugins.json` file in this repository.
+2. **Automated Bot:** A GitHub Action runs automatically every midnight (or when a new PR is merged).
+3. **Data Fetching:** The bot visits every registered repository, reads their `kobar.json` metadata file, and fetches the latest version and release notes from the GitHub Releases API.
+4. **Registry Generation:** The bot compiles all this data and generates a single `registry.json` file.
+5. **Client App:** The KoBar desktop application downloads this lightweight `registry.json` file to instantly display the most up-to-date plugins to users without hitting API rate limits.
+
+### 🚀 How to Submit Your Plugin
+
+If you have developed a plugin for KoBar and want it to appear in the official Plugin Store, follow these simple steps:
+
+#### Step 1: Add a Manifest to Your Repository
+Ensure your plugin's repository has a `kobar.json` (or `manifest.json`) file in its root directory. This file provides the store with your plugin's display information.
+
+**Example `kobar.json`:**
+```json
+{
+  "id": "my-awesome-plugin",
+  "name": "Awesome Plugin",
+  "description": "This plugin does amazing things for KoBar.",
+  "version": "1.0.0",
+  "versionNote": "Updated plugin images.",
+  "author": "YourName",
+  "entry": "index.js",
+  "isBeta": false,
+  "githubRepo": "your-name/your-plugin",
+  "icon": "library_books",
+  "image": "https://raw.githubusercontent.com/YourName/your-repo/main/banner.png",
+  "storeImage": [
+    "https://raw.githubusercontent.com/YourName/your-repo/main/banner.png1",
+    "https://raw.githubusercontent.com/YourName/your-repo/main/banner.png2",
+    "https://raw.githubusercontent.com/YourName/your-repo/main/banner.png3"
+  ],
+  "categories": ["Utility", "Productivity"],
+  "languages": ["en", "tr", "de"]
+}
+```
+*(Note: You do not need to specify the `version` here. The bot automatically fetches the version number and release notes from your latest GitHub Release!)*
+
+#### Step 2: Create a GitHub Release
+Make sure you have created at least one **Release** on your GitHub repository (e.g., `v1.0.0`) and attached your plugin's `.zip` file to it.
+
+#### Step 3: Fork and Update `plugins.json`
+1. Fork the [kobar-plugins-registry](https://github.com/Kobar-Project/kobar-plugins-registry) repository.
+2. Open the `plugins.json` file.
+3. Add your repository path (`Username/RepositoryName`) to the array.
+
+#### Step 4: Open a Pull Request
+Submit a Pull Request (PR) to the registry repository. Once the KoBar team reviews and merges your PR, the bot will automatically index your plugin, and it will appear in the KoBar app within a few minutes!
+
+---
+
+## 🪄 Vibe Coding: Build Plugins with AI
+
+You don't need to be an expert developer to build a KoBar plugin. KoBar officially supports **Vibe Coding**!
+
+Inside the `for-agents` directory of this repository, you will find specialized **Agent Skills** (e.g., `kobar-plugin-developer/SKILL.md`). These files contain all the architectural rules, API constraints, and UI guidelines needed to build a plugin.
+
+**How to vibe code a plugin:**
+1. Open the KoBar project in an AI-powered IDE (like Cursor, Windsurf) or use an agentic coding assistant (like Cline, Roo, or Antigravity).
+2. Tell the AI: *"I want to create a new KoBar plugin that does [YOUR IDEA]. Please read the `for-agents/kobar-plugin-developer/SKILL.md` file first to learn the rules."*
+3. The AI will read the guidelines and automatically write the code for you inside the local `pluginsPlayground` folder.
+4. Open the KoBar app, and your new plugin will be running instantly for testing!
 
 <p align="center">
   <img src="Assets/GitHub_images/AI-hub.png" alt="Theming and AI Hub" width="100%" />
