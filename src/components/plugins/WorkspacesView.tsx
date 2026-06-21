@@ -17,6 +17,22 @@ const WorkspacesView: React.FC = () => {
     const [renameValue, setRenameValue] = useState('');
     const [newPresetName, setNewPresetName] = useState('');
 
+    const showEyeNotification = useAppStore(state => state.showEyeNotification);
+    const hideEyeNotification = useAppStore(state => state.hideEyeNotification);
+
+    const handleSaveNew = (e?: React.MouseEvent | React.KeyboardEvent) => {
+        if (e) e.stopPropagation();
+        if (newPresetName.trim()) {
+            saveCurrentAsWorkspace(newPresetName.trim());
+            setNewPresetName('');
+        } else {
+            showEyeNotification({
+                message: (t as any)('workspaceNameRequired') || 'Please enter a preset name',
+                buttons: [{ label: (t as any)('tutorialBtnOk') || 'OK', color: "primary", onClick: () => hideEyeNotification() }]
+            });
+        }
+    };
+
     return (
         <div className="flex flex-col h-full space-y-6">
             <div className="flex items-center justify-between px-2">
@@ -128,22 +144,15 @@ const WorkspacesView: React.FC = () => {
                             onChange={e => setNewPresetName(e.target.value)}
                             placeholder={(t as any)('workspaceNamePlaceholder') || 'Preset name...'}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' && newPresetName.trim()) {
-                                    saveCurrentAsWorkspace(newPresetName.trim());
-                                    setNewPresetName('');
+                                if (e.key === 'Enter') {
+                                    handleSaveNew(e);
                                 }
                             }}
                             className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary transition-colors"
                         />
                         <button
-                            onClick={() => {
-                                if (newPresetName.trim()) {
-                                    saveCurrentAsWorkspace(newPresetName.trim());
-                                    setNewPresetName('');
-                                }
-                            }}
-                            disabled={!newPresetName.trim()}
-                            className="px-4 py-2 bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 rounded-lg text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={handleSaveNew}
+                            className="px-4 py-2 bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
                         >
                             {(t as any)('saveCurrentSettings') || 'Save Current Settings'}
                         </button>
@@ -235,12 +244,7 @@ const WorkspacesView: React.FC = () => {
                         <div
                             className="relative rounded-xl border-2 border-dashed overflow-hidden transition-all duration-300 cursor-pointer group no-drag-region"
                             style={{ borderColor: design === 'style2' ? 'rgba(255,255,255,0.08)' : 'var(--theme-border)' }}
-                            onClick={() => {
-                                if (newPresetName.trim()) {
-                                    saveCurrentAsWorkspace(newPresetName.trim());
-                                    setNewPresetName('');
-                                }
-                            }}
+                            onClick={handleSaveNew}
                         >
                             <div className="flex flex-col items-center justify-center gap-3 p-5 pt-6 min-h-[160px]">
                                 <div
@@ -255,9 +259,8 @@ const WorkspacesView: React.FC = () => {
                                     onChange={e => setNewPresetName(e.target.value)}
                                     onClick={e => e.stopPropagation()}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && newPresetName.trim()) {
-                                            saveCurrentAsWorkspace(newPresetName.trim());
-                                            setNewPresetName('');
+                                        if (e.key === 'Enter') {
+                                            handleSaveNew(e);
                                         }
                                     }}
                                     placeholder={language === 'tr' ? 'Preset adı...' : 'Preset name...'}
