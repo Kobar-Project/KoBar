@@ -3,11 +3,11 @@ import { useAppStore, applyCustomThemeCSS } from '../../store/useAppStore';
 import { getLanguageOptions } from '../../i18n/translations';
 function hsvToHex(h: number, s: number, v: number): string {
     s /= 100; v /= 100;
-    let i = Math.floor(h / 60);
-    let f = h / 60 - i;
-    let p = v * (1 - s);
-    let q = v * (1 - f * s);
-    let t = v * (1 - (1 - f) * s);
+    const i = Math.floor(h / 60);
+    const f = h / 60 - i;
+    const p = v * (1 - s);
+    const q = v * (1 - f * s);
+    const t = v * (1 - (1 - f) * s);
     let r = 0, g = 0, b = 0;
     switch (i % 6) {
         case 0: r = v; g = t; b = p; break;
@@ -36,9 +36,9 @@ function hexToHsv(hex: string): [number, number, number] {
     if (isNaN(g)) g = 0;
     if (isNaN(b)) b = 0;
 
-    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
     let h = 0, s = 0, v = max;
-    let d = max - min;
+    const d = max - min;
     s = max === 0 ? 0 : d / max;
 
     if (max !== min) {

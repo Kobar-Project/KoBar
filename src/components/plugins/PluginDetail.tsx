@@ -21,7 +21,7 @@ const PluginDetail: React.FC = () => {
 
     const pluginsArray = Array.isArray(externalPluginsList) ? externalPluginsList : [];
     let pluginData = pluginsArray.find((p: any) => p.id === selectedPluginId);
-    let localData = localPlugins.find((p: any) => p.id === selectedPluginId);
+    const localData = localPlugins.find((p: any) => p.id === selectedPluginId);
     
     if (!pluginData && localData) {
         pluginData = localData;

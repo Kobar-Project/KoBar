@@ -74,9 +74,9 @@ const App: React.FC = () => {
       const root = document.documentElement;
       
       const hexToHSL = (hex: string) => {
-        let r = parseInt(hex.slice(1, 3), 16) / 255;
-        let g = parseInt(hex.slice(3, 5), 16) / 255;
-        let b = parseInt(hex.slice(5, 7), 16) / 255;
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
         const max = Math.max(r, g, b), min = Math.min(r, g, b);
         let h = 0, s = 0;
         const l = (max + min) / 2;
@@ -202,7 +202,7 @@ const App: React.FC = () => {
 
 
   useEffect(() => {
-    let unsubs: (() => void)[] = [];
+    const unsubs: (() => void)[] = [];
     if (window.api?.getScreenBounds) {
       window.api.getScreenBounds().then(bounds => {
         if (bounds) useAppStore.getState().setScreenBounds(bounds);

@@ -21,8 +21,9 @@ interface UseSpeechToTextProps {
 }
 
 export const useSpeechToText = ({ onTranscript, language }: UseSpeechToTextProps) => {
+    const isSupported = !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
     const [isListening, setIsListening] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(isSupported ? null : 'Speech recognition not supported');
     const recognitionRef = useRef<any>(null);
     
     // Store callback in a ref to avoid effect re-runs when onTranscript changes
@@ -35,7 +36,6 @@ export const useSpeechToText = ({ onTranscript, language }: UseSpeechToTextProps
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         
         if (!SpeechRecognition) {
-            setError('Speech recognition not supported');
             return;
         }
 

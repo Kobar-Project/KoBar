@@ -158,7 +158,7 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
         const newH = (direction === 'bottom' || direction === 'corner') ? defaultH : state.notePanelHeight;
 
         onResizeTemp(newW, newH);
-    }, [target, direction, onResizeTemp]);
+    }, [direction, onResizeTemp]);
 
     return {
         isResizing,
