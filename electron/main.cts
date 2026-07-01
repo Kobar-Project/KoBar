@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, clipboard, globalShortcut, shell, dialog, session, WebContents, desktopCapturer } from 'electron';
+import { app, BrowserWindow, Tray, Menu, MenuItem, ipcMain, screen, nativeImage, clipboard, globalShortcut, shell, dialog, session, WebContents, desktopCapturer } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { exec, execFile, ChildProcess } from 'child_process';
@@ -243,6 +243,28 @@ function createWindow() {
     mainWindow.on('blur', () => {
         if (!isAwaitingPinTarget && mainWindow) {
             mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+        }
+    });
+
+    // Handle Context Menu for Copy/Paste in Notes
+    mainWindow.webContents.on('context-menu', (event, params) => {
+        const menu = new Menu();
+        
+        if (params.isEditable) {
+            menu.append(new MenuItem({ label: 'Undo', role: 'undo' }));
+            menu.append(new MenuItem({ label: 'Redo', role: 'redo' }));
+            menu.append(new MenuItem({ type: 'separator' }));
+            menu.append(new MenuItem({ label: 'Cut', role: 'cut' }));
+            menu.append(new MenuItem({ label: 'Copy', role: 'copy' }));
+            menu.append(new MenuItem({ label: 'Paste', role: 'paste' }));
+            menu.append(new MenuItem({ type: 'separator' }));
+            menu.append(new MenuItem({ label: 'Select All', role: 'selectAll' }));
+        } else if (params.selectionText && params.selectionText.trim() !== '') {
+            menu.append(new MenuItem({ label: 'Copy', role: 'copy' }));
+        }
+        
+        if (menu.items.length > 0) {
+            menu.popup({ window: mainWindow! });
         }
     });
 }
