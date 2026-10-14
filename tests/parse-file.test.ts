@@ -31,7 +31,7 @@ describe('parsePdfInProcess', () => {
     it('extracts the text of a minimal PDF', async () => {
         const text = await parsePdfInProcess(buildPdf('Hello KoBar'));
         expect(text).toContain('Hello KoBar');
-    });
+    }, 30_000); // first call loads the PDF parser cold; slow CI runners exceed the 5 s default
 
     it('can be called repeatedly (parser is destroyed each time)', async () => {
         expect(await parsePdfInProcess(buildPdf('First'))).toContain('First');

@@ -102,7 +102,8 @@ describe('path shape', () => {
             expect(isProtectedPath(path.join(sneaky, 'new.png'), [userData], [koBox])).toBe(true);
         } finally {
             // rmdir removes only the junction. A recursive rm follows a junction on Node >= 24.21 (Electron 44) and would delete the target's contents.
-            fs.rmdirSync(sneaky);
+            if (process.platform === 'win32') fs.rmdirSync(sneaky);
+            else fs.unlinkSync(sneaky);
         }
     });
     it('detects a not-yet-existing target whose parent is a junction into a protected root', (ctx) => {
