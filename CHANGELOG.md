@@ -4,6 +4,20 @@ All notable changes to KoBar are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.1] - 2026-10-15
+
+A maintenance release that replaces the 1.4.0 pre-release. No stored data changes (`kobar-storage` stays at v32).
+
+### Fixed
+
+- The internal "copy into KoBox" helper no longer uses `fs.cp`, which fails with `EEXIST` on the Node version bundled in Electron 44 (Node 24.21) when the destination folder has just been created. Dropping files and folders into KoBox moves them with a separate, fail-safe routine that never removes the original before the copy is verified; it is now covered by tests that force a copy to fail half way and check that the original is untouched.
+- Tests that removed a Windows junction with a recursive delete (which follows the junction on Node 24.21) now remove only the link. Windows-only path tests no longer run on Linux.
+
+### Changed
+
+- Development and CI use Node 24.21.0 (`.nvmrc`, `engines`), the same version as Electron 44.7, so local test runs behave like the packaged app.
+- CI and CodeQL workflows run on the `master` and `remaster` branches.
+
 ## [1.4.0] - 2026-10-14
 
 The remaster release: a new design system, a separate Settings window, a rebuilt plugin flow, a calmer first run and a file-backed data store. Stored data is migrated automatically (`kobar-storage` v21 up to v32); existing users are never sent through onboarding again. The plugin contract (`window.React`, `window.ReactDOM`, `window.useAppStore`, `window.api`, `window.KoBarExtensions`) is unchanged; `window.api.globalPasteVersion` (value 2) is the only addition.

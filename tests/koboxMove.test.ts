@@ -1,9 +1,10 @@
 // R2-11 / R2-12: moving files and folders into KoBox, and the Recycle-Bin cleanup. Temp folders only (never the real userData / KoBox).
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { moveIntoKoBox } from '../electron/lib/koboxMove.cjs';
+import { copyIntoKoBox } from '../electron/lib/fileArgs.cjs';
 import { cleanKoBoxItems, readInventory, recordMovedItem } from '../electron/lib/koboxCleanup.cjs';
 
 let root: string;
@@ -32,7 +33,10 @@ beforeEach(() => {
     fs.mkdirSync(koBox, { recursive: true });
     fs.mkdirSync(outside);
 });
-afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
+afterEach(() => {
+    vi.restoreAllMocks();
+    fs.rmSync(root, { recursive: true, force: true });
+});
 
 describe('moveIntoKoBox: same drive (R2-12 folders, R2-11 move)', () => {
     it('moves a folder tree with nested dirs, files and an empty dir; the source is gone', async () => {
@@ -154,14 +158,60 @@ describe('moveIntoKoBox: another drive (EXDEV)', () => {
         const src = path.join(outside, 'WithLink');
         fs.mkdirSync(src);
         fs.writeFileSync(path.join(src, 'real.txt'), 'r');
+        // The junction points at a folder outside `src` (a link back to `outside` would make a cycle that the temp-folder cleanup cannot resolve).
+        const elsewhere = path.join(root, 'elsewhere');
+        fs.mkdirSync(elsewhere);
         try {
-            fs.symlinkSync(outside, path.join(src, 'lnk'), 'junction');
+            fs.symlinkSync(elsewhere, path.join(src, 'lnk'), 'junction');
         } catch {
             ctx.skip();
         }
         const res = await moveIntoKoBox(src, koBox, roots(), { rename: crossDrive() });
         expect(res).toEqual({ ok: false, reason: 'unsupported-entries' });
         expect(fs.existsSync(path.join(src, 'real.txt'))).toBe(true);
+        expect(fs.readdirSync(koBox)).toEqual([]);
+    });
+});
+
+// User files: a failed copy must NEVER cost the original. Every case makes the copy fail half way and checks the source is untouched.
+describe('a failed copy never loses the original', () => {
+    /** Makes the second copyFile call fail (the first file is already copied by then). */
+    const failSecondCopy = () => {
+        const real = fs.promises.copyFile.bind(fs.promises);
+        let calls = 0;
+        vi.spyOn(fs.promises, 'copyFile').mockImplementation(async (from, to, mode) => {
+            calls += 1;
+            if (calls === 2) throw errno('EIO');
+            return real(from, to, mode);
+        });
+    };
+    it('moveIntoKoBox (another drive), folder: source intact, nothing left in KoBox', async () => {
+        const src = path.join(outside, 'Precious');
+        makeTree(src);
+        const before = list(src);
+        failSecondCopy();
+        const res = await moveIntoKoBox(src, koBox, roots(), { rename: crossDrive() });
+        expect(res.ok).toBe(false);
+        expect(list(src)).toEqual(before);
+        expect(fs.readFileSync(path.join(src, 'a', 'b', 'deep.bin')).equals(Buffer.from([1, 2, 3, 4]))).toBe(true);
+        expect(fs.readdirSync(koBox)).toEqual([]);
+    });
+    it('moveIntoKoBox (another drive), file: source intact, no partial file in KoBox', async () => {
+        const src = path.join(outside, 'keep.txt');
+        fs.writeFileSync(src, 'precious');
+        vi.spyOn(fs.promises, 'copyFile').mockRejectedValue(errno('EIO'));
+        const res = await moveIntoKoBox(src, koBox, roots(), { rename: crossDrive() });
+        expect(res.ok).toBe(false);
+        expect(fs.readFileSync(src, 'utf-8')).toBe('precious');
+        expect(fs.readdirSync(koBox)).toEqual([]);
+    });
+    it('copyIntoKoBox, folder: source intact, the half-made copy is removed', async () => {
+        const src = path.join(outside, 'Precious');
+        makeTree(src);
+        const before = list(src);
+        failSecondCopy();
+        await expect(copyIntoKoBox(src, koBox, roots())).rejects.toThrow();
+        expect(list(src)).toEqual(before);
         expect(fs.readdirSync(koBox)).toEqual([]);
     });
 });

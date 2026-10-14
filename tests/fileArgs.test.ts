@@ -61,7 +61,7 @@ afterAll(() => {
 });
 
 describe('path shape', () => {
-    it('rejects device names, device namespace and relative paths', () => {
+    it.runIf(process.platform === 'win32')('rejects device names, device namespace and relative paths', () => {
         expect(hasReservedDeviceName('C:\\x\\CON.png', 'win32')).toBe(true);
         expect(hasReservedDeviceName('/x/nul', 'win32')).toBe(true);
         expect(hasReservedDeviceName('/x/com1.txt', 'win32')).toBe(true);
@@ -101,7 +101,8 @@ describe('path shape', () => {
             expect(isProtectedPath(path.join(sneaky, 'plugin-a', 'index.js'), [userData], [koBox])).toBe(true);
             expect(isProtectedPath(path.join(sneaky, 'new.png'), [userData], [koBox])).toBe(true);
         } finally {
-            fs.rmSync(sneaky, { recursive: true, force: true });
+            // rmdir removes only the junction. A recursive rm follows a junction on Node >= 24.21 (Electron 44) and would delete the target's contents.
+            fs.rmdirSync(sneaky);
         }
     });
     it('detects a not-yet-existing target whose parent is a junction into a protected root', (ctx) => {

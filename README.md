@@ -80,7 +80,7 @@ Plugins are installed from the plugin store in Settings. These 13 are maintained
 
 ## For developers
 
-Requirements: Node.js `^22.22.1 || ^24.0.0 || >=26.0.0` (`engines` in `package.json`; `.nvmrc` pins 24) and npm.
+Requirements: Node.js `^24.21.0` (`engines` in `package.json`; `.nvmrc` pins 24.21.0, the Node bundled in Electron 44.7) and npm.
 
 ```bash
 git clone https://github.com/Kobar-Project/KoBar.git

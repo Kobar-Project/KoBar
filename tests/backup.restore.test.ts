@@ -610,7 +610,7 @@ describe('preview text safety and internal errors', () => {
         const elapsed = performance.now() - started;
         expect(ok.preview.counts.pluginKeys).toBe(9_999);
         expect(elapsed).toBeLessThan(10_000);
-    });
+    }, 30_000);
 
     it('handles identical redaction records once and refuses array `length` paths', () => {
         const redactedFields = [

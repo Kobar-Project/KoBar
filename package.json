@@ -1,14 +1,14 @@
 {
   "name": "kobar",
   "productName": "KoBar",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Modular utility sidebar for desktop. Your multi-threaded creative assistant.",
   "author": "Ekrem Edali",
   "private": true,
   "type": "module",
   "main": "dist-electron/main.cjs",
   "engines": {
-    "node": "^22.22.1 || ^24.0.0 || >=26.0.0"
+    "node": "^24.21.0"
   },
   "scripts": {
     "predev": "node -e \"require('fs').rmSync('dist-electron',{recursive:true,force:true})\"",

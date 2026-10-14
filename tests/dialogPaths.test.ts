@@ -176,7 +176,7 @@ describe('dialog-paths.json file helpers', () => {
 
 describe('screenshotDialogDefaultPath (T-042)', () => {
     const desk = String.raw`C:\Users\me\Desktop`;
-    it('uses a valid local folder from the renderer', () => {
+    it.runIf(process.platform === 'win32')('uses a valid local folder from the renderer', () => {
         expect(screenshotDialogDefaultPath(String.raw`D:\Shots`, desk, 'a.png', 'win32')).toBe(String.raw`D:\Shots\a.png`);
     });
     it('falls back to the desktop for missing, relative, UNC, device or ADS folders, never throwing', () => {

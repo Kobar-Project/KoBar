@@ -347,6 +347,22 @@ export function withCollisionSuffix(name: string, n: number, isDir: boolean): st
     return `${stem} (${n})${ext}`;
 }
 
+/** Copies the files and folders inside `from` into the existing folder `to`; never overwrites, skips links and special files. */
+async function copyFolderContents(from: string, to: string): Promise<void> {
+    for (const name of await fs.promises.readdir(from)) {
+        const a = nodePath.join(from, name);
+        const b = nodePath.join(to, name);
+        const st = await fs.promises.lstat(a);
+        if (st.isSymbolicLink()) continue;
+        if (st.isDirectory()) {
+            await fs.promises.mkdir(b);
+            await copyFolderContents(a, b);
+        } else if (st.isFile()) {
+            await fs.promises.copyFile(a, b, fs.constants.COPYFILE_EXCL);
+        }
+    }
+}
+
 /**
  * Copies one dropped file or folder into KoBox (the source is left untouched). Validation is
  * synchronous; the copy itself is asynchronous so large drops do not block the main process.
@@ -396,7 +412,11 @@ export async function copyIntoKoBox(
                 await fs.promises.copyFile(source, target, fs.constants.COPYFILE_EXCL);
                 dest = target;
             } catch (err) {
-                if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+                if ((err as NodeJS.ErrnoException).code !== 'EEXIST') {
+                    // EEXIST was excluded above, so a half-written target can only be ours: remove it, the source is untouched.
+                    await fs.promises.unlink(target).catch(() => undefined);
+                    throw err;
+                }
             }
         }
         if (!dest) return { ok: false, reason: 'destination-exists' };
@@ -417,20 +437,11 @@ export async function copyIntoKoBox(
             }
         }
         if (!dest) return { ok: false, reason: 'destination-exists' };
+        // An explicit walker instead of fs.cp: newer Node versions (as bundled in Electron 44) refuse an existing
+        // destination root with errorOnExist, and the root was just claimed above. Links and special files are skipped.
+        // The source is only read here, never modified, so a failure leaves it intact and removes only the folder claimed above.
         try {
-            await fs.promises.cp(source, dest, {
-                recursive: true,
-                errorOnExist: true,
-                force: false,
-                filter: async (entry) => {
-                    try {
-                        const st = await fs.promises.lstat(entry);
-                        return !st.isSymbolicLink() && (st.isFile() || st.isDirectory());
-                    } catch {
-                        return false;
-                    }
-                },
-            });
+            await copyFolderContents(source, dest);
         } catch (err) {
             await fs.promises.rm(dest, { recursive: true, force: true }).catch(() => undefined);
             throw err;

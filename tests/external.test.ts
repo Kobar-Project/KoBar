@@ -120,7 +120,7 @@ describe('classifyLaunchTarget', () => {
         expect(classifyLaunchTarget(p).kind).toBe('url')
     );
 
-    it('maps file: URLs onto local paths or UNC', () => {
+    it.runIf(process.platform === 'win32')('maps file: URLs onto local paths or UNC', () => {
         const local = classifyLaunchTarget('file:///C:/x.lnk');
         expect(local.kind === 'path' && local.path).toBe(String.raw`C:\x.lnk`);
         expect(classifyLaunchTarget('file://localhost/C:/x.lnk').kind).toBe('path');

@@ -45,7 +45,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ### Prerequisites
 
-- **Node.js** `^22.22.1 || ^24.0.0 || >=26.0.0` (`engines` in `package.json`; `.nvmrc` pins 24)
+- **Node.js** `^24.21.0` (`engines` in `package.json`; `.nvmrc` pins 24.21.0, the Node bundled in Electron 44.7)
 - **npm**
 - **Windows 10/11** (macOS support is experimental)
 
