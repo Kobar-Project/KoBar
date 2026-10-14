@@ -26,8 +26,8 @@ KoBar is a frameless, transparent, always-on-top bar that docks to the edge of y
 
 <table>
   <tr>
-    <td><img src="Assets/GitHub_images/bar-vertical-dark.png" alt="Vertical bar, dark theme" width="100%" /></td>
-    <td><img src="Assets/GitHub_images/bar-horizontal-light.png" alt="Horizontal bar, light theme" width="100%" /></td>
+    <td align="center" valign="middle"><img src="Assets/GitHub_images/bar-vertical-dark.png" alt="Vertical bar, dark theme" width="132" /></td>
+    <td align="center" valign="middle"><img src="Assets/GitHub_images/bar-horizontal-light.png" alt="Horizontal bar, light theme" width="292" /></td>
   </tr>
   <tr>
     <td><img src="Assets/GitHub_images/notes-panel.png" alt="Notes panel" width="100%" /></td>

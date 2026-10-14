@@ -7,6 +7,11 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "[deps]"
+    # Major bumps (e.g. TypeScript 7) can break the build and the plugin contract; they are done by hand, not by PR.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
     groups:
       npm-minor-patch:
         update-types:
