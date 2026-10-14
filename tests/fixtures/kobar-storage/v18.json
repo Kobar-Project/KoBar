@@ -1,0 +1,73 @@
+{
+  "version": 18,
+  "state": {
+    "notes": [
+      {
+        "id": 1,
+        "title": "Synthetic v18 note",
+        "icon": "FileText",
+        "emoji": null,
+        "content": "<h2>Plan</h2><p>Fixture body</p>"
+      },
+      {
+        "id": 2,
+        "title": "Synthetic empty note",
+        "icon": "FileText",
+        "emoji": null,
+        "content": ""
+      }
+    ],
+    "activeNoteId": 1,
+    "nextNoteId": 3,
+    "theme": "dark",
+    "customThemeColor": "#336699",
+    "language": "en",
+    "showTooltips": true,
+    "sidebarWidth": 64,
+    "iconScale": 1,
+    "enableEyeAnimation": false,
+    "orientation": "horizontal",
+    "edgePosition": "top",
+    "featureOrder": [
+      "com.kobar.aihub.btn",
+      "copypaste",
+      "ko-calender-plugin-btn",
+      "kobox",
+      "pininjector"
+    ],
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": true,
+    "koBoxCleanupMode": "24h",
+    "workspaces": [
+      {
+        "id": "ws-alpha",
+        "name": "Synthetic Alpha",
+        "enabledExtensions": { "fixture.plugin": true },
+        "isPinInjectorEnabled": true,
+        "isKoBoxEnabled": true,
+        "koBoxCleanupMode": "24h",
+        "sidebarWidth": 64,
+        "iconScale": 1
+      },
+      {
+        "id": "ws-beta",
+        "name": "Synthetic Beta",
+        "isIsolated": true,
+        "isolatedData": {
+          "notes": [
+            { "id": 1, "title": "Isolated note", "icon": "FileText", "emoji": null, "content": "<p>Isolated fixture</p>" }
+          ],
+          "activeNoteId": 1,
+          "nextNoteId": 2
+        },
+        "isPinInjectorEnabled": false,
+        "isKoBoxEnabled": false,
+        "koBoxCleanupMode": "quit",
+        "sidebarWidth": 80,
+        "iconScale": 1.2
+      }
+    ],
+    "settingsFeatureViewMode": "grid",
+    "settingsWorkspaceViewMode": "list"
+  }
+}

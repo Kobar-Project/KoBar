@@ -1,59 +1,54 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { translations } from '../i18n/translations';
-import type { LanguageCode, TranslationKeys } from '../i18n/translations';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { translate } from '../i18n/translate';
+import type { LanguageCode, TranslationKeys } from '../i18n';
+import { FORCED_THEME_COLOR_KEY, KOBAR_STORAGE_VERSION, migratePersistedKobarStorage } from './migrations';
+import { appPersistStorage, flushAppPersist } from './persistStorage';
+import { handleHydrationFailure } from './hydrationError';
+import { findActiveWorkspace, patchActiveWorkspace } from './workspace/activeWorkspace';
+import { computeNextNoteId, resolveActiveNoteId, resolveContextNotes } from './workspace/context';
+import { writeActiveContextNotes } from './workspace/contextNotes';
+import { shouldSwitchDataContext, type WorkspaceContextReason } from './workspace/dataContext';
+import { extensionsConfigForActiveContext, needsFullPluginReload, planExtensionsContextSwitch } from './workspace/enabledExtensions';
+import { type DeleteWorkspaceResult, defaultDeleteWorkspaceDeps, deleteWorkspaceWithBackup } from './workspace/deleteWorkspace';
+import { REPO_URL } from '../config/links';
+import { openSettingsPage } from './settingsOpener';
+import { getWindowGeometry } from '../utils/windowGeometry';
+import { computeVisibleArea } from '../utils/visibleArea';
+import { DEFAULT_FEATURE_ORDER } from '../config/defaults';
+import { applyCustomThemeCSS, clearLegacyThemeCSS } from '../utils/color';
+import type { Accent, Scheme } from '../theme';
+import {
+    DEFAULT_ACCENT,
+    DEFAULT_CUSTOM_THEME_COLOR,
+    DEFAULT_GLASS_OPACITY,
+    DEFAULT_MATERIAL,
+    DEFAULT_SCHEME,
+    THEME_FOR_ACCENT,
+    accentFromLegacy,
+    legacyMaterialFields,
+    legacyThemeFields,
+    materialFromLegacy,
+    profileAccent,
+    profileMaterial,
+    type Material,
+} from './appearance';
+import { DEFAULT_DENSITY, densityFromSidebarWidth, isDensity, legacySidebarWidth, profileDensity, type Density } from './density';
+import { clampNoteListWidth, NOTE_LIST_WIDTH_DEFAULT } from '../notes/noteListWidth';
+import { sanitizePanelOffset, type PanelAxis, type PanelOffsets } from '../components/plugins/panelPosition';
+import { DEFAULT_ONBOARDING, isOnboardingState, type OnboardingState } from './onboarding';
 export type ThemeName = 'ember' | 'ocean' | 'sakura' | 'emerald' | 'midnight' | 'amethyst' | 'crimson' | 'nord' | 'coffee' | 'lavender' | 'custom';
 
-// ─── Custom Theme Color → CSS Variables Generator ───
-function hexToHSL(hex: string): { h: number; s: number; l: number } {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s = 0;
-    const l = (max + min) / 2;
-    if (max !== min) {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-            case g: h = ((b - r) / d + 2) / 6; break;
-            case b: h = ((r - g) / d + 4) / 6; break;
-        }
+// Re-exported for existing importers (older importers).
+export { applyCustomThemeCSS };
+
+/** 1.2.x compatibility (T-601): <= v25 read this key on startup for a custom theme. A failing write is not an error. */
+function writeForcedThemeColor(hex: string) {
+    try {
+        localStorage.setItem(FORCED_THEME_COLOR_KEY, hex);
+    } catch (err) {
+        console.warn('[Store] Could not write the custom theme colour key:', err);
     }
-    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
-}
-
-function hslToHex(h: number, s: number, l: number): string {
-    s /= 100; l /= 100;
-    const a = s * Math.min(l, 1 - l);
-    const f = (n: number) => {
-        const k = (n + h / 30) % 12;
-        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-        return Math.round(255 * color).toString(16).padStart(2, '0');
-    };
-    return `#${f(0)}${f(8)}${f(4)}`;
-}
-
-export function applyCustomThemeCSS(primaryHex: string) {
-    const { h, s } = hexToHSL(primaryHex);
-    const root = document.documentElement;
-    root.style.setProperty('--theme-primary', primaryHex);
-    root.style.setProperty('--theme-bg-dark', hslToHex(h, Math.min(s, 15), 8));
-    root.style.setProperty('--theme-bg-base', hslToHex(h, Math.min(s, 15), 11));
-    root.style.setProperty('--theme-bg-light', hslToHex(h, Math.min(s, 20), 96));
-    root.style.setProperty('--theme-border', hslToHex(h, Math.min(s, 25), 22));
-    root.style.setProperty('--theme-surface', hslToHex(h, Math.min(s, 15), 5));
-    const { h: pH, s: pS, l: pL } = hexToHSL(primaryHex);
-    root.style.setProperty('--theme-accent-glow', `hsla(${pH}, ${pS}%, ${pL}%, 0.15)`);
-    root.style.setProperty('--theme-scrollbar', hslToHex(h, Math.min(s, 25), 22));
-    root.style.setProperty('--theme-marker', primaryHex);
-}
-
-function clearCustomThemeCSS() {
-    const root = document.documentElement;
-    const props = ['--theme-primary', '--theme-bg-dark', '--theme-bg-base', '--theme-bg-light', '--theme-border', '--theme-surface', '--theme-accent-glow', '--theme-scrollbar', '--theme-marker'];
-    props.forEach(p => root.style.removeProperty(p));
 }
 
 export interface Note {
@@ -121,6 +116,12 @@ export interface WorkspaceConfig {
     customThemeColor: string;
     design: 'style1' | 'style2';
     glassOpacity: number;
+    /** v26 (T-601): per-workspace accent; missing on records written before v26 (derive with `profileAccent`). */
+    accent?: Accent;
+    /** v26 (T-601): per-workspace material; missing on records written before v26 (derive with `profileMaterial`). */
+    material?: Material;
+    /** v27 (T-602): per-workspace density; missing on records written before v27 (derive with `profileDensity`). */
+    density?: Density;
     featureOrder: string[];
     edgePosition: 'left' | 'right' | 'top' | 'bottom';
     isPopupSmartPositioning: boolean;
@@ -128,7 +129,7 @@ export interface WorkspaceConfig {
     orientation: 'vertical' | 'horizontal';
 }
 
-interface AppState {
+export interface AppState {
     isMac: boolean;
     edgePosition: 'left' | 'right' | 'top' | 'bottom';
     setEdgePosition: (edge: 'left' | 'right' | 'top' | 'bottom') => void;
@@ -143,6 +144,13 @@ interface AppState {
     setNotePanelWidth: (width: number | ((prev: number) => number)) => void;
     notePanelHeight: number;
     setNotePanelHeight: (height: number | ((prev: number) => number)) => void;
+    /** R-11: width of the note list column (px, clamped to NOTE_LIST_WIDTH_MIN..MAX). */
+    noteListWidth: number;
+    setNoteListWidth: (width: number) => void;
+    /** R-15: per plugin id, the panel's offset (px) from its default position along the bar's free axis (x: horizontal bar, y: vertical bar). */
+    pluginPanelOffsets: Record<string, PanelOffsets>;
+    /** Sets (or, with `null`, clears) one axis of a plugin's panel offset. */
+    setPluginPanelOffset: (pluginId: string, axis: PanelAxis, offset: number | null) => void;
     // Mini Mode
     isMiniMode: boolean;
     miniModePosition: { x: number, y: number } | null;
@@ -158,7 +166,13 @@ interface AppState {
 
     // Tutorial State
     tutorialState: TutorialState;
+    /** v23 (T-027): retired legacy fields (colorPalettes, todos, ...) kept after migration instead of being deleted.
+     *  v24 (T-408): `workspaceModelV24` holds the raw workspace values the workspace-model migration replaced. */
+    legacyBackup?: Record<string, unknown>;
     setTutorialState: (state: Partial<TutorialState>) => void;
+    /** v29 (T-604): first-run state (src/store/onboarding.ts); independent of the v1 `tutorialState`. Device-level. */
+    onboarding: OnboardingState;
+    setOnboarding: (updates: Partial<OnboardingState>) => void;
     isManualTutorialTrigger: boolean;
     setIsManualTutorialTrigger: (val: boolean) => void;
     isHighlightingToggleNotes: boolean;
@@ -173,20 +187,38 @@ interface AppState {
     showEyeNotification: (data: Omit<EyeNotificationData, 'isVisible'>) => void;
     hideEyeNotification: () => void;
     addNote: () => void;
+    /** Appends notes (new ids) to the active data context; the active note does not change. Used by data import. */
+    addNotes: (notes: Omit<Note, 'id'>[]) => void;
     deleteNote: (id: number) => void;
     updateNoteContent: (id: number, content: string) => void;
     updateNoteTitle: (id: number, title: string) => void;
     updateNoteEmoji: (id: number, emoji: string) => void;
     openSettingsTab: () => void;
     openPluginsTab: () => void;
+    /** T-615: main-window host tab for a plugin's v1 settings panel (`id`) or the GitHub link install (`null`). */
+    openPluginSettings: (id: string | null) => void;
     // App Launcher
 
-    // Theme
+    // Appearance (v26, T-601): the UI follows scheme/accent/material; the v1 fields below stay consistent with them.
+    /** Global; 'system' follows the OS. */
+    scheme: Scheme;
+    setScheme: (scheme: Scheme) => void;
+    /** Per workspace. 'custom' uses `customThemeColor`. */
+    accent: Accent;
+    /** `customHex` (for 'custom') becomes `customThemeColor`; a hex equal to a preset selects that preset. */
+    setAccent: (accent: Accent, customHex?: string) => void;
+    /** Per workspace. */
+    material: Material;
+    setMaterial: (material: Material) => void;
+    /** v27 (T-602), per workspace. App.tsx writes it to the root `data-density`; `sidebarWidth` is its v1 view. */
+    density: Density;
+    setDensity: (density: Density) => void;
+    // Theme (v1 view of `accent`; plugins read it)
     theme: ThemeName;
     setTheme: (theme: ThemeName) => void;
     customThemeColor: string;
     setCustomThemeColor: (color: string) => void;
-    // Design System
+    // Design System (v1 view of `material`; plugins read it)
     design: 'style1' | 'style2';
     setDesign: (design: 'style1' | 'style2') => void;
     glassOpacity: number;
@@ -205,10 +237,6 @@ interface AppState {
 
     isDraggingGlobal: boolean;
     setIsDraggingGlobal: (val: boolean) => void;
-
-    // Teleport
-    teleportShortcut: string;
-    setTeleportShortcut: (val: string) => void;
 
     // Layout Context
     screenBounds: { x: number, y: number, width: number, height: number } | null;
@@ -250,8 +278,6 @@ interface AppState {
 
     settingsFeatureViewMode: 'list' | 'cards';
     setSettingsFeatureViewMode: (mode: 'list' | 'cards') => void;
-    settingsWorkspaceViewMode: 'list' | 'cards';
-    setSettingsWorkspaceViewMode: (mode: 'list' | 'cards') => void;
 
     // UI Spacing & Sizing
     toggleWidth: number;
@@ -290,10 +316,17 @@ interface AppState {
     // Dynamic Extensions State
     activeExtensionPanelId: string | null;
     activeExtensionAnchorRect: { top: number, left: number, bottom: number, right: number, width: number, height: number } | null;
+    /** Bumped by every plugin load request (full or diff); the host loader and plugin lists follow it. Volatile. */
     extensionReloadTrigger: number;
+    /** Full reload: every plugin script runs again (install, update, data namespace switch). */
     triggerExtensionReload: () => void;
-    pluginsTabSubMenu: 'store' | 'installed' | 'updates' | 'workspaces' | 'features';
-    setPluginsTabSubMenu: (tab: 'store' | 'installed' | 'updates' | 'workspaces' | 'features') => void;
+    /** T-409: bumped only by full reload requests (see src/components/extensions/pluginLoader.ts). Volatile. */
+    extensionFullReloadTrigger: number;
+    /** T-409: loads/unloads only the plugins whose enabled flag changed or that were uninstalled (toggle, uninstall,
+     * workspace switch in the same data namespace); running plugins are left alone. */
+    syncEnabledExtensions: () => void;
+    /** T-206: bumped on every plugin data context switch; React key for plugin roots. Volatile (not persisted). */
+    dataContextId: number;
     extensionsSubTab: 'installed' | 'marketplace';
     setExtensionsSubTab: (tab: 'installed' | 'marketplace') => void;
     pluginsViewMode: 'grid' | 'list';
@@ -302,11 +335,12 @@ interface AppState {
     setSelectedPluginId: (id: string | null) => void;
     externalPluginsList: any[];
     setExternalPluginsList: (list: any[]) => void;
-    pluginsSearchQuery: string;
-    setPluginsSearchQuery: (query: string) => void;
     pluginsSelectedTags: string[];
     setPluginsSelectedTags: (tags: string[]) => void;
+    /** Mirror of extensions-config.json = the enabled set of the active context (see ./workspace/enabledExtensions). */
     currentExtensionsConfig: Record<string, boolean>;
+    /** T-409 (v25): the Default workspace's list, saved while a workspace is active; null = Default active, or unknown. */
+    defaultExtensionsConfig: Record<string, boolean> | null;
     setCurrentExtensionsConfig: (config: Record<string, boolean>) => void;
     setExtensionEnabledInWorkspace: (extensionId: string, enabled: boolean) => void;
 
@@ -324,8 +358,206 @@ interface AppState {
     saveCurrentAsWorkspace: (name: string, isIsolated?: boolean) => void;
     loadWorkspace: (id: string) => void;
     deleteWorkspace: (id: string) => void;
+    /** T-214: automatic backup, then deleteWorkspace, then removal of the workspace's `_iso_<id>` keys. */
+    deleteWorkspaceWithBackup: (id: string) => Promise<DeleteWorkspaceResult>;
     updateWorkspaceName: (id: string, newName: string) => void;
     updateWorkspaceSettings: (id: string) => void;
+}
+
+// ─── T-206 (WS-03): single entry point for workspace actions that may switch the plugin data context ───
+interface WorkspaceContextOptions {
+    /** DOM/localStorage side effects of the action; runs once the patch is committed (never inside the `set` callback). */
+    afterCommit?: (committed: AppState) => void;
+}
+
+type AppStoreSet = (fn: (state: AppState) => AppState | Partial<AppState>) => void;
+
+/** T-409: only the latest return to the Default workspace may drop the saved Default list (see applyWorkspaceContext). */
+let defaultRestoreToken = 0;
+
+/** T-418: counts data-context switches; a retried extensions-config write of an older switch never runs after a newer one. */
+let extensionsSwitchSeq = 0;
+
+/** T-418: delays before the retries of a failed extensions-config write of a workspace switch (bounded: two retries). */
+const EXTENSIONS_WRITE_RETRY_DELAYS_MS = [500, 2000] as const;
+
+/** T-409: the file owns the Default list again once main wrote it, unless a newer return to the Default or a switch came. */
+function dropSavedDefaultIfCurrent(set: AppStoreSet, get: () => AppState, token: number): void {
+    if (token === defaultRestoreToken && !findActiveWorkspace(get())) set(() => ({ defaultExtensionsConfig: null }));
+}
+
+/**
+ * T-418: retries a failed `setExtensionsConfig` of switch `seq` after a short delay, at most twice. Each attempt sends the
+ * set of the context that is active THEN (extensionsConfigForActiveContext), so a plugin toggled meanwhile keeps its new
+ * value. The retry stops quietly when a newer context switch happened (that switch planned against the reloaded mirror and is responsible for the file from now on)
+ * or while the persist storage is locked (a backup restore is writing). On success the saved Default list is dropped as
+ * after a first-try success, and the plugins are synced to the written set (diff load). Never throws.
+ */
+function retryExtensionsConfigWrite(
+    set: AppStoreSet,
+    get: () => AppState,
+    seq: number,
+    defaultToken: number,
+    clearDefaultAfterWrite: boolean,
+    attempt = 0
+): void {
+    const delay = EXTENSIONS_WRITE_RETRY_DELAYS_MS[attempt];
+    if (delay === undefined) {
+        console.error('setExtensionsConfig retries failed; extensions-config.json keeps the previous set until the next switch');
+        return;
+    }
+    setTimeout(() => {
+        if (seq !== extensionsSwitchSeq) return;
+        if (appPersistStorage.lockReason() !== null) {
+            console.warn('setExtensionsConfig retry skipped: persist storage locked');
+            return;
+        }
+        if (typeof window === 'undefined' || !window.api?.setExtensionsConfig) return;
+        let request: Promise<unknown>;
+        try {
+            request = Promise.resolve(window.api.setExtensionsConfig(extensionsConfigForActiveContext(get())));
+        } catch (err) {
+            request = Promise.reject(err);
+        }
+        request
+            .then(
+                (ok) => ok === true,
+                () => false
+            )
+            .then((ok) => {
+                if (seq !== extensionsSwitchSeq) return;
+                if (!ok) {
+                    retryExtensionsConfigWrite(set, get, seq, defaultToken, clearDefaultAfterWrite, attempt + 1);
+                    return;
+                }
+                if (clearDefaultAfterWrite) dropSavedDefaultIfCurrent(set, get, defaultToken);
+                // The loader reads the file again: the mirror and the loaded plugins follow the written set.
+                get().syncEnabledExtensions();
+            })
+            .catch((err: unknown) => console.error('setExtensionsConfig retry failed', err));
+    }, delay);
+}
+
+/** Plugin v1 contract: plugins (and usePluginData) listen to this event on window. Payload must stay `{ workspaceId }`. */
+function notifyWorkspaceChanged(workspaceId: string | null): void {
+    setTimeout(() => {
+        if (typeof window !== 'undefined') {
+            window.KoBarExtensions?.notify?.();
+            window.dispatchEvent(new CustomEvent('kobar:workspace-changed', { detail: { workspaceId: workspaceId } }));
+        }
+    }, 0);
+}
+
+/**
+ * Runs a workspace action. `recipe` computes the state patch from the current state (return null for a no-op).
+ * When the action switches the data context (see shouldSwitchDataContext), in this order:
+ * 1. the patch, `dataContextId + 1` and (T-409) the enabled-plugin set of the context that becomes active are committed
+ *    together (plugin roots keyed on dataContextId remount on the new context, and localStorageIsolation reads the new
+ *    namespace from then on; see ./workspace/enabledExtensions for the merge rule and the saved Default list);
+ * 2. when that set changed, main derives extensions-config.json from it (`setExtensionsConfig`), then plugins are
+ *    loaded: a full reload when the plugins' data namespace changed, otherwise only the enabled-set diff (T-409);
+ * 3. `kobar:workspace-changed` is dispatched on the next tick (same timing as the old loadWorkspace).
+ * Otherwise only the patch is committed. No persist flush is needed before the switch: plugins write localStorage
+ * synchronously, so their writes made before the commit already landed in the old namespace, and `kobar-storage`
+ * is a system key (never suffixed).
+ */
+function applyWorkspaceContext(
+    set: AppStoreSet,
+    get: () => AppState,
+    reason: WorkspaceContextReason,
+    recipe: (state: AppState) => Partial<AppState> | null,
+    options: WorkspaceContextOptions = {}
+): void {
+    const outcome: {
+        applied: boolean;
+        switched: boolean;
+        next: AppState | null;
+        sendConfig: Record<string, boolean> | null;
+        fullReload: boolean;
+        flushBeforeSend: boolean;
+        clearDefaultAfterWrite: boolean;
+    } = {
+        applied: false,
+        switched: false,
+        next: null,
+        sendConfig: null,
+        fullReload: true,
+        flushBeforeSend: false,
+        clearDefaultAfterWrite: false,
+    };
+    set((state) => {
+        const patch = recipe(state);
+        if (!patch) return state;
+        outcome.applied = true;
+        const next = { ...state, ...patch };
+        if (!shouldSwitchDataContext(reason, state, next)) return patch;
+        outcome.switched = true;
+        outcome.next = next;
+        outcome.fullReload = needsFullPluginReload(state, next);
+        const extensions = planExtensionsContextSwitch(state, next);
+        outcome.sendConfig = extensions?.changed ? extensions.currentExtensionsConfig : null;
+        outcome.flushBeforeSend = !!extensions?.savedNewDefault;
+        outcome.clearDefaultAfterWrite = !!extensions?.clearDefaultAfterWrite;
+        // Close the open plugin panel in the same commit: otherwise it would remount (new key) on the OLD plugin
+        // module before re-injection, and a mount effect could write the old state into the new namespace.
+        return {
+            ...patch,
+            ...(extensions
+                ? {
+                      currentExtensionsConfig: extensions.currentExtensionsConfig,
+                      defaultExtensionsConfig: extensions.defaultExtensionsConfig,
+                  }
+                : {}),
+            dataContextId: state.dataContextId + 1,
+            activeExtensionPanelId: null,
+            activeExtensionAnchorRect: null,
+        };
+    });
+    if (outcome.applied) {
+        try {
+            options.afterCommit?.(get());
+        } catch (err) {
+            // A failing side effect must never skip the plugin reload and the workspace-changed event below.
+            console.error('workspace afterCommit failed', err);
+        }
+    }
+    if (!outcome.switched || !outcome.next) return;
+    const switchSeq = ++extensionsSwitchSeq;
+
+    // KNOWN GAP (T-153, out of scope): between the commit above and the re-injection of the plugin scripts the OLD
+    // plugin instances are still alive and could write their in-memory state into the NEW namespace (localStorage
+    // isolation already points at it). Mitigated only by closing the open panel and remounting roots (dataContextId).
+    // A full fix (suspend plugin writes until the reload finishes) needs a plugin-side contract and is not done here.
+    const reload = outcome.fullReload ? () => get().triggerExtensionReload() : () => get().syncEnabledExtensions();
+    const token = outcome.clearDefaultAfterWrite ? ++defaultRestoreToken : 0;
+    if (outcome.sendConfig && window.api?.setExtensionsConfig) {
+        // A newly saved Default list must be on disk before main overwrites extensions-config.json (its only other copy).
+        if (outcome.flushBeforeSend) flushAppPersist();
+        // Load even if the config IPC fails: plugins must never keep the old context's in-memory state.
+        // (The loader then reads the file as it is, and the mirror follows it.) A failed write is retried later (T-418).
+        const retry = () => retryExtensionsConfigWrite(set, get, switchSeq, token, outcome.clearDefaultAfterWrite);
+        window.api
+            .setExtensionsConfig(outcome.sendConfig)
+            .then(
+                (ok: unknown) => {
+                    if (ok === true) {
+                        // The file owns the Default list again only once main wrote it and the Default is still active.
+                        if (outcome.clearDefaultAfterWrite) dropSavedDefaultIfCurrent(set, get, token);
+                        return;
+                    }
+                    if (outcome.clearDefaultAfterWrite) console.error('setExtensionsConfig did not write the Default list; the saved copy is kept');
+                    retry();
+                },
+                (err: unknown) => {
+                    console.error('setExtensionsConfig failed during workspace switch', err);
+                    retry();
+                }
+            )
+            .then(reload);
+    } else {
+        reload();
+    }
+    notifyWorkspaceChanged(outcome.next.activeWorkspaceId);
 }
 
 const defaultNotes: Note[] = [
@@ -340,7 +572,7 @@ const defaultNotes: Note[] = [
 <br>
 <p><strong>🌟 Open Source & Support</strong></p>
 <p>KoBar is a completely open-source project! We welcome your feedback and contributions.</p>
-<p>For bug reports, software support, feature requests, and financial support, please visit our GitHub repository: <a href="https://github.com/eedali/KoBar" target="_blank" rel="noopener noreferrer">https://github.com/eedali/KoBar</a></p>
+<p>For bug reports, software support, feature requests, and financial support, please visit our GitHub repository: <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer">${REPO_URL}</a></p>
 <br>
 <p><strong>🚀 KoBar Features</strong></p>
 <ul>
@@ -368,6 +600,12 @@ const defaultNotes: Note[] = [
     }
 ];
 
+// T-201 (PROD-02): no `kobar-storage` write may reach disk until hydration (incl. migration) has succeeded. The lock is
+// released in onRehydrateStorage below; after a failed hydration it stays for the whole session.
+// Dev HMR re-evaluation only: write what the previous instance left pending (on a fresh page load nothing is pending).
+appPersistStorage.flush();
+appPersistStorage.lockWrites('hydration-pending');
+
 export const useAppStore = create<AppState>()(
     persist(
         (set, get) => ({
@@ -380,9 +618,13 @@ export const useAppStore = create<AppState>()(
             activeExtensionPanelId: null,
             activeExtensionAnchorRect: null,
             extensionReloadTrigger: 0,
-            triggerExtensionReload: () => set((state) => ({ extensionReloadTrigger: state.extensionReloadTrigger + 1 })),
-            pluginsTabSubMenu: 'store',
-            setPluginsTabSubMenu: (tab) => set({ pluginsTabSubMenu: tab }),
+            extensionFullReloadTrigger: 0,
+            triggerExtensionReload: () => set((state) => ({
+                extensionReloadTrigger: state.extensionReloadTrigger + 1,
+                extensionFullReloadTrigger: state.extensionFullReloadTrigger + 1,
+            })),
+            syncEnabledExtensions: () => set((state) => ({ extensionReloadTrigger: state.extensionReloadTrigger + 1 })),
+            dataContextId: 0,
             extensionsSubTab: 'installed',
             setExtensionsSubTab: (tab) => set({ extensionsSubTab: tab }),
             pluginsViewMode: 'grid',
@@ -391,40 +633,31 @@ export const useAppStore = create<AppState>()(
             setSelectedPluginId: (id) => set({ selectedPluginId: id }),
             externalPluginsList: [],
             setExternalPluginsList: (list) => set({ externalPluginsList: list }),
-            pluginsSearchQuery: '',
-            setPluginsSearchQuery: (query) => set({ pluginsSearchQuery: query }),
             pluginsSelectedTags: [],
             setPluginsSelectedTags: (tags) => set({ pluginsSelectedTags: tags }),
             currentExtensionsConfig: {},
+            defaultExtensionsConfig: null,
             setCurrentExtensionsConfig: (config) => set({ currentExtensionsConfig: config }),
             setExtensionEnabledInWorkspace: (extensionId, enabled) => set((state) => {
                 const nextConfig = { ...state.currentExtensionsConfig, [extensionId]: enabled };
-                let updatedWorkspaces = state.workspaces;
-                if (state.activeWorkspaceId) {
-                    updatedWorkspaces = state.workspaces.map(w => {
-                        if (w.id === state.activeWorkspaceId) {
-                            return {
-                                ...w,
-                                enabledExtensions: {
-                                    ...(w.enabledExtensions || {}),
-                                    [extensionId]: enabled
-                                }
-                            };
-                        }
-                        return w;
-                    });
-                }
+                // T-409: in the Default workspace a saved Default list still exists only when its restore was not
+                // confirmed by main; keep it in sync with the toggle so it never brings back an older value.
+                const pendingDefault = !findActiveWorkspace(state) && state.defaultExtensionsConfig
+                    ? { defaultExtensionsConfig: { ...state.defaultExtensionsConfig, [extensionId]: enabled } }
+                    : {};
                 return {
+                    ...pendingDefault,
                     currentExtensionsConfig: nextConfig,
-                    workspaces: updatedWorkspaces
+                    workspaces: patchActiveWorkspace(state, (w) => ({
+                        ...w,
+                        enabledExtensions: { ...(w.enabledExtensions || {}), [extensionId]: enabled },
+                    })),
                 };
             }),
             edgePosition: 'right',
             setEdgePosition: (edge) => set((state) => ({
                 edgePosition: edge,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, edgePosition: edge } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { edgePosition: edge })
             })),
             orientation: 'vertical',
             setOrientation: (orientation) => {
@@ -433,9 +666,7 @@ export const useAppStore = create<AppState>()(
                     orientation,
                     edgePosition: defaultEdge,
                     sidebarPosition: null,
-                    workspaces: state.activeWorkspaceId
-                        ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, orientation, edgePosition: defaultEdge } : w)
-                        : state.workspaces
+                    workspaces: patchActiveWorkspace(state, { orientation, edgePosition: defaultEdge })
                 }));
             },
             isNotePanelOpen: false,
@@ -447,6 +678,21 @@ export const useAppStore = create<AppState>()(
             setNotePanelWidth: (width) => set((state) => ({ notePanelWidth: typeof width === 'function' ? width(state.notePanelWidth) : width })),
             notePanelHeight: 600,
             setNotePanelHeight: (height) => set((state) => ({ notePanelHeight: typeof height === 'function' ? height(state.notePanelHeight) : height })),
+            noteListWidth: NOTE_LIST_WIDTH_DEFAULT,
+            setNoteListWidth: (width) => set({ noteListWidth: clampNoteListWidth(width) }),
+            pluginPanelOffsets: {},
+            setPluginPanelOffset: (pluginId, axis, offset) =>
+                set((state) => {
+                    if (!pluginId || pluginId === '__proto__') return {};
+                    const value = offset === null ? null : sanitizePanelOffset(offset);
+                    const entry: PanelOffsets = { ...state.pluginPanelOffsets[pluginId] };
+                    if (value === null) delete entry[axis];
+                    else entry[axis] = value;
+                    const next = { ...state.pluginPanelOffsets };
+                    if (entry.x === undefined && entry.y === undefined) delete next[pluginId];
+                    else next[pluginId] = entry;
+                    return { pluginPanelOffsets: next };
+                }),
 
             // Sidebar Position (null = auto edge-snap, {x,y} = free floating)
             sidebarPosition: null,
@@ -454,75 +700,112 @@ export const useAppStore = create<AppState>()(
 
 
 
-            // Helper to sync active workspace config
-            // Theme
-            theme: 'midnight',
-            customThemeColor: '#f4a125',
-            setTheme: (theme) => {
-                if (theme === 'custom') {
-                    document.documentElement.setAttribute('data-theme', 'custom');
-                    applyCustomThemeCSS(get().customThemeColor);
-                } else {
-                    clearCustomThemeCSS();
-                    document.documentElement.setAttribute('data-theme', theme);
-                }
-                set((state) => ({
-                    theme,
-                    workspaces: state.activeWorkspaceId
-                        ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, theme } : w)
-                        : state.workspaces
+            // Appearance (v26, T-601). App.tsx writes the root attributes (data-scheme/-accent/-material/-theme/-design)
+            // from the state; the setters only update the state (and the active workspace record for per-workspace fields).
+            scheme: DEFAULT_SCHEME,
+            setScheme: (scheme) => set({ scheme }),
+            accent: DEFAULT_ACCENT,
+            setAccent: (accent, customHex) => {
+                const state = get();
+                const hex = accent === 'custom' && typeof customHex === 'string'
+                    ? (customHex.startsWith('#') ? customHex : `#${customHex}`)
+                    : state.customThemeColor;
+                // 'custom' with a preset hex selects the preset; an invalid hex falls back to amber.
+                const nextAccent = accent === 'custom' ? accentFromLegacy('custom', hex) : accent;
+                const legacy = accent === 'custom'
+                    ? { theme: 'custom' as const, customThemeColor: hex }
+                    : legacyThemeFields(nextAccent, state);
+                if (legacy.theme === 'custom') writeForcedThemeColor(legacy.customThemeColor);
+                set((s) => ({
+                    accent: nextAccent,
+                    ...legacy,
+                    workspaces: patchActiveWorkspace(s, { accent: nextAccent, ...legacy })
                 }));
             },
+            material: DEFAULT_MATERIAL,
+            setMaterial: (material) => set((state) => {
+                const legacy = legacyMaterialFields(material, state);
+                return {
+                    material,
+                    ...legacy,
+                    workspaces: patchActiveWorkspace(state, { material, ...legacy })
+                };
+            }),
+            // Density (v27, T-602). `sidebarWidth` follows it only when the stored width does not describe it already.
+            density: DEFAULT_DENSITY,
+            setDensity: (density) => {
+                // Plugins can call it (window.useAppStore): an invalid value is ignored.
+                if (!isDensity(density)) return;
+                set((state) => {
+                    const sidebarWidth = legacySidebarWidth(density, state.sidebarWidth);
+                    return {
+                        density,
+                        sidebarWidth,
+                        workspaces: patchActiveWorkspace(state, { density, sidebarWidth })
+                    };
+                });
+            },
+
+            // Theme (v1 view of `accent`)
+            theme: THEME_FOR_ACCENT[DEFAULT_ACCENT],
+            customThemeColor: DEFAULT_CUSTOM_THEME_COLOR,
+            setTheme: (theme) => set((state) => {
+                const accent = accentFromLegacy(theme, state.customThemeColor);
+                return {
+                    theme,
+                    accent,
+                    workspaces: patchActiveWorkspace(state, { theme, accent })
+                };
+            }),
             setCustomThemeColor: (color: string) => {
                 const hex = color.startsWith('#') ? color : `#${color}`;
                 // Double safety: Manual sync write to bypass any async persist issues
-                localStorage.setItem('kobar_force_theme_color', hex);
-
-                document.documentElement.setAttribute('data-theme', 'custom');
-                applyCustomThemeCSS(hex);
+                writeForcedThemeColor(hex);
+                const accent = accentFromLegacy('custom', hex);
                 set((state) => ({
                     customThemeColor: hex,
                     theme: 'custom',
-                    workspaces: state.activeWorkspaceId
-                        ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, customThemeColor: hex, theme: 'custom' } : w)
-                        : state.workspaces
+                    accent,
+                    workspaces: patchActiveWorkspace(state, { customThemeColor: hex, theme: 'custom', accent })
                 }));
             },
 
-            // Design System
+            // Design System (v1 view of `material`)
             design: 'style1',
-            setDesign: (design) => {
-                document.documentElement.setAttribute('data-design', design);
-                set((state) => ({
+            setDesign: (design) => set((state) => {
+                const material = materialFromLegacy(design, state.glassOpacity);
+                return {
                     design,
-                    workspaces: state.activeWorkspaceId
-                        ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, design } : w)
-                        : state.workspaces
-                }));
-            },
-            glassOpacity: 60,
-            setGlassOpacity: (val) => set((state) => ({
-                glassOpacity: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, glassOpacity: val } : w)
-                    : state.workspaces
-            })),
+                    material,
+                    workspaces: patchActiveWorkspace(state, { design, material })
+                };
+            }),
+            glassOpacity: DEFAULT_GLASS_OPACITY,
+            setGlassOpacity: (val) => set((state) => {
+                const material = materialFromLegacy(state.design, val);
+                return {
+                    glassOpacity: val,
+                    material,
+                    workspaces: patchActiveWorkspace(state, { glassOpacity: val, material })
+                };
+            }),
 
             // Settings
             showTooltips: true,
             setShowTooltips: (val) => set((state) => ({
                 showTooltips: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, showTooltips: val } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { showTooltips: val })
             })),
             sidebarWidth: 46,
-            setSidebarWidth: (val) => set((state) => ({
-                sidebarWidth: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, sidebarWidth: val } : w)
-                    : state.workspaces
-            })),
+            setSidebarWidth: (val) => set((state) => {
+                // v27 (T-602): the density follows the v1 width.
+                const density = densityFromSidebarWidth(val);
+                return {
+                    sidebarWidth: val,
+                    density,
+                    workspaces: patchActiveWorkspace(state, { sidebarWidth: val, density })
+                };
+            }),
             lastSidebarHeight: 800,
             setLastSidebarHeight: (val) => set({ lastSidebarHeight: val }),
             lastSidebarWidth: 200,
@@ -530,19 +813,11 @@ export const useAppStore = create<AppState>()(
             iconScale: 0.8,
             setIconScale: (val) => set((state) => ({
                 iconScale: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, iconScale: val } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { iconScale: val })
             })),
 
             isDraggingGlobal: false,
             setIsDraggingGlobal: (val) => set({ isDraggingGlobal: val }),
-
-            teleportShortcut: 'CommandOrControl+Shift+K',
-            setTeleportShortcut: (val) => {
-                set({ teleportShortcut: val });
-                window.api?.registerTeleportShortcut?.(val);
-            },
 
             screenBounds: null,
             setScreenBounds: (bounds) => set({ screenBounds: bounds }),
@@ -554,9 +829,7 @@ export const useAppStore = create<AppState>()(
             isPinInjectorEnabled: false,
             setIsPinInjectorEnabled: (val: boolean) => set((state) => ({
                 isPinInjectorEnabled: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, isPinInjectorEnabled: val } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { isPinInjectorEnabled: val })
             })),
 
             isTargetingMode: false,
@@ -567,53 +840,40 @@ export const useAppStore = create<AppState>()(
             isKoBoxEnabled: false,
             setIsKoBoxEnabled: (val: boolean) => set((state) => ({
                 isKoBoxEnabled: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, isKoBoxEnabled: val } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { isKoBoxEnabled: val })
             })),
             koBoxCleanupMode: '24h',
             setKoBoxCleanupMode: (val: '24h' | 'quit') => set((state) => ({
                 koBoxCleanupMode: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, koBoxCleanupMode: val } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { koBoxCleanupMode: val })
             })),
 
-            isPopupSmartPositioning: false,
+            // v27 (T-602): the new shell always places popups smartly; v1 plugins read `true` (the setter still works).
+            isPopupSmartPositioning: true,
             setIsPopupSmartPositioning: (val: boolean) => set((state) => ({
                 isPopupSmartPositioning: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, isPopupSmartPositioning: val } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { isPopupSmartPositioning: val })
             })),
 
-            featureOrder: ['com.kobar.aihub.btn', 'ko-calender-plugin-btn', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'],
+            featureOrder: [...DEFAULT_FEATURE_ORDER],
             setFeatureOrder: (order) => set((state) => ({
                 featureOrder: order,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, featureOrder: [...order] } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { featureOrder: [...order] })
             })),
 
             settingsFeatureViewMode: 'cards',
             setSettingsFeatureViewMode: (mode) => set({ settingsFeatureViewMode: mode }),
-            settingsWorkspaceViewMode: 'cards',
-            setSettingsWorkspaceViewMode: (mode) => set({ settingsWorkspaceViewMode: mode }),
 
             // UI Spacing & Sizing (defaults)
             toggleWidth: 22, // Note Notch Protrusion
             setToggleWidth: (val) => set((state) => ({
                 toggleWidth: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, toggleWidth: val } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { toggleWidth: val })
             })),
             featureSpacing: 8, // Feature Spacing
             setFeatureSpacing: (val) => set((state) => ({
                 featureSpacing: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, featureSpacing: val } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { featureSpacing: val })
             })),
 
             // Launch at Startup
@@ -622,24 +882,16 @@ export const useAppStore = create<AppState>()(
                 set({ launchAtStartup: val });
                 window.api?.setAutoLaunch?.(val);
             },
-            enableEyeAnimation: true,
+            enableEyeAnimation: false, // T-621: off for new installs; existing users keep their persisted value (v17 migration + partialize)
             setEnableEyeAnimation: (val) => set((state) => ({
                 enableEyeAnimation: val,
-                workspaces: state.activeWorkspaceId
-                    ? state.workspaces.map(w => w.id === state.activeWorkspaceId ? { ...w, enableEyeAnimation: val } : w)
-                    : state.workspaces
+                workspaces: patchActiveWorkspace(state, { enableEyeAnimation: val })
             })),
 
             // Language
             language: 'en',
             setLanguage: (language) => set({ language }),
-            t: (key) => {
-                const state = get();
-                const lang = state.language || 'tr';
-                return (translations as Record<string, Record<string, string>>)[lang]?.[key]
-                    || (translations as Record<string, Record<string, string>>)['en'][key]
-                    || key;
-            },
+            t: (key) => translate(get().language, key),
 
             // Mini Mode
             isMiniMode: false,
@@ -661,10 +913,12 @@ export const useAppStore = create<AppState>()(
                                 y: sidebarY
                             };
 
-                            // Recalculate edgePosition so NotePanel/SettingsPanel opens on the correct side
-                            const screenH = state.screenBounds?.height ?? 800;
+                            // Recalculate edgePosition so NotePanel opens on the correct side
+                            const screenH = state.screenBounds?.height ?? getWindowGeometry().fallbackScreenHeight;
+                            // T-322: off macOS, the vertical centre of the usable screen area in window coordinates (taskbar at top).
+                            const screenCenterY = state.isMac ? (screenH / 2) : computeVisibleArea(getWindowGeometry(), state.screenBounds).centerY;
                             const sidebarCenterY = sidebarY + (state.sidebarWidth / 2);
-                            updates.edgePosition = sidebarCenterY < (screenH / 2) ? 'top' : 'bottom';
+                            updates.edgePosition = sidebarCenterY < screenCenterY ? 'top' : 'bottom';
                         } else {
                             // Position the sidebar's bottom handle precisely where the eye was located
                             // We subtract lastSidebarHeight so the bottom of the sidebar rests at the eye's Y pos
@@ -677,10 +931,11 @@ export const useAppStore = create<AppState>()(
                                 y: pos.y - state.lastSidebarHeight + centerToBottom
                             };
 
-                            // Recalculate edgePosition so NotePanel/SettingsPanel opens on the correct side
-                            const screenW = state.screenBounds?.width ?? 1920;
+                            // Recalculate edgePosition so NotePanel opens on the correct side
+                            const screenW = state.screenBounds?.width ?? getWindowGeometry().fallbackScreenWidth;
                             const isMacPlatform = state.isMac;
-                            const screenCenter = isMacPlatform ? (screenW / 2) : 3000;
+                            // T-322: off macOS, the horizontal centre of the usable screen area in window coordinates.
+                            const screenCenter = isMacPlatform ? (screenW / 2) : computeVisibleArea(getWindowGeometry(), state.screenBounds).centerX;
                             const sidebarCenterX = sidebarX + (state.sidebarWidth / 2);
                             updates.edgePosition = sidebarCenterX < screenCenter ? 'left' : 'right';
                         }
@@ -690,12 +945,44 @@ export const useAppStore = create<AppState>()(
                 }
                 return updates;
             }),
-            notes: defaultNotes,
-            activeNoteId: 1,
-            nextNoteId: 2,
+            notes: [],
+            activeNoteId: 1, // T-623: no seeded note; the panel shows an empty state until the first note is added
+            nextNoteId: 1,
             activeWorkspaceId: null,
-            setActiveWorkspaceId: (id) => set({ activeWorkspaceId: id }),
-            globalNotes: defaultNotes,
+            // T-153: the context may only change through applyWorkspaceContext. A known id is a full workspace load
+            // (snapshot of the previous workspace, notes/settings of the target, plugin reload); unknown ids are ignored.
+            setActiveWorkspaceId: (id) => {
+                if (id !== null) {
+                    if (id !== get().activeWorkspaceId) get().loadWorkspace(id);
+                    return;
+                }
+                // null = leave the active workspace; the shared context becomes live again. Live settings (theme, widths...)
+                // are intentionally NOT snapshotted into the workspace here, same as saveCurrentAsWorkspace.
+                applyWorkspaceContext(set, get, 'set-active', (state) => {
+                    if (state.activeWorkspaceId === null) return null;
+                    const prevWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
+                    if (!prevWs || !prevWs.isIsolated) return { activeWorkspaceId: null };
+                    const sharedCtx = resolveContextNotes(state, null);
+                    const sharedNotes: Note[] = JSON.parse(JSON.stringify(sharedCtx.notes));
+                    return {
+                        workspaces: state.workspaces.map(w => w.id === prevWs.id ? {
+                            ...w,
+                            isolatedData: {
+                                ...(w.isolatedData || {}),
+                                notes: JSON.parse(JSON.stringify(state.notes)),
+                                activeNoteId: state.activeNoteId,
+                                nextNoteId: state.nextNoteId,
+                            },
+                        } : w),
+                        activeWorkspaceId: null,
+                        globalNotes: sharedNotes,
+                        notes: JSON.parse(JSON.stringify(sharedNotes)),
+                        activeNoteId: resolveActiveNoteId(sharedNotes, sharedCtx.activeNoteId) ?? 1,
+                        nextNoteId: computeNextNoteId(sharedNotes),
+                    };
+                });
+            },
+            globalNotes: [],
             globalPluginData: {},
 
             getPluginData: <T = any>(pluginId: string, defaultValue?: T): T => {
@@ -729,25 +1016,23 @@ export const useAppStore = create<AppState>()(
                     return { globalPluginData: { ...(state.globalPluginData || {}), [pluginId]: data } };
                 }
             }),
-            setActiveNoteId: (id) => set((state) => {
-                const activeWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
-                if (activeWs && activeWs.isIsolated) {
-                    const updatedWorkspaces = state.workspaces.map(w => w.id === activeWs.id ? {
-                        ...w,
-                        isolatedData: {
-                            ...(w.isolatedData || {}),
-                            activeNoteId: id
-                        }
-                    } : w);
-                    return { activeNoteId: id, workspaces: updatedWorkspaces };
-                }
-                return { activeNoteId: id };
-            }),
+            setActiveNoteId: (id) => set((state) => writeActiveContextNotes(state, { activeNoteId: id })),
 
             // Tutorial State
             tutorialState: { version: '1.0.0', status: 'pending' },
             setTutorialState: (updates) => set((state) => {
                 return { tutorialState: { ...state.tutorialState, ...updates } };
+            }),
+            // First-run state (v29, T-604). Fresh installs start `pending`; the v29 migration marks existing users `completed`.
+            onboarding: { ...DEFAULT_ONBOARDING },
+            setOnboarding: (updates) => set((state) => {
+                // Plugins can call it (window.useAppStore): a result that is not a valid record is ignored.
+                const base = isOnboardingState(state.onboarding) ? state.onboarding : DEFAULT_ONBOARDING;
+                const merged = { ...base, ...updates };
+                // Built field by field, so unknown keys from the caller never reach the persisted record.
+                const next: OnboardingState = { status: merged.status, version: merged.version };
+                if (merged.migrated !== undefined) next.migrated = merged.migrated;
+                return isOnboardingState(next) ? { onboarding: next } : {};
             }),
             isManualTutorialTrigger: false,
             setIsManualTutorialTrigger: (val) => set({ isManualTutorialTrigger: val }),
@@ -768,40 +1053,19 @@ export const useAppStore = create<AppState>()(
             addNote: () => set((state) => {
                 const newNote: Note = {
                     id: state.nextNoteId,
-                    title: state.t('addNewNote'),
+                    title: state.t('untitledNote'),
                     icon: 'note',
                     emoji: null,
                     content: '',
                 };
                 const nextNotes = [...state.notes, newNote];
-                const nextActiveId = newNote.id;
-                const nextId = state.nextNoteId + 1;
-
-                const activeWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
-                if (activeWs && activeWs.isIsolated) {
-                    const updatedWorkspaces = state.workspaces.map(w => w.id === activeWs.id ? {
-                        ...w,
-                        isolatedData: {
-                            ...(w.isolatedData || {}),
-                            notes: nextNotes,
-                            activeNoteId: nextActiveId,
-                            nextNoteId: nextId
-                        }
-                    } : w);
-                    return {
-                        notes: nextNotes,
-                        activeNoteId: nextActiveId,
-                        nextNoteId: nextId,
-                        workspaces: updatedWorkspaces
-                    };
-                }
-
-                return {
-                    notes: nextNotes,
-                    activeNoteId: nextActiveId,
-                    nextNoteId: nextId,
-                    globalNotes: nextNotes,
-                };
+                return writeActiveContextNotes(state, { notes: nextNotes, activeNoteId: newNote.id, nextNoteId: state.nextNoteId + 1 });
+            }),
+            addNotes: (incoming) => set((state) => {
+                if (incoming.length === 0) return state;
+                let nextId = computeNextNoteId(state.notes, state.nextNoteId);
+                const nextNotes = [...state.notes, ...incoming.map((n) => ({ ...n, id: nextId++ }))];
+                return writeActiveContextNotes(state, { notes: nextNotes, nextNoteId: nextId });
             }),
             deleteNote: (id) => set((state) => {
                 const filtered = state.notes.filter(n => n.id !== id);
@@ -809,114 +1073,31 @@ export const useAppStore = create<AppState>()(
                 const newActiveId = state.activeNoteId === id
                     ? filtered[0].id
                     : state.activeNoteId;
-
-                const activeWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
-                if (activeWs && activeWs.isIsolated) {
-                    const updatedWorkspaces = state.workspaces.map(w => w.id === activeWs.id ? {
-                        ...w,
-                        isolatedData: {
-                            ...(w.isolatedData || {}),
-                            notes: filtered,
-                            activeNoteId: newActiveId,
-                        }
-                    } : w);
-                    return { notes: filtered, activeNoteId: newActiveId, workspaces: updatedWorkspaces };
-                }
-
-                return { notes: filtered, activeNoteId: newActiveId, globalNotes: filtered };
+                return writeActiveContextNotes(state, { notes: filtered, activeNoteId: newActiveId });
             }),
             updateNoteContent: (id, content) => set((state) => {
                 const nextNotes = state.notes.map(n => n.id === id ? { ...n, content } : n);
-                const activeWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
-                if (activeWs && activeWs.isIsolated) {
-                    const updatedWorkspaces = state.workspaces.map(w => w.id === activeWs.id ? {
-                        ...w,
-                        isolatedData: {
-                            ...(w.isolatedData || {}),
-                            notes: nextNotes,
-                        }
-                    } : w);
-                    return { notes: nextNotes, workspaces: updatedWorkspaces };
-                }
-                return { notes: nextNotes, globalNotes: nextNotes };
+                return writeActiveContextNotes(state, { notes: nextNotes });
             }),
             updateNoteTitle: (id, title) => set((state) => {
                 const nextNotes = state.notes.map(n => n.id === id ? { ...n, title } : n);
-                const activeWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
-                if (activeWs && activeWs.isIsolated) {
-                    const updatedWorkspaces = state.workspaces.map(w => w.id === activeWs.id ? {
-                        ...w,
-                        isolatedData: {
-                            ...(w.isolatedData || {}),
-                            notes: nextNotes,
-                        }
-                    } : w);
-                    return { notes: nextNotes, workspaces: updatedWorkspaces };
-                }
-                return { notes: nextNotes, globalNotes: nextNotes };
+                return writeActiveContextNotes(state, { notes: nextNotes });
             }),
             updateNoteEmoji: (id, emoji) => set((state) => {
                 const nextNotes = state.notes.map(n => n.id === id ? { ...n, emoji } : n);
-                const activeWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
-                if (activeWs && activeWs.isIsolated) {
-                    const updatedWorkspaces = state.workspaces.map(w => w.id === activeWs.id ? {
-                        ...w,
-                        isolatedData: {
-                            ...(w.isolatedData || {}),
-                            notes: nextNotes,
-                        }
-                    } : w);
-                    return { notes: nextNotes, workspaces: updatedWorkspaces };
-                }
-                return { notes: nextNotes, globalNotes: nextNotes };
+                return writeActiveContextNotes(state, { notes: nextNotes });
             }),
-            openSettingsTab: () => set((state) => {
-                let settingsNote = state.notes.find(n => n.isSettings);
-                let nextNotes = state.notes;
-                let nextId = state.nextNoteId;
-
-                if (!settingsNote) {
-                    settingsNote = {
-                        id: state.nextNoteId,
-                        title: state.t('settings'),
-                        icon: 'settings',
-                        emoji: null,
-                        content: '',
-                        isSettings: true,
-                    };
-                    nextNotes = [...state.notes, settingsNote];
-                    nextId++;
-                }
-
-                const activeWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
-                if (activeWs && activeWs.isIsolated) {
-                    const updatedWorkspaces = state.workspaces.map(w => w.id === activeWs.id ? {
-                        ...w,
-                        isolatedData: {
-                            ...(w.isolatedData || {}),
-                            notes: nextNotes,
-                            activeNoteId: settingsNote.id,
-                            nextNoteId: nextId,
-                        }
-                    } : w);
-                    return {
-                        isNotePanelOpen: true,
-                        notes: nextNotes,
-                        activeNoteId: settingsNote.id,
-                        nextNoteId: nextId,
-                        workspaces: updatedWorkspaces
-                    };
-                }
-
-                return {
-                    isNotePanelOpen: true,
-                    notes: nextNotes,
-                    activeNoteId: settingsNote.id,
-                    nextNoteId: nextId,
-                    globalNotes: nextNotes,
-                };
-            }),
-            openPluginsTab: () => set((state) => {
+            // T-615: both names stay on window.useAppStore (v1 plugin contract). They open the Settings window at the matching page
+            // (src/store/settingsOpener.ts); outside Electron there is nothing to open.
+            openSettingsTab: () => {
+                openSettingsPage('general');
+            },
+            openPluginsTab: () => {
+                openSettingsPage('plugins');
+            },
+            // T-615: the main window's minimal plugin host tab (plugins/PluginSettingsHost.tsx): a plugin's v1 settings panel, or the
+            // GitHub link install when `id` is null. It needs the plugin runtime, which only the main window has.
+            openPluginSettings: (id) => set((state) => {
                 let pluginsNote = state.notes.find(n => n.isPlugins);
                 let nextNotes = state.notes;
                 let nextId = state.nextNoteId;
@@ -934,32 +1115,10 @@ export const useAppStore = create<AppState>()(
                     nextId++;
                 }
 
-                const activeWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
-                if (activeWs && activeWs.isIsolated) {
-                    const updatedWorkspaces = state.workspaces.map(w => w.id === activeWs.id ? {
-                        ...w,
-                        isolatedData: {
-                            ...(w.isolatedData || {}),
-                            notes: nextNotes,
-                            activeNoteId: pluginsNote.id,
-                            nextNoteId: nextId,
-                        }
-                    } : w);
-                    return {
-                        isNotePanelOpen: true,
-                        notes: nextNotes,
-                        activeNoteId: pluginsNote.id,
-                        nextNoteId: nextId,
-                        workspaces: updatedWorkspaces
-                    };
-                }
-
                 return {
                     isNotePanelOpen: true,
-                    notes: nextNotes,
-                    activeNoteId: pluginsNote.id,
-                    nextNoteId: nextId,
-                    globalNotes: nextNotes,
+                    selectedPluginId: id,
+                    ...writeActiveContextNotes(state, { notes: nextNotes, activeNoteId: pluginsNote.id, nextNoteId: nextId }),
                 };
             }),
 
@@ -970,8 +1129,8 @@ export const useAppStore = create<AppState>()(
             currentMediaSourceApp: '',
             setCurrentMediaSourceApp: (app) => set({ currentMediaSourceApp: app }),
 
-            // License
-            isLicensed: false,
+            // Kept for v1 plugin contract, removed in 2.0 (not persisted, always true)
+            isLicensed: true,
             setLicensed: (val) => set({ isLicensed: val }),
 
             // Scroll Memory
@@ -982,19 +1141,22 @@ export const useAppStore = create<AppState>()(
 
             // Workspaces
             workspaces: [],
-            saveCurrentAsWorkspace: (name, isIsolated = false) => set((state) => {
+            saveCurrentAsWorkspace: (name, isIsolated = false) => applyWorkspaceContext(set, get, 'save', (state) => {
                 const newId = Date.now().toString();
+                // T-204 (WS-02): the live notes belong to the previous ACTIVE context. An isolated save copies them;
+                // a shared save must switch to the shared context (globalNotes while an isolated workspace is active).
+                const prevActiveWs = state.workspaces.find(w => w.id === state.activeWorkspaceId);
+                const liveCtx = resolveContextNotes(state, prevActiveWs ?? null);
+                const liveActiveNoteId = liveCtx.activeNoteId ?? state.activeNoteId;
                 const newWorkspace: WorkspaceConfig = {
                     id: newId,
                     name,
                     isIsolated,
                     isolatedData: isIsolated ? {
-                        notes: JSON.parse(JSON.stringify(state.notes)),
-                        activeNoteId: state.activeNoteId,
-                        nextNoteId: state.nextNoteId,
-                        pluginData: JSON.parse(JSON.stringify(
-                            (state.workspaces.find(w => w.id === state.activeWorkspaceId)?.isolatedData?.pluginData) || {}
-                        )),
+                        notes: JSON.parse(JSON.stringify(liveCtx.notes)),
+                        activeNoteId: liveActiveNoteId,
+                        nextNoteId: liveCtx.nextNoteId,
+                        pluginData: JSON.parse(JSON.stringify(prevActiveWs?.isolatedData?.pluginData || {})),
                     } : undefined,
                     enabledExtensions: { ...state.currentExtensionsConfig },
 
@@ -1011,6 +1173,9 @@ export const useAppStore = create<AppState>()(
                     customThemeColor: state.customThemeColor,
                     design: state.design,
                     glassOpacity: state.glassOpacity,
+                    accent: state.accent,
+                    material: state.material,
+                    density: state.density,
                     featureOrder: [...state.featureOrder],
                     edgePosition: state.edgePosition,
                     isPopupSmartPositioning: state.isPopupSmartPositioning,
@@ -1018,26 +1183,56 @@ export const useAppStore = create<AppState>()(
                     orientation: state.orientation
                 };
 
-                setTimeout(() => {
-                    if (typeof window !== 'undefined') {
-                        (window.KoBarExtensions as any)?.notify?.();
-                        window.dispatchEvent(new CustomEvent('kobar:workspace-changed', { detail: { workspaceId: newId } }));
-                    }
-                }, 0);
+                const prevIsIsolated = !!prevActiveWs?.isIsolated;
+                // Keep the previous isolated workspace's own copy in sync with the live notes before leaving it.
+                const keptWorkspaces = prevIsIsolated
+                    ? state.workspaces.map(w => w.id === prevActiveWs!.id ? {
+                        ...w,
+                        isolatedData: {
+                            ...(w.isolatedData || {}),
+                            notes: JSON.parse(JSON.stringify(liveCtx.notes)),
+                            activeNoteId: liveActiveNoteId,
+                            nextNoteId: liveCtx.nextNoteId,
+                        },
+                    } : w)
+                    : state.workspaces;
+
+                if (isIsolated) {
+                    return {
+                        workspaces: [...keptWorkspaces, newWorkspace],
+                        activeWorkspaceId: newId,
+                        // Leaving a shared context: its live notes become the canonical shared copy.
+                        ...(prevIsIsolated ? {} : { globalNotes: JSON.parse(JSON.stringify(liveCtx.notes)) }),
+                        activeNoteId: liveActiveNoteId,
+                        nextNoteId: liveCtx.nextNoteId,
+                    };
+                }
+
+                if (prevIsIsolated) {
+                    const sharedCtx = resolveContextNotes(state, null);
+                    const sharedNotes: Note[] = JSON.parse(JSON.stringify(sharedCtx.notes));
+                    return {
+                        workspaces: [...keptWorkspaces, newWorkspace],
+                        activeWorkspaceId: newId,
+                        notes: sharedNotes,
+                        activeNoteId: resolveActiveNoteId(sharedNotes, sharedCtx.activeNoteId) ?? 1,
+                        nextNoteId: computeNextNoteId(sharedNotes),
+                    };
+                }
 
                 return {
-                    workspaces: [...state.workspaces, newWorkspace],
+                    workspaces: [...keptWorkspaces, newWorkspace],
                     activeWorkspaceId: newId,
                 };
             }),
-            loadWorkspace: (id) => set((state) => {
+            loadWorkspace: (id) => applyWorkspaceContext(set, get, 'load', (state) => {
                 const targetWs = state.workspaces.find(w => w.id === id);
-                if (!targetWs) return state;
+                if (!targetWs) return null;
 
                 // 1. Snapshot previous active workspace before switching
                 let updatedWorkspaces = [...state.workspaces];
                 let nextGlobalNotes = state.globalNotes;
-                let nextGlobalPluginData = state.globalPluginData;
+                const nextGlobalPluginData = state.globalPluginData;
 
                 const prevActiveWs = updatedWorkspaces.find(w => w.id === state.activeWorkspaceId);
                 if (prevActiveWs) {
@@ -1058,6 +1253,9 @@ export const useAppStore = create<AppState>()(
                                 customThemeColor: state.customThemeColor,
                                 design: state.design,
                                 glassOpacity: state.glassOpacity,
+                                accent: state.accent,
+                                material: state.material,
+                                density: state.density,
                                 featureOrder: [...state.featureOrder],
                                 edgePosition: state.edgePosition,
                                 isPopupSmartPositioning: state.isPopupSmartPositioning,
@@ -1085,20 +1283,22 @@ export const useAppStore = create<AppState>()(
                 // 2. Fetch fresh target workspace from updated workspaces
                 const freshTargetWs = updatedWorkspaces.find(w => w.id === id) || targetWs;
 
-                // 3. Apply DOM Attributes and Themes
-                const targetTheme = freshTargetWs.theme || 'midnight';
-                const targetDesign = freshTargetWs.design || 'style1';
-                const targetCustomColor = freshTargetWs.customThemeColor || '#f4a125';
-
-                document.documentElement.setAttribute('data-theme', targetTheme);
-                document.documentElement.setAttribute('data-design', targetDesign);
-
-                if (targetTheme === 'custom') {
-                    localStorage.setItem('kobar_force_theme_color', targetCustomColor);
-                    applyCustomThemeCSS(targetCustomColor);
-                } else {
-                    clearCustomThemeCSS();
-                }
+                // 3. Target appearance (the DOM side effects run after the commit, see afterCommit below). v26 (T-601): a record
+                // without accent/material (written before v26, or imported) derives them from its v1 fields; the v1 fields are
+                // filled consistently (a missing theme becomes the accent's theme instead of the old 'midnight' default).
+                const targetAccent = profileAccent(freshTargetWs);
+                const targetMaterial = profileMaterial(freshTargetWs);
+                const targetThemeFields = legacyThemeFields(targetAccent, {
+                    theme: freshTargetWs.theme,
+                    customThemeColor: freshTargetWs.customThemeColor || DEFAULT_CUSTOM_THEME_COLOR,
+                });
+                const targetMaterialFields = legacyMaterialFields(targetMaterial, freshTargetWs);
+                // v27 (T-602): the stored width wins until the Sidebar renders from the density (T-618), so a switch never
+                // changes the bar width; a record without a width uses its density (missing: normal, the old default 46).
+                const storedWidth = freshTargetWs.sidebarWidth;
+                const hasWidth = typeof storedWidth === 'number';
+                const targetDensity = hasWidth ? densityFromSidebarWidth(storedWidth) : profileDensity(freshTargetWs);
+                const targetSidebarWidth = hasWidth ? storedWidth : legacySidebarWidth(targetDensity, undefined);
 
                 // 4. Resolve Notes & Active IDs for Target Workspace
                 let nextNotes: Note[];
@@ -1109,8 +1309,9 @@ export const useAppStore = create<AppState>()(
                     const isoData = freshTargetWs.isolatedData;
                     if (isoData && Array.isArray(isoData.notes) && isoData.notes.length > 0) {
                         nextNotes = JSON.parse(JSON.stringify(isoData.notes));
-                        nextActiveId = isoData.activeNoteId ?? nextNotes[0].id;
-                        nextId = isoData.nextNoteId ?? (Math.max(...nextNotes.map(n => n.id), 0) + 1);
+                        // T-204: never trust a stored counter below max(id)+1 or a dangling activeNoteId (WS-08 data).
+                        nextActiveId = resolveActiveNoteId(nextNotes, isoData.activeNoteId) ?? nextNotes[0].id;
+                        nextId = computeNextNoteId(nextNotes, isoData.nextNoteId);
                     } else {
                         nextNotes = JSON.parse(JSON.stringify(defaultNotes));
                         nextActiveId = 1;
@@ -1124,32 +1325,19 @@ export const useAppStore = create<AppState>()(
                     nextId = Math.max(...nextNotes.map(n => n.id), 0) + 1;
                 }
 
-                // 5. Apply extensions configuration for target workspace
-                const targetExtConfig = freshTargetWs.enabledExtensions || state.currentExtensionsConfig;
-                if (freshTargetWs.enabledExtensions && window.api?.setExtensionsConfig) {
-                    window.api.setExtensionsConfig(freshTargetWs.enabledExtensions).then(() => {
-                        state.triggerExtensionReload();
-                    });
-                } else {
-                    state.triggerExtensionReload();
-                }
-
-                // 6. Notify extensions / plugins
-                setTimeout(() => {
-                    if (typeof window !== 'undefined') {
-                        (window.KoBarExtensions as any)?.notify?.();
-                        window.dispatchEvent(new CustomEvent('kobar:workspace-changed', { detail: { workspaceId: id } }));
-                    }
-                }, 0);
+                // 5. The target's enabled-plugin set (merge rule, saved Default list), sending it to the main process,
+                // the plugin load and the workspace-changed event are handled by applyWorkspaceContext (T-409).
 
                 const safeFeatureOrder = Array.isArray(freshTargetWs.featureOrder) && freshTargetWs.featureOrder.length > 0
                     ? [...freshTargetWs.featureOrder]
-                    : ['com.kobar.aihub.btn', 'ko-calender-plugin-btn', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'];
+                    : (Array.isArray(state.featureOrder) && state.featureOrder.length > 0
+                        // T-027: keep the current bar instead of re-adding the calendar button to an existing user.
+                        ? [...state.featureOrder]
+                        : [...DEFAULT_FEATURE_ORDER]);
 
                 return {
                     workspaces: updatedWorkspaces,
                     activeWorkspaceId: id,
-                    currentExtensionsConfig: targetExtConfig,
                     globalNotes: nextGlobalNotes,
                     globalPluginData: nextGlobalPluginData,
                     notes: nextNotes,
@@ -1161,36 +1349,56 @@ export const useAppStore = create<AppState>()(
                     koBoxCleanupMode: freshTargetWs.koBoxCleanupMode ?? '24h',
 
                     toggleWidth: freshTargetWs.toggleWidth ?? 22,
-                    sidebarWidth: freshTargetWs.sidebarWidth ?? 46,
+                    sidebarWidth: targetSidebarWidth,
                     iconScale: freshTargetWs.iconScale ?? 0.8,
                     featureSpacing: freshTargetWs.featureSpacing ?? 8,
                     showTooltips: freshTargetWs.showTooltips !== undefined ? freshTargetWs.showTooltips : true,
-                    theme: targetTheme,
-                    customThemeColor: targetCustomColor,
-                    design: targetDesign,
-                    glassOpacity: freshTargetWs.glassOpacity ?? 60,
+                    accent: targetAccent,
+                    material: targetMaterial,
+                    density: targetDensity,
+                    theme: targetThemeFields.theme,
+                    customThemeColor: targetThemeFields.customThemeColor,
+                    design: targetMaterialFields.design,
+                    glassOpacity: targetMaterialFields.glassOpacity,
                     featureOrder: safeFeatureOrder,
                     edgePosition: freshTargetWs.edgePosition || 'right',
-                    isPopupSmartPositioning: freshTargetWs.isPopupSmartPositioning ?? false,
+                    isPopupSmartPositioning: freshTargetWs.isPopupSmartPositioning ?? true,
                     enableEyeAnimation: freshTargetWs.enableEyeAnimation !== undefined ? freshTargetWs.enableEyeAnimation : true,
                     orientation: freshTargetWs.orientation || 'vertical'
                 };
+            }, {
+                // T-153: DOM attributes and theme CSS follow the committed state instead of being written inside `set`.
+                afterCommit: (committed) => {
+                    // T-601: App.tsx owns every root attribute (data-scheme/-accent/-material/-theme/-design) and sets them
+                    // from the committed state; only stale inline overrides and the 1.2.x key are handled here.
+                    clearLegacyThemeCSS();
+                    if (committed.theme === 'custom') writeForcedThemeColor(committed.customThemeColor);
+                },
             }),
-            toggleWorkspaceIsolation: (id) => set((state) => {
+            toggleWorkspaceIsolation: (id) => applyWorkspaceContext(set, get, 'toggle-isolation', (state) => {
                 const targetWs = state.workspaces.find(w => w.id === id);
-                if (!targetWs) return state;
+                if (!targetWs) return null;
 
                 const willBeIsolated = !targetWs.isIsolated;
                 const isActive = state.activeWorkspaceId === id;
 
-                let updatedWorkspaces = state.workspaces.map(w => {
+                const updatedWorkspaces = state.workspaces.map(w => {
                     if (w.id === id) {
-                        const existingIso = w.isolatedData || {
-                            notes: JSON.parse(JSON.stringify(isActive ? state.notes : (state.globalNotes || defaultNotes))),
-                            activeNoteId: state.activeNoteId,
-                            nextNoteId: state.nextNoteId,
-                            pluginData: {}
+                        // T-204 (WS-08): notes, activeNoteId and nextNoteId must all come from the SAME context
+                        // (live notes if active, otherwise the shared canonical copy).
+                        const makeIso = () => {
+                            // The target as it looks while NOT isolated: active -> live notes, inactive -> shared copy.
+                            const sharedViewOfTarget = { id: w.id, isIsolated: false };
+                            const source = resolveContextNotes(state, sharedViewOfTarget);
+                            const isoNotes: Note[] = JSON.parse(JSON.stringify(source.notes.length > 0 ? source.notes : defaultNotes));
+                            return {
+                                notes: isoNotes,
+                                activeNoteId: resolveActiveNoteId(isoNotes, source.activeNoteId) ?? 1,
+                                nextNoteId: computeNextNoteId(isoNotes, source.nextNoteId),
+                                pluginData: {}
+                            };
                         };
+                        const existingIso = w.isolatedData || makeIso();
                         return {
                             ...w,
                             isIsolated: willBeIsolated,
@@ -1200,13 +1408,7 @@ export const useAppStore = create<AppState>()(
                     return w;
                 });
 
-                setTimeout(() => {
-                    if (typeof window !== 'undefined') {
-                        (window.KoBarExtensions as any)?.notify?.();
-                        window.dispatchEvent(new CustomEvent('kobar:workspace-changed', { detail: { workspaceId: id } }));
-                    }
-                }, 0);
-
+                // Only toggling the ACTIVE workspace switches the plugin namespace (reload + event via applyWorkspaceContext).
                 if (isActive) {
                     if (willBeIsolated) {
                         const currentIso = updatedWorkspaces.find(w => w.id === id)?.isolatedData;
@@ -1217,8 +1419,8 @@ export const useAppStore = create<AppState>()(
                             workspaces: updatedWorkspaces,
                             globalNotes: JSON.parse(JSON.stringify(state.notes)),
                             notes: isoNotes,
-                            activeNoteId: currentIso?.activeNoteId ?? isoNotes[0]?.id ?? 1,
-                            nextNoteId: currentIso?.nextNoteId ?? (Math.max(...isoNotes.map((n: { id: number }) => n.id), 0) + 1),
+                            activeNoteId: resolveActiveNoteId(isoNotes, currentIso?.activeNoteId) ?? 1,
+                            nextNoteId: computeNextNoteId(isoNotes, currentIso?.nextNoteId),
                         };
                     } else {
                         const fallbackNotes = state.globalNotes && state.globalNotes.length > 0
@@ -1235,7 +1437,7 @@ export const useAppStore = create<AppState>()(
 
                 return { workspaces: updatedWorkspaces };
             }),
-            deleteWorkspace: (id) => set((state) => {
+            deleteWorkspace: (id) => applyWorkspaceContext(set, get, 'delete', (state) => {
                 const wasActive = state.activeWorkspaceId === id;
                 const remaining = state.workspaces.filter(w => w.id !== id);
                 if (wasActive) {
@@ -1252,6 +1454,14 @@ export const useAppStore = create<AppState>()(
                 }
                 return { workspaces: remaining };
             }),
+            deleteWorkspaceWithBackup: (id) =>
+                deleteWorkspaceWithBackup(
+                    id,
+                    defaultDeleteWorkspaceDeps({
+                        getWorkspaceIds: () => get().workspaces.map((w) => w.id),
+                        deleteWorkspace: (target) => get().deleteWorkspace(target),
+                    })
+                ),
             updateWorkspaceName: (id, newName) => set((state) => ({
                 workspaces: state.workspaces.map(w => w.id === id ? { ...w, name: newName } : w)
             })),
@@ -1272,11 +1482,15 @@ export const useAppStore = create<AppState>()(
                     customThemeColor: state.customThemeColor,
                     design: state.design,
                     glassOpacity: state.glassOpacity,
+                    accent: state.accent,
+                    material: state.material,
+                    density: state.density,
                     featureOrder: [...state.featureOrder],
                     edgePosition: state.edgePosition,
                     enableEyeAnimation: state.enableEyeAnimation,
                     orientation: state.orientation,
-                    isolatedData: w.isIsolated ? {
+                    // WS-01: live notes belong to the ACTIVE context only; never copy them into another workspace.
+                    isolatedData: w.isIsolated && w.id === state.activeWorkspaceId ? {
                         ...(w.isolatedData || {}),
                         notes: JSON.parse(JSON.stringify(state.notes)),
                         activeNoteId: state.activeNoteId,
@@ -1288,191 +1502,10 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'kobar-storage',
-            version: 21,
-            migrate: (persistedState: any, version: number) => {
-                if (version <= 20) {
-                    if (persistedState.globalNotes === undefined) {
-                        persistedState.globalNotes = persistedState.notes ? [...persistedState.notes] : [];
-                    }
-                    if (persistedState.globalPluginData === undefined) {
-                        persistedState.globalPluginData = {};
-                    }
-                    if (persistedState.activeWorkspaceId === undefined) {
-                        persistedState.activeWorkspaceId = null;
-                    }
-                    if (persistedState.workspaces && Array.isArray(persistedState.workspaces)) {
-                        persistedState.workspaces = persistedState.workspaces.map((w: any) => ({
-                            ...w,
-                            isIsolated: w.isIsolated ?? false,
-                            isolatedData: w.isolatedData || undefined,
-                        }));
-                    }
-                }
-                // version 20 migration for tutorial state
-                if (version <= 19) {
-                    if (persistedState.tutorialState === undefined) {
-                        persistedState.tutorialState = { version: '1.0.0', status: 'pending' };
-                    }
-                }
-                // version 19 migration for tutorial state
-                if (version <= 18) {
-                    if (persistedState.tutorialState === undefined) {
-                        persistedState.tutorialState = { version: '1.0.0', status: 'pending' };
-                    }
-                    if (persistedState.isHighlightingToggleNotes === undefined) {
-                        persistedState.isHighlightingToggleNotes = false;
-                    }
-                    if (persistedState.isHighlightingSettingsBtn === undefined) {
-                        persistedState.isHighlightingSettingsBtn = false;
-                    }
-                    if (persistedState.isHighlightingPluginsBtn === undefined) {
-                        persistedState.isHighlightingPluginsBtn = false;
-                    }
-                }
-                // version 18 migration for orientation
-                if (version <= 17) {
-                    if (persistedState.orientation === undefined) {
-                        persistedState.orientation = 'vertical';
-                    }
-                    if (persistedState.edgePosition === undefined) {
-                        persistedState.edgePosition = 'right';
-                    }
-                }
-                // version 17 migration for enableEyeAnimation
-                if (version <= 16) {
-                    if (persistedState.enableEyeAnimation === undefined) {
-                        persistedState.enableEyeAnimation = true;
-                    }
-                }
-                if (version <= 12) {
-                    if (persistedState.workspaces === undefined) {
-                        persistedState.workspaces = [];
-                    }
-                }
-                if (version === 0) {
-                    // Ensure 'calculator' is in the order if it's missing
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('calculator')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'calculator'];
-                    }
-                    // Ensure it's enabled by default if not set
-
-                }
-
-                // version 1 migration for colorpicker
-                if (version <= 1) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('kobar-colorpicker-plugin-btn')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'kobar-colorpicker-plugin-btn'];
-                    }
-                }
-
-                if (persistedState.featureOrder) {
-                    persistedState.featureOrder = persistedState.featureOrder.map((f: string) => f === 'colorpicker' ? 'kobar-colorpicker-plugin-btn' : f);
-                }
-
-                delete persistedState.isColorPickerEnabled;
-                delete persistedState.colorPalettes;
-                delete persistedState.currentColor;
-
-                // version 2 migration for todolist
-                if (version <= 2) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('todolist-plugin-btn')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'todolist-plugin-btn'];
-                    }
-                }
-
-                if (persistedState.featureOrder) {
-                    persistedState.featureOrder = persistedState.featureOrder.map((f: string) => f === 'todolist' ? 'todolist-plugin-btn' : f);
-                }
-
-                delete persistedState.isTodoListEnabled;
-                delete persistedState.todos;
-
-                // version 3 migration for pininjector
-                if (version <= 3) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('pininjector')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'pininjector'];
-                    }
-                    if (persistedState.isPinInjectorEnabled === undefined) {
-                        persistedState.isPinInjectorEnabled = true;
-                    }
-                }
-
-                if (persistedState.featureOrder && !persistedState.featureOrder.includes('ko-calender-plugin-btn')) {
-                    persistedState.featureOrder = [...persistedState.featureOrder, 'ko-calender-plugin-btn'];
-                }
-
-
-
-                // version 4 migration for kobox
-                if (version <= 4) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('kobox')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'kobox'];
-                    }
-                    if (persistedState.isKoBoxEnabled === undefined) {
-                        persistedState.isKoBoxEnabled = true;
-                    }
-                    if (persistedState.koBoxCleanupMode === undefined) {
-                        persistedState.koBoxCleanupMode = '24h';
-                    }
-                }
-
-                // version 5/6 migration for snippetvault
-                if (version <= 5) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('snippetvault-plugin-btn')) {
-                        persistedState.featureOrder = [...persistedState.featureOrder, 'snippetvault-plugin-btn'];
-                    }
-                    if (persistedState.isSnippetVaultEnabled === undefined) {
-                        persistedState.isSnippetVaultEnabled = true;
-                    }
-                    if (persistedState.snippets === undefined) {
-                        persistedState.snippets = [];
-                    }
-                }
-
-                // version 14 migration for snippet passwords
-                if (version <= 13) {
-                    if (persistedState.snippets) {
-                        persistedState.snippets = persistedState.snippets.map((s: any) => ({
-                            ...s,
-                            password: s.password || undefined
-                        }));
-                    }
-                }
-
-                // version 15 migration for snippet colors
-                if (version <= 14) {
-                    if (persistedState.snippets) {
-                        persistedState.snippets = persistedState.snippets.map((s: any) => ({
-                            ...s,
-                            color: s.color || undefined
-                        }));
-                    }
-                }
-
-                // AI hub migration
-                if (version <= 6) {
-                    if (persistedState.featureOrder && !persistedState.featureOrder.includes('com.kobar.aihub.btn')) {
-                        // Force it to be the first item
-                        persistedState.featureOrder = ['com.kobar.aihub.btn', ...persistedState.featureOrder.filter((f: string) => f !== 'shortcuts' && f !== 'aihub' && f !== 'com.kobar.aihub.btn')];
-                    }
-                    if (persistedState.isAiHubEnabled === undefined) {
-                        persistedState.isAiHubEnabled = true;
-                    }
-                    // Final sanity check for featureOrder array
-                    if (!persistedState.featureOrder) {
-                        persistedState.featureOrder = ['com.kobar.aihub.btn', 'copypaste', 'todolist-plugin-btn', 'snippetvault-plugin-btn', 'pininjector', 'kobox', 'kobar-colorpicker-plugin-btn', 'calculator'];
-                    }
-                }
-
-                // version 16 migration for custom theme
-                if (version <= 15) {
-                    if (persistedState.customThemeColor === undefined) {
-                        persistedState.customThemeColor = '#f4a125';
-                    }
-                }
-
-                return persistedState;
-            },
+            // Same JSON format as the default storage; writes are debounced and flushed on unload/quit (T-129).
+            storage: createJSONStorage(() => appPersistStorage),
+            version: KOBAR_STORAGE_VERSION,
+            migrate: migratePersistedKobarStorage,
             partialize: (state) => ({
                 notes: state.notes,
                 activeNoteId: state.activeNoteId,
@@ -1480,18 +1513,31 @@ export const useAppStore = create<AppState>()(
                 globalNotes: state.globalNotes,
                 globalPluginData: state.globalPluginData,
                 currentExtensionsConfig: state.currentExtensionsConfig,
+                defaultExtensionsConfig: state.defaultExtensionsConfig,
                 activeWorkspaceId: state.activeWorkspaceId,
                 notePanelWidth: state.notePanelWidth,
                 notePanelHeight: state.notePanelHeight,
+                // v31 (R-11): note list column width.
+                noteListWidth: state.noteListWidth,
+                // v32 (R-15): per-plugin panel offsets.
+                pluginPanelOffsets: state.pluginPanelOffsets,
                 tutorialState: state.tutorialState,
+                // v29 (T-604): first-run state; `tutorialState` stays persisted (the old tutorial and 1.2.x read it).
+                onboarding: state.onboarding,
+                legacyBackup: state.legacyBackup,
 
+                // v26 (T-601): appearance model; the v1 fields stay persisted (plugins and 1.2.x read them).
+                scheme: state.scheme,
+                accent: state.accent,
+                material: state.material,
+                // v27 (T-602): density; the v1 layout fields stay persisted (plugins and 1.2.x read them).
+                density: state.density,
                 theme: state.theme,
                 customThemeColor: state.customThemeColor,
                 language: state.language,
                 showTooltips: state.showTooltips,
                 sidebarWidth: state.sidebarWidth,
                 iconScale: state.iconScale,
-                teleportShortcut: state.teleportShortcut,
                 launchAtStartup: state.launchAtStartup,
                 enableEyeAnimation: state.enableEyeAnimation,
 
@@ -1505,6 +1551,10 @@ export const useAppStore = create<AppState>()(
                 isKoBoxEnabled: state.isKoBoxEnabled,
 
                 koBoxCleanupMode: state.koBoxCleanupMode,
+                // v22 (T-205, WS-06): previously lost on restart.
+                toggleWidth: state.toggleWidth,
+                featureSpacing: state.featureSpacing,
+                isPopupSmartPositioning: state.isPopupSmartPositioning,
 
 
 
@@ -1518,27 +1568,24 @@ export const useAppStore = create<AppState>()(
                 workspaces: state.workspaces,
 
                 settingsFeatureViewMode: state.settingsFeatureViewMode,
-                settingsWorkspaceViewMode: state.settingsWorkspaceViewMode,
                 orientation: state.orientation,
                 edgePosition: state.edgePosition,
             }),
             onRehydrateStorage: () => {
                 return (fetchedState, error) => {
-                    if (error) {
-                        console.error('[Store] Hydration failed:', error);
-                    } else if (fetchedState) {
-                        fetchedState.setHydrated(true);
-
-                        // Priority 1: Force color from emergency sync storage
-                        const forcedColor = localStorage.getItem('kobar_force_theme_color');
-
-                        if (fetchedState.theme === 'custom') {
-                            const finalColor = forcedColor || fetchedState.customThemeColor;
-                            if (finalColor) {
-                                applyCustomThemeCSS(finalColor);
-                            }
-                        }
+                    // zustand reports read/parse errors and a throwing `migrate` here with `error` set.
+                    if (error || !fetchedState) {
+                        // Keeps the write lock for the session and tells the user; the stored value stays untouched.
+                        handleHydrationFailure(error ?? new Error('hydration returned no state'));
+                        return;
                     }
+                    appPersistStorage.unlockWrites();
+                    // First write after unlock: the persist middleware's own post-migration write ran while writes were
+                    // still locked and was dropped, so this setter (which always calls persist's setItem with the
+                    // current, already migrated state) is what puts the migrated state and current version on disk.
+                    fetchedState.setHydrated(true);
+                    // T-601: no startup override from `kobar_force_theme_color` any more; the v26 migration folded that value
+                    // into `customThemeColor`, and App.tsx applies the appearance from the state.
                 };
             },
         }

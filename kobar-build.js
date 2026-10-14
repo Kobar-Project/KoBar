@@ -1,120 +1,66 @@
 import fs from 'fs';
 import { execSync } from 'child_process';
-import path from 'path';
 
 /**
- * KoBar Smart Build Manager v2
- * This script automates the configuration and build process.
+ * KoBar Smart Build Manager v3 (T-217)
+ *
+ * Thin wrapper: reads kobar-settings.json and runs the matching `dist:*` npm scripts for this platform.
+ * No file is rewritten. The auto-update opt-in comes from kobar-settings.json and the flavor from the script
+ * (KOBAR_FLAVOR); electron-builder.config.cjs turns them into `extraMetadata` inside the package only.
+ * The app version lives ONLY in package.json (T-218) and is just logged here.
+ * Every dist script packages with `--publish never` (see tools/dist.mjs).
+ *
+ * kobar-settings.json:
+ *   buildStandard    -> direct build (Windows: NSIS installer via dist:direct:win, macOS: dmg/zip via dist:mac)
+ *   buildAppx        -> Microsoft Store build (Windows only, dist:store)
+ *   enableAutoUpdate -> self-update for the direct build (never for the Store build)
  */
 
 const settingsPath = './kobar-settings.json';
 const packagePath = './package.json';
-const mainPath = './electron/main.cts';
-const appPath = './src/App.tsx';
 
 function log(msg) {
-    console.log(`\n[KoBar Build] 🚀 ${msg}`);
+    console.log(`\n[KoBar Build] ${msg}`);
 }
 
-function updateFile(filePath, regex, replacement) {
-    let content = fs.readFileSync(filePath, 'utf8');
-    content = content.replace(regex, replacement);
-    fs.writeFileSync(filePath, content, 'utf8');
+/** Maps the settings to the npm scripts to run on the given platform. */
+function selectDistScripts(settings, platform) {
+    const scripts = [];
+    if (platform === 'darwin') {
+        if (settings.buildStandard) scripts.push('dist:mac');
+        if (settings.buildAppx) log('buildAppx is ignored on macOS (Store builds are Windows only).');
+        return scripts;
+    }
+    if (settings.buildStandard) scripts.push('dist:direct:win');
+    if (settings.buildAppx) scripts.push('dist:store');
+    return scripts;
 }
 
-async function runBuildSequence(isStore) {
+function start() {
+    if (!fs.existsSync(settingsPath)) {
+        console.error('kobar-settings.json not found!');
+        process.exitCode = 1;
+        return;
+    }
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    const mode = isStore ? "STORE (AppX)" : "STANDARD (Standalone)";
-    
-    // Determine feature flags
-    // If it's a store build, we generally disable these, but we'll follow settings if they are global.
-    // However, store builds MUST NOT have auto-update. So we force it false for Store.
-    const autoUpdate = isStore ? false : settings.enableAutoUpdate;
-    const licensing = isStore ? false : settings.enableLicensing;
-
-    log(`Preparing ${mode} configuration... (Version: ${settings.version}, Licensing: ${licensing}, Update: ${autoUpdate})`);
-
-    // 1. Update package.json
-    const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-    pkg.version = settings.version;
-    pkg.build.win.target = isStore ? ["appx"] : ["nsis"];
-    
-    // Inject Microsoft Store Secrets if available and building for Store
-    const secretsPath = './kobar-secrets.json';
-    let injectedSecrets = false;
-    if (isStore && fs.existsSync(secretsPath)) {
-        const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
-        pkg.build.appx.identityName = secrets.identityName;
-        pkg.build.appx.publisher = secrets.publisher;
-        pkg.build.appx.publisherDisplayName = secrets.publisherDisplayName;
-        log('Injected secure Microsoft Store credentials from kobar-secrets.json');
-        injectedSecrets = true;
+    const scripts = selectDistScripts(settings, process.platform);
+    if (scripts.length === 0) {
+        log('Nothing to build (buildStandard / buildAppx are off).');
+        return;
     }
-    
-    fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2), 'utf8');
-
-    // 2. Update main.cts
-    updateFile(mainPath, 
-        /const IS_STORE_BUILD = (true|false);/, 
-        `const IS_STORE_BUILD = ${isStore};`
-    );
-    updateFile(mainPath, 
-        /const ENABLE_AUTO_UPDATE = (true|false);/, 
-        `const ENABLE_AUTO_UPDATE = ${autoUpdate};`
-    );
-
-    // 3. Update App.tsx
-    updateFile(appPath, 
-        /export const IS_STORE_BUILD = (true|false);/, 
-        `export const IS_STORE_BUILD = ${isStore};`
-    );
-    updateFile(appPath, 
-        /export const ENABLE_LICENSING = (true|false);/, 
-        `export const ENABLE_LICENSING = ${licensing};`
-    );
-
-    log(`Compiling files for ${mode}...`);
-    execSync('npm run build', { stdio: 'inherit' });
-
-    log(`Packaging ${mode} binary...`);
-    const platformFlag = process.platform === 'darwin' ? '--mac' : '--win';
-    execSync(`npx electron-builder ${platformFlag}`, { stdio: 'inherit' });
-    
-    // Cleanup secure credentials from package.json after build
-    if (injectedSecrets) {
-        const cleanupPkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-        cleanupPkg.build.appx.identityName = "YOUR_IDENTITY_NAME_HERE";
-        cleanupPkg.build.appx.publisher = "CN=YOUR_PUBLISHER_ID_HERE";
-        cleanupPkg.build.appx.publisherDisplayName = "YOUR_PUBLISHER_NAME_HERE";
-        fs.writeFileSync(packagePath, JSON.stringify(cleanupPkg, null, 2), 'utf8');
-        log('Sanitized package.json for GitHub release.');
-    }
-    
-    log(`${mode} build complete!`);
-}
-
-async function start() {
-    try {
-        if (!fs.existsSync(settingsPath)) {
-            console.error("kobar-settings.json not found!");
+    const { version } = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+    log(`Version ${version} (package.json), auto-update (direct only): ${settings.enableAutoUpdate === true}`);
+    for (const script of scripts) {
+        log(`Running npm run ${script}...`);
+        try {
+            execSync(`npm run ${script}`, { stdio: 'inherit' });
+        } catch {
+            console.error(`\n❌ ${script} failed.`);
+            process.exitCode = 1;
             return;
         }
-
-        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-
-        if (settings.buildStandard) {
-            await runBuildSequence(false);
-        }
-
-        if (settings.buildAppx) {
-            await runBuildSequence(true);
-        }
-
-        log("All requested builds finished. Check the /release folder.");
-
-    } catch (err) {
-        console.error("\n❌ Build failed:", err.message);
     }
+    log('All requested builds finished. Check the /release folder.');
 }
 
 start();

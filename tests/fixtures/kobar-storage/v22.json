@@ -1,0 +1,139 @@
+{
+  "version": 22,
+  "state": {
+    "notes": [
+      {
+        "id": 1,
+        "title": "Synthetic v21 note",
+        "icon": "FileText",
+        "emoji": null,
+        "content": "<p>Current shape</p>"
+      },
+      {
+        "id": 2,
+        "title": "Synthetic v21 image note",
+        "icon": "Image",
+        "emoji": null,
+        "content": "<img src=\"data:image/png;base64,V21FIXTUREBASE64==\" />"
+      }
+    ],
+    "activeNoteId": 2,
+    "nextNoteId": 3,
+    "globalNotes": [
+      {
+        "id": 1,
+        "title": "Synthetic v21 global note",
+        "icon": "FileText",
+        "emoji": null,
+        "content": "<p>Global fixture</p>"
+      }
+    ],
+    "globalPluginData": {
+      "fixture.plugin": {
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "currentExtensionsConfig": {
+      "fixture.plugin": {
+        "enabled": true
+      }
+    },
+    "activeWorkspaceId": "ws-focus",
+    "notePanelWidth": 400,
+    "notePanelHeight": 500,
+    "tutorialState": {
+      "version": "1.0.0",
+      "status": "snoozed",
+      "snoozeUntil": 1700000000000
+    },
+    "theme": "custom",
+    "customThemeColor": "#aa22cc",
+    "language": "en",
+    "showTooltips": true,
+    "sidebarWidth": 64,
+    "iconScale": 1,
+    "teleportShortcut": "Alt+K",
+    "launchAtStartup": true,
+    "enableEyeAnimation": true,
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": true,
+    "koBoxCleanupMode": "24h",
+    "featureOrder": [
+      "com.kobar.aihub.btn",
+      "copypaste",
+      "kobox",
+      "copypaste",
+      "fixture.plugin-btn",
+      "kobox"
+    ],
+    "design": "glass",
+    "glassOpacity": 0.5,
+    "workspaces": [
+      {
+        "id": "ws-focus",
+        "name": "Synthetic Focus",
+        "isIsolated": true,
+        "isolatedData": {
+          "notes": [
+            {
+              "id": 1,
+              "title": "Focus note",
+              "icon": "FileText",
+              "emoji": null,
+              "content": "<p>Focus fixture</p>"
+            }
+          ],
+          "activeNoteId": 1,
+          "nextNoteId": 2,
+          "pluginData": {}
+        },
+        "isPinInjectorEnabled": true,
+        "isKoBoxEnabled": true,
+        "koBoxCleanupMode": "24h",
+        "sidebarWidth": 64,
+        "iconScale": 1
+      },
+      {
+        "id": "ws-shared",
+        "name": "Synthetic Shared",
+        "isIsolated": false,
+        "isPinInjectorEnabled": false,
+        "isKoBoxEnabled": true,
+        "koBoxCleanupMode": "quit",
+        "sidebarWidth": 64,
+        "iconScale": 1,
+        "featureOrder": [
+          "calculator",
+          "kobox",
+          "calculator"
+        ]
+      }
+    ],
+    "settingsFeatureViewMode": "grid",
+    "settingsWorkspaceViewMode": "grid",
+    "orientation": "vertical",
+    "edgePosition": "right",
+    "toggleWidth": 22,
+    "featureSpacing": 8,
+    "isPopupSmartPositioning": false,
+    "todos": [
+      {
+        "id": "t1",
+        "text": "Synthetic v22 todo",
+        "done": false
+      }
+    ],
+    "isTodoListEnabled": true,
+    "isColorPickerEnabled": false,
+    "colorPalettes": [
+      [
+        "#101010",
+        "#202020"
+      ]
+    ],
+    "currentColor": "#336699"
+  }
+}

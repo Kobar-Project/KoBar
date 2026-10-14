@@ -1,0 +1,79 @@
+{
+  "version": 28,
+  "state": {
+    "notes": [
+      { "id": 1, "title": "Synthetic shared 1", "icon": "FileText", "emoji": null, "content": "<p>Shared one</p>" },
+      { "id": 2, "title": "Synthetic shared 2", "icon": "note", "emoji": null, "content": "<p>Shared two</p>" }
+    ],
+    "activeNoteId": 2,
+    "nextNoteId": 3,
+    "globalNotes": [
+      { "id": 1, "title": "Synthetic shared 1", "icon": "FileText", "emoji": null, "content": "<p>Shared one</p>" },
+      { "id": 2, "title": "Synthetic shared 2", "icon": "note", "emoji": null, "content": "<p>Shared two</p>" }
+    ],
+    "globalPluginData": {},
+    "currentExtensionsConfig": { "fixture.plugin": true },
+    "defaultExtensionsConfig": null,
+    "activeWorkspaceId": null,
+    "notePanelWidth": 420,
+    "notePanelHeight": 520,
+    "tutorialState": { "version": "1.0.0", "status": "snoozed", "snoozeUntil": 1700000000000 },
+    "legacyBackup": {
+      "workspaceModelV24": { "workspaces": [{ "index": 0, "id": "ws-iso", "values": {}, "added": ["design"] }] },
+      "densityV27": { "top": { "values": { "isPopupSmartPositioning": false } } },
+      "fakeNotesV28": { "top": { "removed": [{ "index": 1, "note": { "id": 9, "title": "Settings", "icon": "settings", "emoji": null, "content": "", "isSettings": true } }] } }
+    },
+    "scheme": "dark",
+    "accent": "blue",
+    "material": "solid",
+    "density": "normal",
+    "theme": "ocean",
+    "customThemeColor": "#f4a125",
+    "language": "tr",
+    "showTooltips": true,
+    "sidebarWidth": 46,
+    "iconScale": 0.8,
+    "launchAtStartup": false,
+    "enableEyeAnimation": true,
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": true,
+    "koBoxCleanupMode": "24h",
+    "toggleWidth": 22,
+    "featureSpacing": 8,
+    "isPopupSmartPositioning": true,
+    "featureOrder": ["com.kobar.aihub.btn", "copypaste", "kobox"],
+    "design": "style1",
+    "glassOpacity": 60,
+    "workspaces": [
+      {
+        "id": "ws-iso",
+        "name": "Synthetic isolated",
+        "isIsolated": true,
+        "isolatedData": {
+          "notes": [{ "id": 1, "title": "Isolated", "icon": "note", "emoji": null, "content": "<p>Isolated note</p>" }],
+          "activeNoteId": 1,
+          "nextNoteId": 2,
+          "pluginData": { "fixture.plugin": { "counter": 1 } }
+        },
+        "enabledExtensions": { "fixture.plugin": true },
+        "accent": "blue",
+        "material": "solid",
+        "density": "normal",
+        "sidebarWidth": 46,
+        "isPopupSmartPositioning": true
+      },
+      {
+        "id": "ws-shared",
+        "name": "Synthetic shared",
+        "isIsolated": false,
+        "accent": "amber",
+        "material": "solid",
+        "density": "normal"
+      }
+    ],
+    "settingsFeatureViewMode": "list",
+    "settingsWorkspaceViewMode": "cards",
+    "orientation": "vertical",
+    "edgePosition": "right"
+  }
+}

@@ -1,35 +1,39 @@
 name: Mac Build
 
+# Manual only. This workflow builds an unsigned macOS package and never publishes.
 on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 30
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version-file: .nvmrc
+        cache: npm
 
     - name: Install dependencies
-      run: npm install
+      run: npm ci
 
-    - name: Compile and Build App
-      run: npm run build
-
-    - name: Package for macOS
+    # T-217: dist:mac compiles (KOBAR_FLAVOR=direct) and packages with electron-builder.config.cjs and --publish never.
+    - name: Compile and package for macOS (no publish)
+      run: npm run dist:mac
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: npx electron-builder build --mac
+        CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        # Unsigned CI builds must never self-update.
+        KOBAR_AUTO_UPDATE: "false"
 
     - name: Upload macOS Artifacts
       uses: actions/upload-artifact@v4

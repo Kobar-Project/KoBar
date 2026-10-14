@@ -1,0 +1,1060 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`migrateKobarStorage fixtures > v0 -> latest invariants > matches the stored snapshot 1`] = `
+{
+  "accent": "amber",
+  "activeNoteId": 2,
+  "activeWorkspaceId": null,
+  "customThemeColor": "#f4a125",
+  "density": "comfortable",
+  "edgePosition": "right",
+  "enableEyeAnimation": true,
+  "featureOrder": [
+    "com.kobar.aihub.btn",
+    "copypaste",
+    "todolist-plugin-btn",
+    "calculator",
+    "kobar-colorpicker-plugin-btn",
+    "pininjector",
+    "kobox",
+    "snippetvault-plugin-btn",
+  ],
+  "featureSpacing": 8,
+  "globalNotes": [
+    {
+      "content": "<h1>Fixture heading</h1><p>Plain <strong>bold</strong> paragraph.</p>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic note one",
+    },
+    {
+      "content": "<p>Image below</p><img src="data:image/png;base64,AAAAFIXTUREBASE64PLACEHOLDERAAAA" />",
+      "emoji": "📝",
+      "icon": "Image",
+      "id": 2,
+      "title": "Synthetic note with image",
+    },
+  ],
+  "globalPluginData": {},
+  "iconScale": 1,
+  "isAiHubEnabled": true,
+  "isHighlightingPluginsBtn": false,
+  "isHighlightingSettingsBtn": false,
+  "isHighlightingToggleNotes": false,
+  "isKoBoxEnabled": true,
+  "isPinInjectorEnabled": true,
+  "isPopupSmartPositioning": true,
+  "isSnippetVaultEnabled": true,
+  "koBoxCleanupMode": "24h",
+  "language": "en",
+  "legacyBackup": {
+    "colorPalettes": [
+      [
+        "#111111",
+        "#222222",
+      ],
+    ],
+    "currentColor": "#333333",
+    "densityV27": {
+      "top": {
+        "values": {
+          "isPopupSmartPositioning": false,
+        },
+      },
+    },
+    "isColorPickerEnabled": true,
+    "isTodoListEnabled": true,
+    "onboardingV29": {
+      "added": true,
+      "tutorialState": {
+        "status": "pending",
+        "version": "1.0.0",
+      },
+    },
+    "todos": [
+      {
+        "done": false,
+        "id": "t1",
+        "text": "Synthetic todo",
+      },
+    ],
+  },
+  "material": "solid",
+  "nextNoteId": 3,
+  "notes": [
+    {
+      "content": "<h1>Fixture heading</h1><p>Plain <strong>bold</strong> paragraph.</p>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic note one",
+    },
+    {
+      "content": "<p>Image below</p><img src="data:image/png;base64,AAAAFIXTUREBASE64PLACEHOLDERAAAA" />",
+      "emoji": "📝",
+      "icon": "Image",
+      "id": 2,
+      "title": "Synthetic note with image",
+    },
+  ],
+  "onboarding": {
+    "migrated": true,
+    "status": "completed",
+    "version": 1,
+  },
+  "orientation": "vertical",
+  "scheme": "dark",
+  "showTooltips": true,
+  "sidebarWidth": 64,
+  "snippets": [],
+  "theme": "dark",
+  "toggleWidth": 22,
+  "tutorialState": {
+    "status": "pending",
+    "version": "1.0.0",
+  },
+  "workspaces": [],
+}
+`;
+
+exports[`migrateKobarStorage fixtures > v5 -> latest invariants > matches the stored snapshot 1`] = `
+{
+  "accent": "amber",
+  "activeNoteId": 1,
+  "activeWorkspaceId": null,
+  "customThemeColor": "#f4a125",
+  "density": "comfortable",
+  "edgePosition": "right",
+  "enableEyeAnimation": true,
+  "featureOrder": [
+    "com.kobar.aihub.btn",
+    "copypaste",
+    "todolist-plugin-btn",
+    "pininjector",
+    "kobar-colorpicker-plugin-btn",
+    "calculator",
+    "kobox",
+    "snippetvault-plugin-btn",
+  ],
+  "featureSpacing": 8,
+  "globalNotes": [
+    {
+      "content": "<ul><li>alpha</li><li>beta</li></ul>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic note",
+    },
+    {
+      "content": "<pre><code>const x = 1;</code></pre>",
+      "emoji": null,
+      "icon": "Code",
+      "id": 4,
+      "title": "Synthetic code note",
+    },
+  ],
+  "globalPluginData": {},
+  "iconScale": 1.1,
+  "isAiHubEnabled": true,
+  "isHighlightingPluginsBtn": false,
+  "isHighlightingSettingsBtn": false,
+  "isHighlightingToggleNotes": false,
+  "isKoBoxEnabled": false,
+  "isPinInjectorEnabled": true,
+  "isPopupSmartPositioning": true,
+  "isSnippetVaultEnabled": true,
+  "koBoxCleanupMode": "quit",
+  "language": "tr",
+  "launchAtStartup": false,
+  "legacyBackup": {
+    "densityV27": {
+      "top": {
+        "values": {
+          "isPopupSmartPositioning": false,
+        },
+      },
+    },
+    "onboardingV29": {
+      "added": true,
+      "tutorialState": {
+        "status": "pending",
+        "version": "1.0.0",
+      },
+    },
+    "todos": [],
+  },
+  "material": "solid",
+  "nextNoteId": 5,
+  "notes": [
+    {
+      "content": "<ul><li>alpha</li><li>beta</li></ul>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic note",
+    },
+    {
+      "content": "<pre><code>const x = 1;</code></pre>",
+      "emoji": null,
+      "icon": "Code",
+      "id": 4,
+      "title": "Synthetic code note",
+    },
+  ],
+  "onboarding": {
+    "migrated": true,
+    "status": "completed",
+    "version": 1,
+  },
+  "orientation": "vertical",
+  "scheme": "dark",
+  "showTooltips": false,
+  "sidebarWidth": 72,
+  "snippets": [
+    {
+      "color": undefined,
+      "content": "echo fixture",
+      "id": "s1",
+      "password": undefined,
+      "title": "Synthetic snippet",
+    },
+    {
+      "color": undefined,
+      "content": "ls -la",
+      "id": "s2",
+      "password": undefined,
+      "title": "Synthetic snippet 2",
+    },
+  ],
+  "theme": "light",
+  "toggleWidth": 22,
+  "tutorialState": {
+    "status": "pending",
+    "version": "1.0.0",
+  },
+  "workspaces": [],
+}
+`;
+
+exports[`migrateKobarStorage fixtures > v12 -> latest invariants > matches the stored snapshot 1`] = `
+{
+  "accent": "amber",
+  "activeNoteId": 3,
+  "activeWorkspaceId": null,
+  "customThemeColor": "#f4a125",
+  "density": "comfortable",
+  "design": "glass",
+  "edgePosition": "right",
+  "enableEyeAnimation": true,
+  "featureOrder": [
+    "com.kobar.aihub.btn",
+    "copypaste",
+    "kobar-colorpicker-plugin-btn",
+    "snippetvault-plugin-btn",
+    "pininjector",
+    "kobox",
+    "calculator",
+  ],
+  "featureSpacing": 8,
+  "glassOpacity": 0.6,
+  "globalNotes": [
+    {
+      "content": "<p>Line <em>one</em></p><p>Line two</p>",
+      "emoji": "✅",
+      "icon": "FileText",
+      "id": 3,
+      "title": "Synthetic v12 note",
+    },
+  ],
+  "globalPluginData": {},
+  "iconScale": 1,
+  "isAiHubEnabled": true,
+  "isHighlightingPluginsBtn": false,
+  "isHighlightingSettingsBtn": false,
+  "isHighlightingToggleNotes": false,
+  "isKoBoxEnabled": true,
+  "isPinInjectorEnabled": true,
+  "isPopupSmartPositioning": true,
+  "isSnippetVaultEnabled": true,
+  "koBoxCleanupMode": "24h",
+  "language": "en",
+  "launchAtStartup": true,
+  "legacyBackup": {
+    "appearanceV26": {
+      "top": {
+        "values": {
+          "teleportShortcut": "Alt+Space",
+        },
+      },
+    },
+    "densityV27": {
+      "top": {
+        "values": {
+          "isPopupSmartPositioning": false,
+        },
+      },
+    },
+    "onboardingV29": {
+      "added": true,
+      "tutorialState": {
+        "status": "pending",
+        "version": "1.0.0",
+      },
+    },
+  },
+  "material": "solid",
+  "nextNoteId": 4,
+  "notes": [
+    {
+      "content": "<p>Line <em>one</em></p><p>Line two</p>",
+      "emoji": "✅",
+      "icon": "FileText",
+      "id": 3,
+      "title": "Synthetic v12 note",
+    },
+  ],
+  "onboarding": {
+    "migrated": true,
+    "status": "completed",
+    "version": 1,
+  },
+  "orientation": "vertical",
+  "scheme": "dark",
+  "showTooltips": true,
+  "sidebarWidth": 64,
+  "snippets": [
+    {
+      "color": undefined,
+      "content": "U1lOVEhFVElD",
+      "id": "s1",
+      "password": "fixture-hash",
+      "title": "Synthetic locked",
+    },
+    {
+      "color": "#00ff00",
+      "content": "plain text",
+      "id": "s2",
+      "password": undefined,
+      "title": "Synthetic open",
+    },
+  ],
+  "theme": "custom",
+  "toggleWidth": 22,
+  "tutorialState": {
+    "status": "pending",
+    "version": "1.0.0",
+  },
+  "workspaces": [],
+}
+`;
+
+exports[`migrateKobarStorage fixtures > v18 -> latest invariants > matches the stored snapshot 1`] = `
+{
+  "accent": "amber",
+  "activeNoteId": 1,
+  "activeWorkspaceId": null,
+  "customThemeColor": "#336699",
+  "density": "comfortable",
+  "edgePosition": "top",
+  "enableEyeAnimation": false,
+  "featureOrder": [
+    "com.kobar.aihub.btn",
+    "copypaste",
+    "ko-calender-plugin-btn",
+    "kobox",
+    "pininjector",
+  ],
+  "featureSpacing": 8,
+  "globalNotes": [
+    {
+      "content": "<h2>Plan</h2><p>Fixture body</p>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic v18 note",
+    },
+    {
+      "content": "",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 2,
+      "title": "Synthetic empty note",
+    },
+  ],
+  "globalPluginData": {},
+  "iconScale": 1,
+  "isHighlightingPluginsBtn": false,
+  "isHighlightingSettingsBtn": false,
+  "isHighlightingToggleNotes": false,
+  "isKoBoxEnabled": true,
+  "isPinInjectorEnabled": true,
+  "isPopupSmartPositioning": true,
+  "koBoxCleanupMode": "24h",
+  "language": "en",
+  "legacyBackup": {
+    "cleanupV30": {
+      "settingsWorkspaceViewMode": "list",
+    },
+    "densityV27": {
+      "top": {
+        "values": {
+          "isPopupSmartPositioning": false,
+        },
+      },
+    },
+    "onboardingV29": {
+      "added": true,
+      "tutorialState": {
+        "status": "pending",
+        "version": "1.0.0",
+      },
+    },
+  },
+  "material": "solid",
+  "nextNoteId": 3,
+  "notes": [
+    {
+      "content": "<h2>Plan</h2><p>Fixture body</p>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic v18 note",
+    },
+    {
+      "content": "",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 2,
+      "title": "Synthetic empty note",
+    },
+  ],
+  "onboarding": {
+    "migrated": true,
+    "status": "completed",
+    "version": 1,
+  },
+  "orientation": "horizontal",
+  "scheme": "dark",
+  "settingsFeatureViewMode": "grid",
+  "showTooltips": true,
+  "sidebarWidth": 64,
+  "theme": "dark",
+  "toggleWidth": 22,
+  "tutorialState": {
+    "status": "pending",
+    "version": "1.0.0",
+  },
+  "workspaces": [
+    {
+      "accent": "amber",
+      "density": "comfortable",
+      "enabledExtensions": {
+        "fixture.plugin": true,
+      },
+      "iconScale": 1,
+      "id": "ws-alpha",
+      "isIsolated": false,
+      "isKoBoxEnabled": true,
+      "isPinInjectorEnabled": true,
+      "isolatedData": undefined,
+      "koBoxCleanupMode": "24h",
+      "material": "solid",
+      "name": "Synthetic Alpha",
+      "sidebarWidth": 64,
+    },
+    {
+      "accent": "amber",
+      "density": "comfortable",
+      "iconScale": 1.2,
+      "id": "ws-beta",
+      "isIsolated": true,
+      "isKoBoxEnabled": false,
+      "isPinInjectorEnabled": false,
+      "isolatedData": {
+        "activeNoteId": 1,
+        "nextNoteId": 2,
+        "notes": [
+          {
+            "content": "<p>Isolated fixture</p>",
+            "emoji": null,
+            "icon": "FileText",
+            "id": 1,
+            "title": "Isolated note",
+          },
+        ],
+      },
+      "koBoxCleanupMode": "quit",
+      "material": "solid",
+      "name": "Synthetic Beta",
+      "sidebarWidth": 80,
+    },
+  ],
+}
+`;
+
+exports[`migrateKobarStorage fixtures > v20 -> latest invariants > matches the stored snapshot 1`] = `
+{
+  "accent": "amber",
+  "activeNoteId": 7,
+  "activeWorkspaceId": null,
+  "currentExtensionsConfig": {
+    "fixture.plugin": {
+      "enabled": true,
+    },
+  },
+  "customThemeColor": "#f4a125",
+  "density": "comfortable",
+  "edgePosition": "left",
+  "enableEyeAnimation": true,
+  "featureOrder": [
+    "com.kobar.aihub.btn",
+    "copypaste",
+    "kobox",
+    "fixture.plugin-btn",
+  ],
+  "featureSpacing": 8,
+  "globalNotes": [
+    {
+      "content": "<p>Before global notes</p><img src="data:image/jpeg;base64,FIXTUREJPEGBASE64PLACEHOLDER==" />",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 7,
+      "title": "Synthetic v20 note",
+    },
+  ],
+  "globalPluginData": {},
+  "iconScale": 1,
+  "isHighlightingPluginsBtn": false,
+  "isHighlightingSettingsBtn": false,
+  "isHighlightingToggleNotes": false,
+  "isKoBoxEnabled": true,
+  "isPinInjectorEnabled": true,
+  "isPopupSmartPositioning": true,
+  "koBoxCleanupMode": "24h",
+  "language": "tr",
+  "legacyBackup": {
+    "densityV27": {
+      "top": {
+        "values": {
+          "isPopupSmartPositioning": false,
+        },
+      },
+    },
+    "onboardingV29": {
+      "added": true,
+      "tutorialState": {
+        "status": "completed",
+        "version": "1.0.0",
+      },
+    },
+  },
+  "material": "solid",
+  "nextNoteId": 8,
+  "notePanelHeight": 520,
+  "notePanelWidth": 420,
+  "notes": [
+    {
+      "content": "<p>Before global notes</p><img src="data:image/jpeg;base64,FIXTUREJPEGBASE64PLACEHOLDER==" />",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 7,
+      "title": "Synthetic v20 note",
+    },
+  ],
+  "onboarding": {
+    "migrated": true,
+    "status": "completed",
+    "version": 1,
+  },
+  "orientation": "vertical",
+  "scheme": "dark",
+  "showTooltips": true,
+  "sidebarWidth": 64,
+  "theme": "dark",
+  "toggleWidth": 22,
+  "tutorialState": {
+    "status": "completed",
+    "version": "1.0.0",
+  },
+  "workspaces": [
+    {
+      "accent": "amber",
+      "density": "comfortable",
+      "iconScale": 1,
+      "id": "ws-home",
+      "isIsolated": false,
+      "isKoBoxEnabled": true,
+      "isPinInjectorEnabled": true,
+      "isolatedData": undefined,
+      "koBoxCleanupMode": "24h",
+      "material": "solid",
+      "name": "Synthetic Home",
+      "sidebarWidth": 64,
+    },
+    {
+      "accent": "amber",
+      "density": "comfortable",
+      "iconScale": 1,
+      "id": "ws-lab",
+      "isIsolated": true,
+      "isKoBoxEnabled": false,
+      "isPinInjectorEnabled": true,
+      "isolatedData": {
+        "activeNoteId": 1,
+        "nextNoteId": 2,
+        "notes": [
+          {
+            "content": "<p>Lab fixture</p>",
+            "emoji": "🧪",
+            "icon": "FileText",
+            "id": 1,
+            "title": "Lab note",
+          },
+        ],
+        "pluginData": {
+          "fixture.plugin": {
+            "counter": 3,
+          },
+        },
+      },
+      "koBoxCleanupMode": "quit",
+      "material": "solid",
+      "name": "Synthetic Lab",
+      "sidebarWidth": 72,
+    },
+  ],
+}
+`;
+
+exports[`migrateKobarStorage fixtures > v21 -> latest invariants > matches the stored snapshot 1`] = `
+{
+  "accent": "custom",
+  "activeNoteId": 2,
+  "activeWorkspaceId": "ws-focus",
+  "currentExtensionsConfig": {
+    "fixture.plugin": {
+      "enabled": true,
+    },
+  },
+  "customThemeColor": "#aa22cc",
+  "density": "comfortable",
+  "design": "glass",
+  "edgePosition": "right",
+  "enableEyeAnimation": true,
+  "featureOrder": [
+    "com.kobar.aihub.btn",
+    "copypaste",
+    "kobox",
+    "ko-calender-plugin-btn",
+    "fixture.plugin-btn",
+  ],
+  "featureSpacing": 8,
+  "glassOpacity": 0.5,
+  "globalNotes": [
+    {
+      "content": "<p>Global fixture</p>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic v21 global note",
+    },
+  ],
+  "globalPluginData": {
+    "fixture.plugin": {
+      "items": [
+        "a",
+        "b",
+      ],
+    },
+  },
+  "iconScale": 1,
+  "isKoBoxEnabled": true,
+  "isPinInjectorEnabled": true,
+  "isPopupSmartPositioning": true,
+  "koBoxCleanupMode": "24h",
+  "language": "en",
+  "launchAtStartup": true,
+  "legacyBackup": {
+    "appearanceV26": {
+      "top": {
+        "values": {
+          "teleportShortcut": "Alt+K",
+        },
+      },
+    },
+    "cleanupV30": {
+      "settingsWorkspaceViewMode": "grid",
+    },
+    "densityV27": {
+      "top": {
+        "values": {
+          "isPopupSmartPositioning": false,
+        },
+      },
+      "workspaces": [
+        {
+          "id": "ws-focus",
+          "index": 0,
+          "values": {
+            "isPopupSmartPositioning": false,
+          },
+        },
+      ],
+    },
+    "onboardingV29": {
+      "added": true,
+      "tutorialState": {
+        "snoozeUntil": 1700000000000,
+        "status": "snoozed",
+        "version": "1.0.0",
+      },
+    },
+    "workspaceModelV24": {
+      "workspaces": [
+        {
+          "added": [
+            "toggleWidth",
+            "featureSpacing",
+            "showTooltips",
+            "theme",
+            "customThemeColor",
+            "design",
+            "glassOpacity",
+            "featureOrder",
+            "edgePosition",
+            "isPopupSmartPositioning",
+            "enableEyeAnimation",
+            "orientation",
+          ],
+          "id": "ws-focus",
+          "index": 0,
+          "values": {},
+        },
+      ],
+    },
+  },
+  "material": "solid",
+  "nextNoteId": 3,
+  "notePanelHeight": 500,
+  "notePanelWidth": 400,
+  "notes": [
+    {
+      "content": "<p>Current shape</p>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic v21 note",
+    },
+    {
+      "content": "<img src="data:image/png;base64,V21FIXTUREBASE64==" />",
+      "emoji": null,
+      "icon": "Image",
+      "id": 2,
+      "title": "Synthetic v21 image note",
+    },
+  ],
+  "onboarding": {
+    "migrated": true,
+    "status": "completed",
+    "version": 1,
+  },
+  "orientation": "vertical",
+  "scheme": "dark",
+  "settingsFeatureViewMode": "grid",
+  "showTooltips": true,
+  "sidebarWidth": 64,
+  "theme": "custom",
+  "toggleWidth": 22,
+  "tutorialState": {
+    "snoozeUntil": 1700000000000,
+    "status": "snoozed",
+    "version": "1.0.0",
+  },
+  "workspaces": [
+    {
+      "accent": "custom",
+      "customThemeColor": "#aa22cc",
+      "density": "comfortable",
+      "design": "glass",
+      "edgePosition": "right",
+      "enableEyeAnimation": true,
+      "featureOrder": [
+        "com.kobar.aihub.btn",
+        "copypaste",
+        "kobox",
+        "ko-calender-plugin-btn",
+        "fixture.plugin-btn",
+      ],
+      "featureSpacing": 8,
+      "glassOpacity": 0.5,
+      "iconScale": 1,
+      "id": "ws-focus",
+      "isIsolated": true,
+      "isKoBoxEnabled": true,
+      "isPinInjectorEnabled": true,
+      "isPopupSmartPositioning": true,
+      "isolatedData": {
+        "activeNoteId": 1,
+        "nextNoteId": 2,
+        "notes": [
+          {
+            "content": "<p>Focus fixture</p>",
+            "emoji": null,
+            "icon": "FileText",
+            "id": 1,
+            "title": "Focus note",
+          },
+        ],
+        "pluginData": {},
+      },
+      "koBoxCleanupMode": "24h",
+      "material": "solid",
+      "name": "Synthetic Focus",
+      "orientation": "vertical",
+      "showTooltips": true,
+      "sidebarWidth": 64,
+      "theme": "custom",
+      "toggleWidth": 22,
+    },
+    {
+      "accent": "amber",
+      "density": "comfortable",
+      "iconScale": 1,
+      "id": "ws-shared",
+      "isIsolated": false,
+      "isKoBoxEnabled": true,
+      "isPinInjectorEnabled": false,
+      "koBoxCleanupMode": "quit",
+      "material": "solid",
+      "name": "Synthetic Shared",
+      "sidebarWidth": 64,
+    },
+  ],
+}
+`;
+
+exports[`migrateKobarStorage fixtures > v22 -> latest invariants > matches the stored snapshot 1`] = `
+{
+  "accent": "custom",
+  "activeNoteId": 2,
+  "activeWorkspaceId": "ws-focus",
+  "currentExtensionsConfig": {
+    "fixture.plugin": {
+      "enabled": true,
+    },
+  },
+  "customThemeColor": "#aa22cc",
+  "density": "comfortable",
+  "design": "glass",
+  "edgePosition": "right",
+  "enableEyeAnimation": true,
+  "featureOrder": [
+    "com.kobar.aihub.btn",
+    "copypaste",
+    "kobox",
+    "fixture.plugin-btn",
+  ],
+  "featureSpacing": 8,
+  "glassOpacity": 0.5,
+  "globalNotes": [
+    {
+      "content": "<p>Global fixture</p>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic v21 global note",
+    },
+  ],
+  "globalPluginData": {
+    "fixture.plugin": {
+      "items": [
+        "a",
+        "b",
+      ],
+    },
+  },
+  "iconScale": 1,
+  "isKoBoxEnabled": true,
+  "isPinInjectorEnabled": true,
+  "isPopupSmartPositioning": true,
+  "koBoxCleanupMode": "24h",
+  "language": "en",
+  "launchAtStartup": true,
+  "legacyBackup": {
+    "appearanceV26": {
+      "top": {
+        "values": {
+          "teleportShortcut": "Alt+K",
+        },
+      },
+    },
+    "cleanupV30": {
+      "settingsWorkspaceViewMode": "grid",
+    },
+    "colorPalettes": [
+      [
+        "#101010",
+        "#202020",
+      ],
+    ],
+    "currentColor": "#336699",
+    "densityV27": {
+      "top": {
+        "values": {
+          "isPopupSmartPositioning": false,
+        },
+      },
+      "workspaces": [
+        {
+          "id": "ws-focus",
+          "index": 0,
+          "values": {
+            "isPopupSmartPositioning": false,
+          },
+        },
+      ],
+    },
+    "isColorPickerEnabled": false,
+    "isTodoListEnabled": true,
+    "onboardingV29": {
+      "added": true,
+      "tutorialState": {
+        "snoozeUntil": 1700000000000,
+        "status": "snoozed",
+        "version": "1.0.0",
+      },
+    },
+    "todos": [
+      {
+        "done": false,
+        "id": "t1",
+        "text": "Synthetic v22 todo",
+      },
+    ],
+    "workspaceModelV24": {
+      "workspaces": [
+        {
+          "added": [
+            "toggleWidth",
+            "featureSpacing",
+            "showTooltips",
+            "theme",
+            "customThemeColor",
+            "design",
+            "glassOpacity",
+            "featureOrder",
+            "edgePosition",
+            "isPopupSmartPositioning",
+            "enableEyeAnimation",
+            "orientation",
+          ],
+          "id": "ws-focus",
+          "index": 0,
+          "values": {},
+        },
+      ],
+    },
+  },
+  "material": "solid",
+  "nextNoteId": 3,
+  "notePanelHeight": 500,
+  "notePanelWidth": 400,
+  "notes": [
+    {
+      "content": "<p>Current shape</p>",
+      "emoji": null,
+      "icon": "FileText",
+      "id": 1,
+      "title": "Synthetic v21 note",
+    },
+    {
+      "content": "<img src="data:image/png;base64,V21FIXTUREBASE64==" />",
+      "emoji": null,
+      "icon": "Image",
+      "id": 2,
+      "title": "Synthetic v21 image note",
+    },
+  ],
+  "onboarding": {
+    "migrated": true,
+    "status": "completed",
+    "version": 1,
+  },
+  "orientation": "vertical",
+  "scheme": "dark",
+  "settingsFeatureViewMode": "grid",
+  "showTooltips": true,
+  "sidebarWidth": 64,
+  "theme": "custom",
+  "toggleWidth": 22,
+  "tutorialState": {
+    "snoozeUntil": 1700000000000,
+    "status": "snoozed",
+    "version": "1.0.0",
+  },
+  "workspaces": [
+    {
+      "accent": "custom",
+      "customThemeColor": "#aa22cc",
+      "density": "comfortable",
+      "design": "glass",
+      "edgePosition": "right",
+      "enableEyeAnimation": true,
+      "featureOrder": [
+        "com.kobar.aihub.btn",
+        "copypaste",
+        "kobox",
+        "fixture.plugin-btn",
+      ],
+      "featureSpacing": 8,
+      "glassOpacity": 0.5,
+      "iconScale": 1,
+      "id": "ws-focus",
+      "isIsolated": true,
+      "isKoBoxEnabled": true,
+      "isPinInjectorEnabled": true,
+      "isPopupSmartPositioning": true,
+      "isolatedData": {
+        "activeNoteId": 1,
+        "nextNoteId": 2,
+        "notes": [
+          {
+            "content": "<p>Focus fixture</p>",
+            "emoji": null,
+            "icon": "FileText",
+            "id": 1,
+            "title": "Focus note",
+          },
+        ],
+        "pluginData": {},
+      },
+      "koBoxCleanupMode": "24h",
+      "material": "solid",
+      "name": "Synthetic Focus",
+      "orientation": "vertical",
+      "showTooltips": true,
+      "sidebarWidth": 64,
+      "theme": "custom",
+      "toggleWidth": 22,
+    },
+    {
+      "accent": "amber",
+      "density": "comfortable",
+      "featureOrder": [
+        "calculator",
+        "kobox",
+      ],
+      "iconScale": 1,
+      "id": "ws-shared",
+      "isIsolated": false,
+      "isKoBoxEnabled": true,
+      "isPinInjectorEnabled": false,
+      "koBoxCleanupMode": "quit",
+      "material": "solid",
+      "name": "Synthetic Shared",
+      "sidebarWidth": 64,
+    },
+  ],
+}
+`;

@@ -1,152 +1,342 @@
 @import "tailwindcss";
 
+/* Alias so plugins that hardcode font-family: "Space Grotesk" keep the bundled font. */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 700;
+  src: url("../node_modules/@fontsource-variable/space-grotesk/files/space-grotesk-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 700;
+  src: url("../node_modules/@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
 
 @theme {
   --color-primary: var(--theme-primary);
   --color-background-dark: var(--theme-bg-dark);
   --color-background-light: var(--theme-bg-light);
-  --font-display: "Space Grotesk", sans-serif;
-  --radius: 1rem;
-  --radius-lg: 2rem;
-  --radius-xl: 3rem;
-  --radius-full: 9999px;
+  --font-display: "Space Grotesk Variable", "Space Grotesk", sans-serif;
+  --font-sans: var(--kb-font);
+  --font-mono: var(--kb-font-mono);
+  /* T-503: radius scale (was 1rem / 2rem / 3rem). */
+  --radius: var(--kb-radius-xs);
+  --radius-xs: var(--kb-radius-xs);
+  --radius-sm: var(--kb-radius-sm);
+  --radius-md: var(--kb-radius-md);
+  --radius-lg: var(--kb-radius-lg);
+  --radius-xl: var(--kb-radius-xl);
+  --radius-full: var(--kb-radius-full);
 }
 
-/* ===== THEME DEFINITIONS ===== */
+/* Semantic utilities (bg-shell, text-fg-1, border-stroke, shadow-e1…). Inline so a nested
+   [data-scheme] root (e.g. a v1 plugin wrapper) resolves its own values. */
+@theme inline {
+  --color-shell: var(--kb-bg-shell);
+  --color-surface: var(--kb-bg-surface);
+  --color-inset: var(--kb-bg-inset);
+  --color-fg-1: var(--kb-fg-1);
+  --color-fg-2: var(--kb-fg-2);
+  --color-fg-3: var(--kb-fg-3);
+  --color-danger: var(--kb-danger);
+  --color-fill-hover: var(--kb-fill-hover);
+  --color-fill-selected: var(--kb-fill-selected);
+  --color-stroke: var(--kb-stroke-subtle);
+  --shadow-e1: var(--kb-shadow-e1);
+  --shadow-e2: var(--kb-shadow-e2);
+  --shadow-e3: var(--kb-shadow-e3);
+}
 
-/* Ember (Default — warm amber) */
+/* ===== DESIGN TOKENS (T-503) =====
+   Selected by root attributes: data-scheme, data-accent, data-density, data-material.
+   Until T-504 sets them, :root falls back to dark + amber + normal + solid.
+   z-index and motion tokens: T-507. Font tokens: T-506. */
+
+/* Shape and opacity (scheme independent) */
+:root {
+  --kb-radius-xs: 4px;
+  --kb-radius-sm: 6px;
+  --kb-radius-md: 8px;
+  --kb-radius-lg: 12px;
+  --kb-radius-xl: 16px;
+  --kb-radius-full: 9999px;
+  --kb-opacity-disabled: 0.45;
+  --kb-opacity-drag: 0.6;
+}
+
+/* Typography (T-506): system fonts only, nothing is fetched. The host does not use Space Grotesk;
+   the "Space Grotesk" @font-face alias and --font-display stay for v1 plugins. */
+:root {
+  --kb-font: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  /* Reserved for headings; first consumer lands with the T-508+ primitives. */
+  --kb-font-display: "Segoe UI Variable Display", "Segoe UI", -apple-system, "SF Pro Display", system-ui, sans-serif;
+  --kb-font-mono: "Cascadia Mono", "SF Mono", ui-monospace, monospace;
+}
+
+/* Layers (T-507): six layers only. Mirrored in src/ui/tokens.ts. */
+:root {
+  --kb-z-bar: 10;
+  --kb-z-panel: 20;
+  --kb-z-dialog: 30;
+  --kb-z-popover: 40;
+  --kb-z-toast: 50;
+  --kb-z-tooltip: 60;
+}
+
+/* Motion (T-507). Mirrored in src/ui/tokens.ts. */
+:root {
+  --kb-dur-fast: 100ms;
+  --kb-dur-normal: 160ms;
+  --kb-dur-slow: 240ms;
+  --kb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --kb-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --kb-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --kb-dur-fast: 0ms;
+    --kb-dur-normal: 0ms;
+    --kb-dur-slow: 0ms;
+  }
+}
+
+@keyframes kb-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes kb-pop {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* T-511: the offset comes from the element (PanelShell sets it per dock side); default = slide in from the right. */
+@keyframes kb-slide {
+  from { opacity: 0; transform: translate(var(--kb-slide-x, 8px), var(--kb-slide-y, 0px)); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.kb-fade { animation: kb-fade var(--kb-dur-normal) var(--kb-ease-out) both; }
+.kb-pop { animation: kb-pop var(--kb-dur-normal) var(--kb-ease-out) both; }
+.kb-slide { animation: kb-slide var(--kb-dur-slow) var(--kb-ease-out) both; }
+
+/* Accent raw values per scheme. data-accent belongs on :root (or on/above the [data-scheme]
+   element); the scheme blocks pick the matching value. "custom" is set inline by T-504. */
 :root,
-[data-theme="ember"] {
-  --theme-primary: #f4a125;
-  --theme-bg-dark: #1a1612;
-  --theme-bg-base: #1e1b17;
-  --theme-bg-light: #f8f7f5;
-  --theme-border: #3f362b;
-  --theme-surface: #14110e;
-  --theme-accent-glow: rgba(244, 161, 37, 0.15);
-  --theme-scrollbar: #3f362b;
-  --theme-marker: #f4a125;
+[data-accent="amber"] {
+  --kb-accent-dark: #f4a125;
+  --kb-on-accent-dark: #141414;
+  --kb-accent-light: #9a5b00;
+  --kb-on-accent-light: #ffffff;
 }
 
-/* Ocean (cool deep blue) */
-[data-theme="ocean"] {
-  --theme-primary: #38bdf8;
-  --theme-bg-dark: #0c1524;
-  --theme-bg-base: #111b2e;
-  --theme-bg-light: #f0f4f8;
-  --theme-border: #1e3a5f;
-  --theme-surface: #080f1c;
-  --theme-accent-glow: rgba(56, 189, 248, 0.15);
-  --theme-scrollbar: #1e3a5f;
-  --theme-marker: #38bdf8;
+[data-accent="orange"] {
+  --kb-accent-dark: #f28c45;
+  --kb-on-accent-dark: #141414;
+  --kb-accent-light: #b54708;
+  --kb-on-accent-light: #ffffff;
 }
 
-/* Sakura (soft cherry-blossom pink) */
-[data-theme="sakura"] {
-  --theme-primary: #f472b6;
-  --theme-bg-dark: #1c1018;
-  --theme-bg-base: #22141c;
-  --theme-bg-light: #fdf2f8;
-  --theme-border: #4a2040;
-  --theme-surface: #150c12;
-  --theme-accent-glow: rgba(244, 114, 182, 0.15);
-  --theme-scrollbar: #4a2040;
-  --theme-marker: #f472b6;
+[data-accent="red"] {
+  --kb-accent-dark: #f2626f;
+  --kb-on-accent-dark: #141414;
+  --kb-accent-light: #c42b3c;
+  --kb-on-accent-light: #ffffff;
 }
 
-/* Emerald (deep forest green) */
-[data-theme="emerald"] {
-  --theme-primary: #34d399;
-  --theme-bg-dark: #0c1a14;
-  --theme-bg-base: #111f19;
-  --theme-bg-light: #ecfdf5;
-  --theme-border: #1a4d3a;
-  --theme-surface: #08110d;
-  --theme-accent-glow: rgba(52, 211, 153, 0.15);
-  --theme-scrollbar: #1a4d3a;
-  --theme-marker: #34d399;
+[data-accent="pink"] {
+  --kb-accent-dark: #f07ab8;
+  --kb-on-accent-dark: #141414;
+  --kb-accent-light: #b8236c;
+  --kb-on-accent-light: #ffffff;
 }
 
-/* Midnight (deep indigo) */
-[data-theme="midnight"] {
-  --theme-primary: #6366f1;
-  --theme-bg-dark: #0f172a;
-  --theme-bg-base: #1e293b;
-  --theme-bg-light: #f8fafc;
-  --theme-border: #334155;
-  --theme-surface: #020617;
-  --theme-accent-glow: rgba(99, 102, 241, 0.15);
-  --theme-scrollbar: #334155;
-  --theme-marker: #6366f1;
+[data-accent="violet"] {
+  --kb-accent-dark: #a78bfa;
+  --kb-on-accent-dark: #141414;
+  --kb-accent-light: #7445d6;
+  --kb-on-accent-light: #ffffff;
 }
 
-/* Amethyst (rich purple) */
-[data-theme="amethyst"] {
-  --theme-primary: #a855f7;
-  --theme-bg-dark: #1a1024;
-  --theme-bg-base: #21152d;
-  --theme-bg-light: #faf5ff;
-  --theme-border: #432b57;
-  --theme-surface: #120a1a;
-  --theme-accent-glow: rgba(168, 85, 247, 0.15);
-  --theme-scrollbar: #432b57;
-  --theme-marker: #a855f7;
+[data-accent="blue"] {
+  --kb-accent-dark: #4ca8f5;
+  --kb-on-accent-dark: #141414;
+  --kb-accent-light: #0067c0;
+  --kb-on-accent-light: #ffffff;
 }
 
-/* Crimson (vibrant red) */
-[data-theme="crimson"] {
-  --theme-primary: #f43f5e;
-  --theme-bg-dark: #1a0a0c;
-  --theme-bg-base: #210e11;
-  --theme-bg-light: #fff1f2;
-  --theme-border: #4c1d24;
-  --theme-surface: #120608;
-  --theme-accent-glow: rgba(244, 63, 94, 0.15);
-  --theme-scrollbar: #4c1d24;
-  --theme-marker: #f43f5e;
+[data-accent="green"] {
+  --kb-accent-dark: #45c98b;
+  --kb-on-accent-dark: #141414;
+  --kb-accent-light: #0b7a47;
+  --kb-on-accent-light: #ffffff;
 }
 
-/* Nord (arctic blue-grey) */
-[data-theme="nord"] {
-  --theme-primary: #81a1c1;
-  --theme-bg-dark: #2e3440;
-  --theme-bg-base: #3b4252;
-  --theme-bg-light: #eceff4;
-  --theme-border: #4c566a;
-  --theme-surface: #242933;
-  --theme-accent-glow: rgba(129, 161, 193, 0.15);
-  --theme-scrollbar: #4c566a;
-  --theme-marker: #81a1c1;
+[data-accent="graphite"] {
+  --kb-accent-dark: #a3abb8;
+  --kb-on-accent-dark: #141414;
+  --kb-accent-light: #5a6472;
+  --kb-on-accent-light: #ffffff;
 }
 
-/* Coffee (warm brown-gold) */
-[data-theme="coffee"] {
-  --theme-primary: #d97706;
-  --theme-bg-dark: #1c1511;
-  --theme-bg-base: #241b16;
-  --theme-bg-light: #fffbeb;
-  --theme-border: #4a3728;
-  --theme-surface: #140f0c;
-  --theme-accent-glow: rgba(217, 119, 6, 0.15);
-  --theme-scrollbar: #4a3728;
-  --theme-marker: #d97706;
+/* Dark scheme (default) */
+:root,
+[data-scheme="dark"] {
+  /* T-601: native scrollbars and form controls follow the scheme. */
+  color-scheme: dark;
+  --kb-bg-shell: #1f1f1f;
+  --kb-bg-surface: #2a2a2a;
+  --kb-bg-inset: #181818;
+  --kb-fill-hover: rgba(255, 255, 255, 0.06);
+  --kb-fill-pressed: rgba(255, 255, 255, 0.04);
+  --kb-fill-selected: rgba(255, 255, 255, 0.09);
+  --kb-stroke-subtle: rgba(255, 255, 255, 0.08);
+  --kb-stroke-strong: rgba(255, 255, 255, 0.16);
+  --kb-stroke-control: rgba(255, 255, 255, 0.36);
+  --kb-fg-1: rgba(255, 255, 255, 0.92);
+  --kb-fg-2: rgba(255, 255, 255, 0.68);
+  --kb-fg-3: rgba(255, 255, 255, 0.46);
+  --kb-scrim: rgba(0, 0, 0, 0.5);
+  --kb-success: #6ccb5f;
+  --kb-warning: #fce100;
+  --kb-danger: #ff99a4;
+  --kb-info: #60cdff;
+  --kb-accent: var(--kb-accent-dark);
+  --kb-on-accent: var(--kb-on-accent-dark);
+  --kb-accent-hover: color-mix(in oklab, var(--kb-accent) 88%, white);
+  --kb-accent-pressed: color-mix(in oklab, var(--kb-accent) 80%, black);
+  --kb-accent-subtle: color-mix(in oklab, var(--kb-accent) 16%, transparent);
+  --kb-focus-ring: 0 0 0 2px var(--kb-bg-shell), 0 0 0 4px var(--kb-accent);
+  --kb-shadow-e0: none;
+  --kb-shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.18);
+  --kb-shadow-e2: 0 4px 12px rgba(0, 0, 0, 0.24);
+  --kb-shadow-e3: 0 8px 28px rgba(0, 0, 0, 0.32);
 }
 
-/* Lavender (soothing pastel purple) */
-[data-theme="lavender"] {
-  --theme-primary: #a78bfa;
-  --theme-bg-dark: #17151c;
-  --theme-bg-base: #1d1b26;
-  --theme-bg-light: #f5f3ff;
-  --theme-border: #3e384d;
-  --theme-surface: #111015;
-  --theme-accent-glow: rgba(167, 139, 250, 0.15);
-  --theme-scrollbar: #3e384d;
-  --theme-marker: #a78bfa;
+/* Light scheme */
+[data-scheme="light"] {
+  color-scheme: light;
+  --kb-bg-shell: #f3f3f3;
+  --kb-bg-surface: #ffffff;
+  --kb-bg-inset: #ebebeb;
+  --kb-fill-hover: rgba(0, 0, 0, 0.04);
+  --kb-fill-pressed: rgba(0, 0, 0, 0.06);
+  --kb-fill-selected: rgba(0, 0, 0, 0.07);
+  --kb-stroke-subtle: rgba(0, 0, 0, 0.08);
+  --kb-stroke-strong: rgba(0, 0, 0, 0.16);
+  --kb-stroke-control: rgba(0, 0, 0, 0.45);
+  --kb-fg-1: rgba(0, 0, 0, 0.9);
+  --kb-fg-2: rgba(0, 0, 0, 0.62);
+  --kb-fg-3: rgba(0, 0, 0, 0.45);
+  --kb-scrim: rgba(0, 0, 0, 0.3);
+  --kb-success: #0f7b0f;
+  --kb-warning: #9d5d00;
+  --kb-danger: #c42b1c;
+  --kb-info: #005fb8;
+  --kb-accent: var(--kb-accent-light);
+  --kb-on-accent: var(--kb-on-accent-light);
+  --kb-accent-hover: color-mix(in oklab, var(--kb-accent) 88%, black);
+  --kb-accent-pressed: color-mix(in oklab, var(--kb-accent) 80%, black);
+  --kb-accent-subtle: color-mix(in oklab, var(--kb-accent) 16%, transparent);
+  --kb-focus-ring: 0 0 0 2px var(--kb-bg-shell), 0 0 0 4px var(--kb-accent);
+  --kb-shadow-e0: none;
+  --kb-shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --kb-shadow-e2: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --kb-shadow-e3: 0 8px 28px rgba(0, 0, 0, 0.16);
 }
 
-/* Custom (user-defined — CSS vars applied via JavaScript inline styles) */
-/* Values are set dynamically via applyCustomThemeCSS() in useAppStore.ts */
+/* Density (default normal) */
+:root,
+[data-density="normal"] {
+  --kb-bar-thickness: 48px;
+  --kb-bar-item: 36px;
+  --kb-bar-icon: 20px;
+  --kb-control-h: 32px;
+  --kb-row-h: 40px;
+}
+
+[data-density="compact"] {
+  --kb-bar-thickness: 40px;
+  --kb-bar-item: 32px;
+  --kb-bar-icon: 20px;
+  --kb-control-h: 28px;
+  --kb-row-h: 32px;
+}
+
+[data-density="comfortable"] {
+  --kb-bar-thickness: 56px;
+  --kb-bar-item: 44px;
+  --kb-bar-icon: 24px;
+  --kb-control-h: 36px;
+  --kb-row-h: 48px;
+}
+
+/* Material (default solid); only bar and panel shells use it */
+:root,
+[data-material="solid"] {
+  --kb-material-alpha: 1;
+  --kb-material-bg: var(--kb-bg-shell);
+  --kb-material-blur: none;
+}
+
+[data-material="translucent"] {
+  --kb-material-alpha: 0.82;
+  --kb-material-bg: color-mix(in srgb, var(--kb-bg-shell) 82%, transparent);
+  --kb-material-blur: blur(24px) saturate(140%);
+}
+
+/* T-504: a custom property inherits its computed value, so --kb-material-bg computed on :root
+   keeps the root shell colour inside a nested [data-scheme] root (v1 plugin wrapper). Re-resolve it there. */
+[data-scheme] {
+  --kb-material-bg: var(--kb-bg-shell);
+}
+
+[data-material="translucent"][data-scheme],
+[data-material="translucent"] [data-scheme] {
+  --kb-material-bg: color-mix(in srgb, var(--kb-bg-shell) 82%, transparent);
+}
+
+/* ===== LEGACY --theme-* ALIASES (v1 plugin contract) =====
+   T-601: every --theme-* variable is an alias of a --kb-* token, so the legacy names follow the user's
+   scheme and accent (data-scheme / data-accent). data-theme is still written on :root for v1 plugins
+   (reverse mapping) but no longer selects any colour. Declared on every [data-scheme] root too:
+   a custom property inherits its computed value, so a nested root (v1 plugin wrapper, data-scheme="dark")
+   must re-resolve the aliases against its own scheme. Nothing sets them inline any more. */
+:root,
+[data-scheme] {
+  --theme-primary: var(--kb-accent);
+  --theme-marker: var(--kb-accent);
+  --theme-bg-dark: var(--kb-bg-shell);
+  --theme-bg-base: var(--kb-bg-surface);
+  --theme-surface: var(--kb-bg-inset);
+  --theme-accent-glow: var(--kb-accent-subtle);
+  --theme-bg-light: #f3f3f3;
+}
+
+/* Solid border/scrollbar colours (the old values were solid as well). */
+:root,
+[data-scheme="dark"] {
+  --theme-border: #3a3a3a;
+  --theme-scrollbar: #3a3a3a;
+}
+
+[data-scheme="light"] {
+  --theme-border: #d1d1d1;
+  --theme-scrollbar: #d1d1d1;
+}
+
+/* Tailwind's --color-primary (bg-primary, text-primary) is computed on :root; re-resolve it in nested roots. */
+[data-scheme] {
+  --color-primary: var(--theme-primary);
+}
 
 @layer utilities {
   .drag-region {
@@ -163,10 +353,15 @@
     height: 10px;
     border-radius: 50%;
     border: 2px solid var(--theme-border);
-    outline: none;
     transition: all 0.2s ease-in-out;
     cursor: pointer;
     position: relative;
+  }
+
+  /* T-512: visible keyboard focus (this utilities-layer rule beats the base-layer ring). */
+  .custom-radio:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
   }
 
   .custom-radio:checked::after {
@@ -203,8 +398,11 @@
     border-color: #3b82f6;
   }
 
+  /* Local full variable font (material-symbols package, axes FILL/GRAD/opsz/wght). Selected/active icons
+     set 'FILL' 1. Inline font-variation-settings from v1 plugins still win. */
   .material-symbols-outlined {
     user-select: none;
+    font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 20;
   }
 
   ::-webkit-scrollbar {
@@ -280,7 +478,7 @@ body,
 body {
   background-color: transparent !important;
   overflow: visible !important;
-  font-family: var(--font-display);
+  font-family: var(--kb-font);
 }
 
 /* Tiptap Editor Dark Theme Overrides */
@@ -291,6 +489,21 @@ body {
   /* slate-300 */
   font-size: 1.125rem;
   line-height: 1.75;
+}
+
+/* R-12: no frame around the text area when the editor is clicked. */
+.tiptap:focus,
+.tiptap:focus-visible {
+  outline: none;
+}
+
+/* R-07: spinner glyph rotates around its own centre (square box, clipped ligature text, no offset). */
+.kb-spin {
+  display: inline-flex;
+  flex: none;
+  overflow: hidden;
+  line-height: 1;
+  transform-origin: 50% 50%;
 }
 
 .tiptap p {
@@ -366,13 +579,83 @@ input, textarea, [contenteditable="true"], .ProseMirror {
     -webkit-user-drag: element !important;
 }
 
-/* Remove default focus outlines from buttons to prevent shortcut highlighting */
 button, [role="button"] {
-    outline: none !important;
     -webkit-tap-highlight-color: transparent;
 }
 
-button:focus, [role="button"]:focus {
-    outline: none !important;
-    box-shadow: none !important;
+/* Keyboard focus ring (keyboard only, no ring on mouse click).
+   T-503: kept as an outline on --theme-primary for legacy markup. A box-shadow
+   (--kb-focus-ring) would ignore `outline-none` opt-outs and lose to Tailwind shadow
+   utilities. Since T-601 --theme-primary aliases --kb-accent, so the outline follows the
+   user's accent (data-accent), like --kb-focus-ring. New primitives (T-508+) use
+   box-shadow: var(--kb-focus-ring).
+   In @layer base so intentional `outline-none` utilities still win. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* T-507: kb-fade is the only motion kept under reduced motion (class beats the universal selector). */
+  .kb-fade {
+    animation-duration: 80ms !important;
+  }
+  /* T-512: endless spinners/pulses become static instead of a 0.01ms flash. */
+  .animate-spin,
+  .animate-pulse,
+  .animate-ping,
+  .animate-bounce {
+    animation: none !important;
+  }
+}
+
+/* Links inside the note editor */
+.kobar-note-editor a {
+    color: var(--theme-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: text;
+}
+
+/* R2-01: host-side normalisation of plugin inline-widget bar buttons (v1 plugins draw their own round, filled, glowing buttons).
+   No fill/border/shadow/scale behind any bar icon, even when active; one colour and one icon size/weight; emphasis only on hover.
+   Unlayered + !important so it also beats utility classes and inline styles from the plugin. */
+[data-bar-widget] button {
+  width: var(--kb-bar-item) !important;
+  height: var(--kb-bar-item) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: var(--kb-radius-md) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--kb-fg-2) !important;
+  transform: none !important;
+  scale: none !important;
+  animation: none !important;
+}
+
+[data-bar-widget] button:hover {
+  background: var(--kb-fill-hover) !important;
+  color: var(--kb-fg-1) !important;
+}
+
+[data-bar-widget] button:active {
+  background: var(--kb-fill-pressed) !important;
+}
+
+[data-bar-widget] button .material-symbols-outlined {
+  font-size: var(--kb-bar-icon) !important;
+  font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 20 !important;
+  color: inherit !important;
+  transform: none !important;
 }

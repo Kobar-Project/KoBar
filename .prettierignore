@@ -1,0 +1,13 @@
+dist
+dist-electron
+release
+node_modules
+package-lock.json
+*.min.*
+coverage
+remaster/
+tests/fixtures/
+tests/__snapshots__/
+build/
+for-agents/
+Assets/

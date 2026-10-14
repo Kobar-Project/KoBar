@@ -1,0 +1,114 @@
+{
+  "version": 23,
+  "state": {
+    "notes": [
+      { "id": 1, "title": "Synthetic iso 1", "icon": "FileText", "emoji": null, "content": "<p>Iso one</p>" },
+      { "id": 4, "title": "Synthetic iso 4", "icon": "FileText", "emoji": null, "content": "<p>Iso four</p>" }
+    ],
+    "activeNoteId": 4,
+    "nextNoteId": 5,
+    "globalNotes": [
+      { "id": 1, "title": "Synthetic shared 1", "icon": "FileText", "emoji": null, "content": "<p>Shared one</p>" },
+      { "id": 2, "title": "Synthetic shared 2", "icon": "FileText", "emoji": null, "content": "<p>Shared two</p>" }
+    ],
+    "globalPluginData": {},
+    "currentExtensionsConfig": { "fixture.plugin": true, "other.plugin": false },
+    "activeWorkspaceId": "ws-iso",
+    "notePanelWidth": 420,
+    "notePanelHeight": 520,
+    "tutorialState": { "version": "1.0.0", "status": "completed" },
+    "legacyBackup": { "todos": [{ "id": "t1", "text": "Synthetic todo", "done": false }] },
+    "theme": "ocean",
+    "customThemeColor": "#2266aa",
+    "language": "en",
+    "showTooltips": false,
+    "sidebarWidth": 64,
+    "iconScale": 0.9,
+    "teleportShortcut": "CommandOrControl+Shift+K",
+    "launchAtStartup": true,
+    "enableEyeAnimation": false,
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": true,
+    "koBoxCleanupMode": "quit",
+    "toggleWidth": 30,
+    "featureSpacing": 10,
+    "isPopupSmartPositioning": true,
+    "featureOrder": ["com.kobar.aihub.btn", "copypaste", "kobox", "fixture.plugin-btn"],
+    "design": "style2",
+    "glassOpacity": 70,
+    "workspaces": [
+      {
+        "id": "ws-iso",
+        "name": "Synthetic Isolated",
+        "isIsolated": true,
+        "enabledExtensions": { "fixture.plugin": false },
+        "isolatedData": {
+          "notes": [
+            { "id": 1, "title": "Synthetic iso 1", "icon": "FileText", "emoji": null, "content": "<p>Iso one</p>" },
+            { "id": 4, "title": "Synthetic iso 4", "icon": "FileText", "emoji": null, "content": "<p>Iso four</p>" }
+          ],
+          "activeNoteId": 4,
+          "nextNoteId": 5,
+          "pluginData": { "fixture.plugin": { "counter": 2 } }
+        },
+        "isPinInjectorEnabled": true,
+        "isKoBoxEnabled": true,
+        "koBoxCleanupMode": "24h",
+        "toggleWidth": 30,
+        "sidebarWidth": 50,
+        "iconScale": 0.9,
+        "featureSpacing": 10,
+        "showTooltips": false,
+        "theme": "midnight",
+        "customThemeColor": "#2266aa",
+        "design": "style2",
+        "glassOpacity": 70,
+        "featureOrder": ["com.kobar.aihub.btn", "copypaste"],
+        "edgePosition": "right",
+        "isPopupSmartPositioning": true,
+        "orientation": "vertical"
+      },
+      {
+        "id": "ws-shared",
+        "name": "Synthetic Shared",
+        "isIsolated": false,
+        "enabledExtensions": { "fixture.plugin": true },
+        "isolatedData": {
+          "notes": [{ "id": 9, "title": "Synthetic kept iso", "icon": "FileText", "emoji": null, "content": "<p>Kept from an earlier isolation</p>" }],
+          "activeNoteId": 9,
+          "nextNoteId": 10
+        },
+        "isPinInjectorEnabled": false,
+        "isKoBoxEnabled": false,
+        "koBoxCleanupMode": "24h",
+        "toggleWidth": 22,
+        "sidebarWidth": 46,
+        "iconScale": 0.8,
+        "featureSpacing": 8,
+        "showTooltips": true,
+        "theme": "ember",
+        "customThemeColor": "#f4a125",
+        "design": "style1",
+        "glassOpacity": 60,
+        "featureOrder": ["copypaste", "kobox"],
+        "edgePosition": "left",
+        "isPopupSmartPositioning": false,
+        "enableEyeAnimation": true,
+        "orientation": "vertical"
+      },
+      {
+        "id": "ws-legacy",
+        "name": "Synthetic Legacy",
+        "isPinInjectorEnabled": true,
+        "isKoBoxEnabled": true,
+        "koBoxCleanupMode": "24h",
+        "sidebarWidth": 46,
+        "iconScale": 0.8
+      }
+    ],
+    "settingsFeatureViewMode": "cards",
+    "settingsWorkspaceViewMode": "list",
+    "orientation": "vertical",
+    "edgePosition": "right"
+  }
+}

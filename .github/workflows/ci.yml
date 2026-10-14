@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "remaster" ]
+  pull_request:
+    branches: [ "main", "remaster" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  windows:
+    name: Windows (primary)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Typecheck (renderer)
+        run: npx tsc -b
+      - name: Typecheck (electron main)
+        run: npx tsc -p electron/tsconfig.json --noEmit
+      - name: Lint
+        run: npm run lint:ci
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  e2e:
+    name: Windows (e2e smoke)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run build
+      # T-101: `npm ci` no longer downloads the Electron binary; fetch it explicitly for the e2e run.
+      - name: Install Electron binary
+        run: node node_modules/electron/install.js
+      # `_electron` needs no browser download, so `npx playwright install` is intentionally not run.
+      - name: E2E smoke test
+        run: npm run test:e2e
+      - name: Upload e2e results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: node_modules/.cache/playwright-results
+          if-no-files-found: ignore
+
+  ubuntu-fast:
+    name: Ubuntu (fast checks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Typecheck (renderer)
+        run: npx tsc -b
+      - name: Typecheck (electron main)
+        run: npx tsc -p electron/tsconfig.json --noEmit
+      - name: Lint
+        run: npm run lint:ci
+      - name: Test
+        run: npm test

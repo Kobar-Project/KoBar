@@ -1,12 +1,19 @@
 import React from 'react';
 
 import { useAppStore } from '../../store/useAppStore';
+import { useT } from '../../i18n/useT';
 
 import { setIsResizingGlobal } from '../../App';
 
 import TooltipButton from './TooltipButton';
+import { BarItem } from '../../sidebar/BarItem';
+import { useRovingToolbar } from '../../sidebar/useRovingToolbar';
+import { BarHeader } from '../../sidebar/BarHeader';
 import EyeNotification from './EyeNotification';
 import { useExtensionRegistry } from '../extensions/extensionRegistry';
+import { getWindowGeometry, refreshWindowGeometry, subscribeWindowGeometry } from '../../utils/windowGeometry';
+import { computeVisibleArea, hasDisplayInfo, visibleAreaFromWorkArea, windowOriginForDisplay } from '../../utils/visibleArea';
+import { exceedsDragThreshold } from '../../utils/dragThreshold';
 
 const Sidebar: React.FC = () => {
     const toggleNotePanel = useAppStore(state => state.toggleNotePanel);
@@ -15,11 +22,12 @@ const Sidebar: React.FC = () => {
     const setMiniMode = useAppStore(state => state.setMiniMode);
     const isMiniMode = useAppStore(state => state.isMiniMode);
 
-    const t = useAppStore(state => state.t);
+    const t = useT();
 
     const isMac = useAppStore(state => state.isMac);
     
-    const activeWorkspaceId = useAppStore(state => state.activeWorkspaceId);
+    // T-206: plugin roots remount on every data context switch (load / save / isolation toggle / delete).
+    const dataContextId = useAppStore(state => state.dataContextId);
 
 
 
@@ -35,6 +43,8 @@ const Sidebar: React.FC = () => {
     const glassOpacity = useAppStore(state => state.glassOpacity);
     const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
     const orientation = useAppStore(state => state.orientation);
+    const showTooltips = useAppStore(state => state.showTooltips);
+    const isDraggingGlobal = useAppStore(state => state.isDraggingGlobal);
     const isHighlightingToggleNotes = useAppStore(state => state.isHighlightingToggleNotes);
 
 
@@ -56,8 +66,10 @@ const Sidebar: React.FC = () => {
     const eyeButtonRef = React.useRef<HTMLButtonElement>(null);
     const innerEyeRef = React.useRef<HTMLSpanElement>(null);
     const sidebarContainerRef = React.useRef<HTMLDivElement>(null);
+    const toolbarHandlers = useRovingToolbar(sidebarContainerRef, orientation === 'horizontal' ? 'horizontal' : 'vertical');
 
     const [reorderMode, setReorderMode] = React.useState<boolean>(false);
+    const [barMenuOpen, setBarMenuOpen] = React.useState(false);
     const longPressTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const [dragOverId, setDragOverId] = React.useState<string | null>(null);
     const [isDev, setIsDev] = React.useState(false);
@@ -135,6 +147,11 @@ const Sidebar: React.FC = () => {
 
     const handleScrollMouseDown = (e: React.MouseEvent) => {
         if (e.button !== 0 || e.defaultPrevented) return;
+        // R-09: horizontal bar has no drag grip; empty bar space moves the bar instead.
+        if (orientation === 'horizontal' && isEmptyBarSpace(e)) {
+            handleSidebarDragStart(e);
+            return;
+        }
         setIsDragScrolling(true);
         setIsResizingGlobal(true);
         scrollDragStart.current = { 
@@ -176,6 +193,7 @@ const Sidebar: React.FC = () => {
     const handleSidebarDragStart = (e: React.MouseEvent) => {
         if (e.button !== 0) return;
         e.preventDefault();
+        dragRef.current = { startX: e.clientX, startY: e.clientY, dragged: false };
         setIsSidebarDragging(true);
         setIsResizingGlobal(true);
         useAppStore.getState().setIsDraggingGlobal(true);
@@ -227,6 +245,16 @@ const Sidebar: React.FC = () => {
     React.useEffect(() => {
         const handleSidebarDragMove = (e: MouseEvent) => {
             if (!isSidebarDragging) return;
+            // R-08: below the pixel threshold a press is still a click (Eye click guard), so the bar does not move yet.
+            if (
+                !dragRef.current.dragged &&
+                !exceedsDragThreshold(
+                    { x: dragRef.current.startX, y: dragRef.current.startY },
+                    { x: e.clientX, y: e.clientY }
+                )
+            ) {
+                return;
+            }
             dragRef.current.dragged = true; // Mark that a real drag occurred (used by Eye click guard)
             
             let mouseX = e.clientX;
@@ -244,10 +272,11 @@ const Sidebar: React.FC = () => {
                     physicalCursorY >= d.bounds.y && physicalCursorY < (d.bounds.y + d.bounds.height)
                 );
 
-                if (activeDisplay) {
-                    const windowWidth = 6000;
-                    const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
-                    const newWinY = activeDisplay.workArea.y;
+                // T-322: the window origin for that display from the live model (window model A: the display's origin).
+                const targetOrigin = windowOriginForDisplay(activeDisplay, getWindowGeometry());
+                if (targetOrigin) {
+                    const newWinX = targetOrigin.x;
+                    const newWinY = targetOrigin.y;
 
                     if (newWinX !== windowPosRef.current.x || newWinY !== windowPosRef.current.y) {
                         const dx = newWinX - windowPosRef.current.x;
@@ -315,8 +344,8 @@ const Sidebar: React.FC = () => {
                 const physicalCurrentX = physicalOriginX + newX + (orientation === 'horizontal' ? 0 : sidebarWidth / 2);
                 const physicalCurrentY = physicalOriginY + newY + (orientation === 'horizontal' ? sidebarWidth / 2 : 0);
 
-                let activeScreenPhysicalCenter = physicalOriginX + 3000; // Fallback to primary
-                let activeScreenPhysicalCenterY = physicalOriginY + 2000;
+                let activeScreenPhysicalCenter = physicalOriginX + getWindowGeometry().centerX; // Fallback to primary
+                let activeScreenPhysicalCenterY = physicalOriginY + getWindowGeometry().centerY;
 
                 const activeMonitor = allDisplays.find(d => 
                     physicalCurrentX >= d.bounds.x && physicalCurrentX < (d.bounds.x + d.bounds.width) &&
@@ -363,102 +392,134 @@ const Sidebar: React.FC = () => {
                     return;
                 }
 
-                let pos = { x: sidebarDragRef.current.lastX, y: sidebarDragRef.current.lastY };
-                let displayBounds = null;
+                try {
+                    let pos = { x: sidebarDragRef.current.lastX, y: sidebarDragRef.current.lastY };
+                    let displayBounds = null;
 
-                if (window.api?.recenterWindowOnWidget && !isMac) {
-                    const result = await window.api.recenterWindowOnWidget(pos.x, pos.y, sidebarWidth, 20);
-                    if (result) {
-                        pos = { x: result.x, y: result.y };
-                        displayBounds = result.displayBounds;
+                    if (window.api?.recenterWindowOnWidget && !isMac) {
+                        // T-322: a failed call keeps the drop where it is (it used to leave the drag stuck).
+                        const result = await window.api.recenterWindowOnWidget(pos.x, pos.y, sidebarWidth, 20).catch((err: unknown) => {
+                            console.warn('[KoBar] recenterWindowOnWidget failed:', err);
+                            return null;
+                        });
+                        if (result) {
+                            pos = { x: result.x, y: result.y };
+                            displayBounds = result.displayBounds;
+                        }
                     }
-                }
 
-                let activeScreenCenter = 0;
-                let activeScreenCenterY = 0;
-                let visibleLeft = 0;
-                let visibleRight = 0;
-                let visibleTop = 0;
-                let visibleBottom = 0;
+                    let activeScreenCenter = 0;
+                    let activeScreenCenterY = 0;
+                    let visibleLeft = 0;
+                    let visibleRight = 0;
+                    let visibleTop = 0;
+                    let visibleBottom = 0;
 
-                if (isMac) {
-                    const visibleW = screenBounds?.width ?? window.innerWidth;
-                    const visibleH = screenBounds?.height ?? window.innerHeight;
-                    visibleLeft = 0;
-                    visibleRight = visibleW;
-                    visibleTop = 0;
-                    visibleBottom = visibleH;
-                    activeScreenCenter = visibleW / 2;
-                    activeScreenCenterY = visibleH / 2;
-                } else {
-                    // Since the window has been recentered on the active monitor, the active monitor's bounds
-                    // relative to the window are simplified:
-                    // window center is at X=3000, so active monitor starts at 3000 - activeMonitorW / 2
-                    // and ends at 3000 + activeMonitorW / 2.
-                    const activeMonitorW = displayBounds?.width ?? screenBounds?.width ?? window.innerWidth;
-                    const activeMonitorH = displayBounds?.height ?? screenBounds?.height ?? window.innerHeight;
-                    visibleLeft = 3000 - activeMonitorW / 2;
-                    visibleRight = 3000 + activeMonitorW / 2;
-                    visibleTop = 0;
-                    visibleBottom = activeMonitorH;
-                    activeScreenCenter = 3000;
-                    activeScreenCenterY = activeMonitorH / 2;
-                }
-
-                const SNAP_THRESHOLD = 100;
-
-                if (orientation === 'horizontal') {
-                    const currentCenterY = pos.y + (sidebarWidth / 2);
-                    const isTopHalf = currentCenterY < activeScreenCenterY;
-                    const distToTop = Math.abs(pos.y - visibleTop);
-                    const distToBottom = Math.abs(pos.y + sidebarWidth - visibleBottom);
-
-                    if (distToTop <= SNAP_THRESHOLD) {
-                        useAppStore.getState().setEdgePosition('top');
-                        pos = { x: pos.x, y: visibleTop };
-                    } else if (distToBottom <= SNAP_THRESHOLD) {
-                        useAppStore.getState().setEdgePosition('bottom');
-                        pos = { x: pos.x, y: visibleBottom - sidebarWidth };
+                    if (isMac) {
+                        const visibleW = screenBounds?.width ?? window.innerWidth;
+                        const visibleH = screenBounds?.height ?? window.innerHeight;
+                        visibleLeft = 0;
+                        visibleRight = visibleW;
+                        visibleTop = 0;
+                        visibleBottom = visibleH;
+                        activeScreenCenter = visibleW / 2;
+                        activeScreenCenterY = visibleH / 2;
                     } else {
-                        useAppStore.getState().setEdgePosition(isTopHalf ? 'top' : 'bottom');
-                        pos = { x: pos.x, y: pos.y };
+                        // T-322: the window was re-fitted to the drop display; read the model and the window position again (the
+                        // re-fit event may still be queued) and take the usable area (the work area recenterWindowOnWidget returned)
+                        // relative to the real window origin. Window model A: taskbar offsets at the top/left included.
+                        refreshWindowGeometry();
+                        const geometry = getWindowGeometry();
+                        let windowOrigin: { x: number; y: number } | null = null;
+                        if (window.api?.getWindowPositionSync) {
+                            const [wx, wy] = window.api.getWindowPositionSync();
+                            if (Number.isFinite(wx) && Number.isFinite(wy)) windowOrigin = { x: wx, y: wy };
+                        }
+                        if (windowOrigin) windowPosRef.current = windowOrigin;
+                        const inModel = !!windowOrigin && hasDisplayInfo(geometry)
+                            && windowOrigin.x === geometry.displayBounds.x && windowOrigin.y === geometry.displayBounds.y;
+                        const area = (displayBounds && windowOrigin
+                            ? visibleAreaFromWorkArea(displayBounds, windowOrigin, inModel ? { width: geometry.width, height: geometry.height } : null)
+                            : null) ?? computeVisibleArea(geometry, screenBounds);
+                        visibleLeft = area.left;
+                        visibleRight = area.right;
+                        visibleTop = area.top;
+                        visibleBottom = area.bottom;
+                        activeScreenCenter = area.centerX;
+                        activeScreenCenterY = area.centerY;
                     }
-                } else {
-                    const currentCenter = pos.x + (sidebarWidth / 2);
-                    const isLeftHalf = currentCenter < activeScreenCenter;
-                    const distToLeft = Math.abs(pos.x - visibleLeft);
-                    const distToRight = Math.abs(pos.x + sidebarWidth - visibleRight);
 
-                    if (distToLeft <= SNAP_THRESHOLD) {
-                        // Snap to left edge of active monitor
-                        useAppStore.getState().setEdgePosition('left');
-                        pos = { x: visibleLeft, y: pos.y };
-                    } else if (distToRight <= SNAP_THRESHOLD) {
-                        // Snap to right edge of active monitor
-                        useAppStore.getState().setEdgePosition('right');
-                        pos = { x: visibleRight - sidebarWidth, y: pos.y };
+                    const SNAP_THRESHOLD = 100;
+
+                    if (orientation === 'horizontal') {
+                        const currentCenterY = pos.y + (sidebarWidth / 2);
+                        const isTopHalf = currentCenterY < activeScreenCenterY;
+                        const distToTop = Math.abs(pos.y - visibleTop);
+                        const distToBottom = Math.abs(pos.y + sidebarWidth - visibleBottom);
+
+                        if (distToTop <= SNAP_THRESHOLD) {
+                            useAppStore.getState().setEdgePosition('top');
+                            pos = { x: pos.x, y: visibleTop };
+                        } else if (distToBottom <= SNAP_THRESHOLD) {
+                            useAppStore.getState().setEdgePosition('bottom');
+                            pos = { x: pos.x, y: visibleBottom - sidebarWidth };
+                        } else {
+                            useAppStore.getState().setEdgePosition(isTopHalf ? 'top' : 'bottom');
+                            pos = { x: pos.x, y: pos.y };
+                        }
                     } else {
-                        // Free-floating: aktif ekranın hangi yarısında olduğuna (isLeftHalf) göre left/right ayarla
-                        useAppStore.getState().setEdgePosition(isLeftHalf ? 'left' : 'right');
-                        pos = { x: pos.x, y: pos.y };
+                        const currentCenter = pos.x + (sidebarWidth / 2);
+                        const isLeftHalf = currentCenter < activeScreenCenter;
+                        const distToLeft = Math.abs(pos.x - visibleLeft);
+                        const distToRight = Math.abs(pos.x + sidebarWidth - visibleRight);
+
+                        if (distToLeft <= SNAP_THRESHOLD) {
+                            // Snap to left edge of active monitor
+                            useAppStore.getState().setEdgePosition('left');
+                            pos = { x: visibleLeft, y: pos.y };
+                        } else if (distToRight <= SNAP_THRESHOLD) {
+                            // Snap to right edge of active monitor
+                            useAppStore.getState().setEdgePosition('right');
+                            pos = { x: visibleRight - sidebarWidth, y: pos.y };
+                        } else {
+                            // Free-floating: aktif ekranın hangi yarısında olduğuna (isLeftHalf) göre left/right ayarla
+                            useAppStore.getState().setEdgePosition(isLeftHalf ? 'left' : 'right');
+                            pos = { x: pos.x, y: pos.y };
+                        }
                     }
+
+                    // Synchronize global store with the final drop position AFTER calculations
+                    setSidebarPosition(pos);
+                } catch (err) {
+                    // T-322: whatever fails in the drop maths, the drag below still ends (no stuck drag / disabled layout sync).
+                    console.warn('[KoBar] sidebar drop failed:', err);
                 }
 
-                // Synchronize global store with the final drop position AFTER calculations
-                setSidebarPosition(pos);
-
+                // Always end the drag (also after a failure above). A catch rather than finally: the React Compiler behind the
+                // react-hooks lint rules does not support try/finally.
                 setIsSidebarDragging(false);
                 setIsResizingGlobal(false);
                 useAppStore.getState().setIsDraggingGlobal(false);
             }
         };
+        // T-322: main re-fits the window after the drag moved it onto another display (size and origin can differ from what
+        // moveWindow asked for, e.g. mixed DPI); re-read the real window position so the cursor maths does not use a stale origin.
+        let unsubscribeGeometry: (() => void) | null = null;
         if (isSidebarDragging) {
             window.addEventListener('mousemove', handleSidebarDragMove);
             window.addEventListener('mouseup', handleSidebarDragEnd);
+            if (!isMac) {
+                unsubscribeGeometry = subscribeWindowGeometry(() => {
+                    if (!window.api?.getWindowPositionSync) return;
+                    const [wx, wy] = window.api.getWindowPositionSync();
+                    if (Number.isFinite(wx) && Number.isFinite(wy)) windowPosRef.current = { x: wx, y: wy };
+                });
+            }
         }
         return () => {
             window.removeEventListener('mousemove', handleSidebarDragMove);
             window.removeEventListener('mouseup', handleSidebarDragEnd);
+            unsubscribeGeometry?.();
         };
     }, [isSidebarDragging, screenBounds, sidebarWidth, orientation]);
 
@@ -541,20 +602,25 @@ const Sidebar: React.FC = () => {
         };
     }, [enableEyeAnimation]);
 
+    // R-09: a press/right-click on the bar's own background (not on a plugin button) counts as empty bar space.
+    const isEmptyBarSpace = (e: React.MouseEvent) =>
+        e.target === e.currentTarget || (e.target as HTMLElement).dataset?.barEmpty === 'true';
+
     // Handle Eye Button: dual-purpose handle — drag moves the whole bar, click enters Mini Mode.
     const handleEyeMouseDown = (e: React.MouseEvent) => {
         if (e.button !== 0) return; // Left click only
         e.preventDefault(); // Prevent accidental text selection
-        // Reset dragged flag before each interaction
-        dragRef.current = { startX: e.clientX, startY: e.clientY, dragged: false };
         // Bridge: also kick off the sidebar drag so the Eye acts as a drag handle for the whole bar
         handleSidebarDragStart(e);
     };
 
-    const handleEyeClick = () => {
-        // If a real drag happened (handleSidebarDragMove set the flag), don't enter Mini Mode —
-        // the sidebar was already repositioned by the drag system.
-        if (dragRef.current.dragged) return;
+    const consumeHeaderDrag = () => {
+        const wasDrag = dragRef.current.dragged;
+        dragRef.current.dragged = false;
+        return wasDrag;
+    };
+
+    const enterMiniMode = () => {
         // Use the eye button's actual DOM rect center for pixel-perfect alignment
         if (eyeButtonRef.current) {
             const rect = eyeButtonRef.current.getBoundingClientRect();
@@ -564,14 +630,49 @@ const Sidebar: React.FC = () => {
         }
     };
 
+    const handleEyeClick = () => {
+        // If a real drag happened (handleSidebarDragMove set the flag), don't enter Mini Mode —
+        // the sidebar was already repositioned by the drag system.
+        const wasDrag = dragRef.current.dragged;
+        dragRef.current.dragged = false; // a later keyboard activation must not inherit this flag
+        if (wasDrag) return;
+        enterMiniMode();
+    };
+
+    // The menu's click would reach the window listener that ends reorder mode, so enter it on the next tick.
+    const startReorder = () => {
+        window.setTimeout(() => setReorderMode(true), 0);
+    };
+
+    const dynamicButtons = extensionsRegistry.getButtons();
+    const dynamicInlineWidgets = extensionsRegistry.getInlineWidgets();
+    const allExts = [...dynamicButtons, ...dynamicInlineWidgets];
+
+    // Plugins missing from featureOrder are appended to it (so they show at the end) from an effect, not from render.
+    const missingIds = allExts.map((e) => e.id).filter((id) => !featureOrder.includes(id));
+    const missingKey = missingIds.length ? JSON.stringify(missingIds) : '';
+    React.useEffect(() => {
+        if (!missingKey) return;
+        const current = useAppStore.getState().featureOrder;
+        const add = (JSON.parse(missingKey) as string[]).filter((id) => !current.includes(id));
+        if (add.length) setFeatureOrder([...current, ...add]);
+    }, [missingKey, setFeatureOrder]);
+
     return (
         <div className="relative z-50 pointer-events-none" style={{ width: orientation === 'horizontal' ? 'fit-content' : `${sidebarWidth}px`, height: orientation === 'horizontal' ? `${sidebarWidth}px` : 'fit-content' }}>
             <div 
                 ref={sidebarContainerRef}
-                className={`flex ${orientation === 'horizontal' ? 'flex-row pl-4 pr-2 h-full w-fit' : 'flex-col pt-4 pb-2 w-full h-fit'} items-center overflow-hidden ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'} transition-all duration-500
+                role="toolbar"
+                aria-label="KoBar"
+                aria-orientation={orientation === 'horizontal' ? 'horizontal' : 'vertical'}
+                onKeyDown={toolbarHandlers.onKeyDown}
+                onFocus={toolbarHandlers.onFocus}
+                onMouseDown={orientation === 'horizontal' ? (e) => { if (e.button === 0 && isEmptyBarSpace(e)) handleSidebarDragStart(e); } : undefined}
+                onContextMenu={orientation === 'horizontal' ? (e) => { if (isEmptyBarSpace(e)) { e.preventDefault(); setBarMenuOpen(true); } } : undefined}
+                className={`flex ${orientation === 'horizontal' ? 'flex-row pr-2 h-full w-fit' : 'flex-col pb-2 w-full h-fit'} items-center overflow-hidden ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'} transition-all duration-500
                     ${orientation === 'horizontal' ? '' : (isMac && edgePosition === 'left' ? 'pt-8' : '')}
                     ${design === 'style2' 
-                        ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/10') 
+                        ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-e3 border border-stroke') 
                         : 'bg-[var(--theme-bg-dark)] rounded-3xl shadow-2xl border border-[var(--theme-border)]'}`}
                 style={{ 
                     maxHeight: orientation === 'horizontal' ? undefined : `${calculatedMaxHeight}px`,
@@ -585,36 +686,27 @@ const Sidebar: React.FC = () => {
                         : 'var(--theme-bg-dark)'
                 }}
             >
-                {/* 1a. Top/Left Drag Region & Branding */}
-                <div 
-                    className={`${orientation === 'horizontal' ? 'w-6 h-full -mr-2' : 'h-6 w-full -mb-2'} shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing`}
-                    onMouseDown={handleSidebarDragStart}
-                >
-                    <div className={`${orientation === 'horizontal' ? 'w-1 h-8 ml-1' : 'w-8 h-1 mt-1'} bg-white/10 rounded-full transition-all`} style={{ zoom: iconScale }}></div>
-                </div>
-
-                <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
+                {/* 1a. Bar header (R2-02): the whole area drags the bar (pixel threshold) and a click opens the bar menu. */}
+                <BarHeader
+                    orientation={orientation === 'horizontal' ? 'horizontal' : 'vertical'}
+                    open={barMenuOpen}
+                    onOpenChange={setBarMenuOpen}
+                    onReorder={startReorder}
+                    onMiniMode={enterMiniMode}
+                    onDragStart={handleSidebarDragStart}
+                    consumeDrag={consumeHeaderDrag}
+                />
 
                 {/* 1b. Scrollable Container for Features */}
                 <div 
                     ref={scrollRef}
                     onMouseDown={handleScrollMouseDown}
+                    data-bar-empty="true"
                     className={`flex ${orientation === 'horizontal' ? 'flex-row h-full w-fit overflow-x-hidden' : 'flex-col w-full h-fit overflow-y-hidden'} items-center custom-scrollbar`} 
                 >
-                    <div className={`${orientation === 'horizontal' ? 'h-full flex-row px-1.5' : 'w-full flex-col py-1.5'} flex items-center cursor-default`} style={{ zoom: iconScale, gap: `${featureSpacing}px` }}>
+                    <div data-bar-empty="true" className={`${orientation === 'horizontal' ? 'h-full flex-row px-1.5' : 'w-full flex-col py-1.5'} flex items-center cursor-default`} style={{ zoom: iconScale, gap: `${featureSpacing}px` }}>
                     {/* Dynamic Feature Order with Separators */}
                     {(() => {
-                        const dynamicButtons = extensionsRegistry.getButtons();
-                        const dynamicInlineWidgets = extensionsRegistry.getInlineWidgets();
-                        
-                        const allExts = [...dynamicButtons, ...dynamicInlineWidgets];
-
-                        // Ensure missing plugins are added to featureOrder implicitly (so they show at the end)
-                        const missing = allExts.map(e => e.id).filter(id => !featureOrder.includes(id));
-                        if (missing.length > 0) {
-                            setTimeout(() => setFeatureOrder([...featureOrder, ...missing]), 0);
-                        }
-
                         // Sort all plugins according to featureOrder
                         const sortedFeatures = [...allExts].sort((a, b) => {
                             const idxA = featureOrder.indexOf(a.id);
@@ -625,13 +717,13 @@ const Sidebar: React.FC = () => {
                             return 0;
                         });
 
-                        return sortedFeatures.map((feat: any, idx) => {
+                        return sortedFeatures.map((feat: any) => {
                             const isWidget = !!feat.render;
                             const id = feat.id;
                             const isDragOver = dragOverId === id;
                             
                             return (
-                                <React.Fragment key={`${id}-${activeWorkspaceId}`}>
+                                <React.Fragment key={`${id}-${dataContextId}`}>
                                     <div 
                                         draggable={reorderMode}
                                         onDragStart={(e) => onPluginDragStart(e, id)}
@@ -641,34 +733,35 @@ const Sidebar: React.FC = () => {
                                         onMouseDown={handlePluginMouseDown}
                                         onMouseUp={handlePluginMouseUp}
                                         onMouseLeave={handlePluginMouseUp}
-                                        className={`w-full flex justify-center no-drag-region transition-all ${reorderMode ? 'cursor-grab hover:scale-105 active:cursor-grabbing' : ''} ${reorderMode && !isDragScrolling ? 'animate-pulse' : ''}`}
+                                        className={`w-full flex justify-center no-drag-region transition-all ${reorderMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
                                         style={{ 
                                             transform: isDragOver ? (orientation === 'horizontal' ? 'translateX(10px)' : 'translateY(10px)') : 'none',
                                             opacity: isDragOver ? 0.5 : 1
                                         }}
                                     >
                                         {isWidget ? (
-                                            feat.render()
+                                            // T-503: v1 inline widgets resolve the dark scheme tokens; display: contents keeps layout/events
+                                            <div data-scheme="dark" data-bar-widget="" className="contents">
+                                                {feat.render()}
+                                            </div>
                                         ) : (
-                                            <TooltipButton
+                                            <BarItem
                                                 label={reorderMode ? (t('dragToReorder' as any) || 'Drag to reorder') : feat.label}
-                                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg
-                                                    ${!reorderMode ? 'hover:scale-110 active:scale-95' : ''}
-                                                    ${activeExtensionPanelId === id ? 'bg-primary/20 text-primary border-primary/50' : 'bg-white/5 text-slate-400 hover:text-primary hover:bg-white/10'}`}
-                                                style={{ borderWidth: activeExtensionPanelId === id ? '1px' : '0px', pointerEvents: reorderMode ? 'none' : 'auto' }}
+                                                active={activeExtensionPanelId === id}
+                                                orientation={orientation === 'horizontal' ? 'horizontal' : 'vertical'}
+                                                edge={edgePosition}
+                                                tooltipDisabled={!showTooltips || isDraggingGlobal || isMiniMode}
+                                                style={{ pointerEvents: reorderMode ? 'none' : 'auto' }}
                                                 onClick={(e) => {
                                                     if (reorderMode) return;
                                                     const rect = sidebarContainerRef.current?.getBoundingClientRect() || e.currentTarget.getBoundingClientRect();
                                                     feat.onClick(e as any, rect);
                                                 }}
                                             >
-                                                <span className="material-symbols-outlined text-[24px]">{feat.icon}</span>
-                                            </TooltipButton>
+                                                <span className="material-symbols-outlined" style={{ fontSize: 'var(--kb-bar-icon)' }}>{feat.icon}</span>
+                                            </BarItem>
                                         )}
                                     </div>
-                                    {(idx < sortedFeatures.length - 1) && (
-                                        <div className={`${orientation === 'horizontal' ? 'h-10 w-px' : 'w-10 h-px'} bg-white/5 no-drag-region shrink-0`} />
-                                    )}
                                 </React.Fragment>
                             );
                         });
@@ -676,28 +769,29 @@ const Sidebar: React.FC = () => {
                     </div>
                 </div> {/* End scrollable container */}
 
-                <div className={`${orientation === 'horizontal' ? 'h-10 w-px mx-2' : 'w-10 h-px my-2'} bg-white/5 no-drag-region shrink-0`} />
-
                 {/* 1c. Bottom Static Utilities (Always Bottom / Right) */}
                 <div className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} items-center gap-4 no-drag-region shrink-0 ${orientation === 'horizontal' ? 'py-2 pr-0' : 'px-2 pb-0'}`}>
                     <div style={{ zoom: iconScale }} className="transition-all">
-                        <TooltipButton
+                        <BarItem
                             label={t('miniMode')}
-                            buttonRef={eyeButtonRef}
+                            ref={eyeButtonRef}
+                            tone="accent"
+                            orientation={orientation === 'horizontal' ? 'horizontal' : 'vertical'}
+                            edge={edgePosition}
+                            tooltipDisabled={!showTooltips || isDraggingGlobal || isMiniMode}
                             onMouseDown={handleEyeMouseDown}
                             onClick={handleEyeClick}
-                            className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:bg-primary/40 cursor-grab active:cursor-grabbing group relative ${orientation === 'horizontal' ? '' : 'mt-2'}
-                                ${design === 'style2' ? 'bg-primary/5 backdrop-blur-md' : 'bg-primary/20 shadow-[0_0_20px_rgba(244,161,37,0.2)]'}`}
+                            className={`cursor-grab active:cursor-grabbing ${orientation === 'horizontal' ? '' : 'mt-2'}`}
                         >
                             <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
-                                <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">visibility</span>
+                                <span className="material-symbols-outlined" style={{ fontSize: 'var(--kb-bar-icon)' }}>visibility</span>
                             </span>
                             {isDev && (
-                                <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
+                                <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 select-none pointer-events-none tracking-wide uppercase leading-none font-sans">
                                     dev
                                 </span>
                             )}
-                        </TooltipButton>
+                        </BarItem>
                         <EyeNotification />
                     </div>
                 </div>
@@ -707,7 +801,7 @@ const Sidebar: React.FC = () => {
                 label={t('toggleNotes')}
                 className={`absolute border flex items-center justify-center transition-all shadow-2xl z-[60] 
                     ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'}
-                    ${isHighlightingToggleNotes ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 border-primary' : 'text-slate-400 hover:text-primary hover:bg-white/5'}`}
+                    ${isHighlightingToggleNotes ? 'ring-4 ring-primary animate-pulse text-primary bg-primary/20 border-primary' : 'text-fg-2 hover:text-primary hover:bg-fill-hover'}`}
                 style={{ 
                     backgroundColor: design === 'style2' 
                         ? (isMac ? 'transparent' : `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)`) 

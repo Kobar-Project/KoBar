@@ -1,0 +1,43 @@
+{
+  "version": 12,
+  "state": {
+    "notes": [
+      {
+        "id": 3,
+        "title": "Synthetic v12 note",
+        "icon": "FileText",
+        "emoji": "✅",
+        "content": "<p>Line <em>one</em></p><p>Line two</p>"
+      }
+    ],
+    "activeNoteId": 3,
+    "nextNoteId": 4,
+    "theme": "custom",
+    "language": "en",
+    "showTooltips": true,
+    "sidebarWidth": 64,
+    "iconScale": 1,
+    "teleportShortcut": "Alt+Space",
+    "launchAtStartup": true,
+    "featureOrder": [
+      "com.kobar.aihub.btn",
+      "copypaste",
+      "colorpicker",
+      "snippetvault-plugin-btn",
+      "pininjector",
+      "kobox",
+      "calculator"
+    ],
+    "isAiHubEnabled": true,
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": true,
+    "koBoxCleanupMode": "24h",
+    "isSnippetVaultEnabled": true,
+    "snippets": [
+      { "id": "s1", "title": "Synthetic locked", "content": "U1lOVEhFVElD", "password": "fixture-hash" },
+      { "id": "s2", "title": "Synthetic open", "content": "plain text", "color": "#00ff00" }
+    ],
+    "design": "glass",
+    "glassOpacity": 0.6
+  }
+}

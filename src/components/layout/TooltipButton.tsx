@@ -43,7 +43,10 @@ const TooltipButton: React.FC<TooltipButtonProps> = ({
     onContextMenu,
     buttonRef,
 }) => {
-    const { edgePosition, showTooltips, isDraggingGlobal, isMiniMode } = useAppStore();
+    const edgePosition = useAppStore((s) => s.edgePosition);
+    const showTooltips = useAppStore((s) => s.showTooltips);
+    const isDraggingGlobal = useAppStore((s) => s.isDraggingGlobal);
+    const isMiniMode = useAppStore((s) => s.isMiniMode);
     const internalRef = useRef<HTMLElement>(null);
     const ref = (buttonRef as React.RefObject<HTMLElement>) ?? internalRef;
 

@@ -1,0 +1,44 @@
+{
+    "version": 21,
+    "__proto__": { "polluted": true },
+    "constructor": { "prototype": { "polluted": true } },
+    "theme": "<script>alert(1)</script>",
+    "language": "tr",
+    "sidebarWidth": "9999",
+    "iconScale": 1e308,
+    "glassOpacity": 50,
+    "customThemeColor": "javascript:alert(1)",
+    "teleportShortcut": "CommandOrControl+Shift+J",
+    "showTooltips": "yes",
+    "activeWorkspaceId": "nowhere",
+    "notes": [{ "id": 1, "title": "evil", "content": "evil-root-note" }],
+    "globalNotes": [{ "id": 1, "title": "evil", "content": "evil-global-note" }],
+    "globalPluginData": { "aiHub": { "apiKey": "sk-evil" } },
+    "currentExtensionsConfig": { "evil-plugin": true },
+    "tutorialState": { "version": "9", "status": "completed" },
+    "isMac": true,
+    "addNote": "not-a-function",
+    "setTheme": null,
+    "legacyBackup": { "todos": ["from-file"], "colorPalettes": ["from-file"], "__proto__": { "polluted": true } },
+    "workspaces": [
+        {
+            "id": "w1",
+            "name": "Renamed",
+            "theme": "ocean",
+            "isIsolated": false,
+            "isolatedData": { "notes": [{ "id": 1, "title": "stale", "content": "stale-iso-note" }] }
+        },
+        { "id": "w1", "name": "Duplicate" },
+        {
+            "id": "new1",
+            "name": "New",
+            "isIsolated": true,
+            "isolatedData": { "notes": [{ "id": 5, "title": "old", "content": "old-file-note" }], "pluginData": { "k": 1 } }
+        },
+        { "id": 42, "name": "numeric id" },
+        "garbage",
+        null,
+        { "name": "no id" },
+        { "id": "new2", "theme": "bogus", "sidebarWidth": -5, "enabledExtensions": { "a": true, "b": "yes" }, "__proto__": { "polluted": true } }
+    ]
+}

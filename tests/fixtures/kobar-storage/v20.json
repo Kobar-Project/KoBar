@@ -1,0 +1,67 @@
+{
+  "version": 20,
+  "state": {
+    "notes": [
+      {
+        "id": 7,
+        "title": "Synthetic v20 note",
+        "icon": "FileText",
+        "emoji": null,
+        "content": "<p>Before global notes</p><img src=\"data:image/jpeg;base64,FIXTUREJPEGBASE64PLACEHOLDER==\" />"
+      }
+    ],
+    "activeNoteId": 7,
+    "nextNoteId": 8,
+    "notePanelWidth": 420,
+    "notePanelHeight": 520,
+    "tutorialState": { "version": "1.0.0", "status": "completed" },
+    "theme": "dark",
+    "customThemeColor": "#f4a125",
+    "language": "tr",
+    "showTooltips": true,
+    "sidebarWidth": 64,
+    "iconScale": 1,
+    "enableEyeAnimation": true,
+    "orientation": "vertical",
+    "edgePosition": "left",
+    "isHighlightingToggleNotes": false,
+    "isHighlightingSettingsBtn": false,
+    "isHighlightingPluginsBtn": false,
+    "featureOrder": ["com.kobar.aihub.btn", "copypaste", "kobox", "fixture.plugin-btn"],
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": true,
+    "koBoxCleanupMode": "24h",
+    "currentExtensionsConfig": { "fixture.plugin": { "enabled": true } },
+    "workspaces": [
+      {
+        "id": "ws-home",
+        "name": "Synthetic Home",
+        "isIsolated": false,
+        "isolatedData": null,
+        "isPinInjectorEnabled": true,
+        "isKoBoxEnabled": true,
+        "koBoxCleanupMode": "24h",
+        "sidebarWidth": 64,
+        "iconScale": 1
+      },
+      {
+        "id": "ws-lab",
+        "name": "Synthetic Lab",
+        "isIsolated": true,
+        "isolatedData": {
+          "notes": [
+            { "id": 1, "title": "Lab note", "icon": "FileText", "emoji": "🧪", "content": "<p>Lab fixture</p>" }
+          ],
+          "activeNoteId": 1,
+          "nextNoteId": 2,
+          "pluginData": { "fixture.plugin": { "counter": 3 } }
+        },
+        "isPinInjectorEnabled": true,
+        "isKoBoxEnabled": false,
+        "koBoxCleanupMode": "quit",
+        "sidebarWidth": 72,
+        "iconScale": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "version": 21,
+  "state": {
+    "notes": [
+      { "id": 3, "title": "Synthetic shared note", "icon": "FileText", "emoji": null, "content": "<p>Shared body</p>" },
+      { "id": 7, "title": "Synthetic second note", "icon": "FileText", "emoji": null, "content": "<p>Second body</p>" }
+    ],
+    "activeNoteId": 7,
+    "nextNoteId": 10,
+    "globalNotes": [
+      { "id": 3, "title": "Synthetic shared note", "icon": "FileText", "emoji": null, "content": "<p>Shared body</p>" },
+      { "id": 7, "title": "Synthetic second note", "icon": "FileText", "emoji": null, "content": "<p>Second body</p>" }
+    ],
+    "globalPluginData": {},
+    "currentExtensionsConfig": {},
+    "activeWorkspaceId": null,
+    "notePanelWidth": 380,
+    "notePanelHeight": 480,
+    "tutorialState": { "version": "1.0.0", "status": "pending" },
+    "theme": "ocean",
+    "customThemeColor": "#f4a125",
+    "language": "tr",
+    "showTooltips": false,
+    "sidebarWidth": 64,
+    "iconScale": 1,
+    "teleportShortcut": "Alt+Space",
+    "launchAtStartup": false,
+    "enableEyeAnimation": false,
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": false,
+    "koBoxCleanupMode": "quit",
+    "featureOrder": ["com.kobar.aihub.btn", "copypaste", "ko-calender-plugin-btn"],
+    "design": "style2",
+    "glassOpacity": 0.7,
+    "workspaces": [
+      {
+        "id": "ws-inactive",
+        "name": "Synthetic Inactive",
+        "isIsolated": false,
+        "isPinInjectorEnabled": true,
+        "isKoBoxEnabled": false,
+        "koBoxCleanupMode": "quit",
+        "toggleWidth": 50,
+        "sidebarWidth": 64,
+        "iconScale": 1,
+        "featureSpacing": 16,
+        "isPopupSmartPositioning": true
+      }
+    ],
+    "settingsFeatureViewMode": "cards",
+    "settingsWorkspaceViewMode": "cards",
+    "orientation": "vertical",
+    "edgePosition": "left"
+  }
+}

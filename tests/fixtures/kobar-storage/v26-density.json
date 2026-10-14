@@ -1,0 +1,119 @@
+{
+  "version": 26,
+  "state": {
+    "notes": [
+      { "id": 1, "title": "Synthetic work 1", "icon": "FileText", "emoji": null, "content": "<p>Work one</p>" }
+    ],
+    "activeNoteId": 1,
+    "nextNoteId": 2,
+    "globalNotes": [
+      { "id": 1, "title": "Synthetic shared 1", "icon": "FileText", "emoji": null, "content": "<p>Shared one</p>" }
+    ],
+    "globalPluginData": {},
+    "currentExtensionsConfig": { "fixture.plugin": true },
+    "defaultExtensionsConfig": null,
+    "activeWorkspaceId": "ws-work",
+    "notePanelWidth": 420,
+    "notePanelHeight": 520,
+    "tutorialState": { "version": "1.0.0", "status": "completed" },
+    "legacyBackup": {
+      "workspaceModelV24": { "workspaces": [{ "index": 0, "id": "ws-work", "values": {}, "added": ["design"] }] },
+      "appearanceV26": { "top": { "values": { "teleportShortcut": "CommandOrControl+Shift+K" } } }
+    },
+    "scheme": "dark",
+    "accent": "blue",
+    "material": "solid",
+    "theme": "ocean",
+    "customThemeColor": "#f4a125",
+    "language": "tr",
+    "showTooltips": true,
+    "sidebarWidth": 40,
+    "iconScale": 1.2,
+    "launchAtStartup": false,
+    "enableEyeAnimation": true,
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": true,
+    "koBoxCleanupMode": "24h",
+    "toggleWidth": 30,
+    "featureSpacing": 12,
+    "isPopupSmartPositioning": false,
+    "featureOrder": ["com.kobar.aihub.btn", "copypaste", "kobox"],
+    "design": "style1",
+    "glassOpacity": 60,
+    "workspaces": [
+      {
+        "id": "ws-work",
+        "name": "Synthetic work",
+        "isIsolated": true,
+        "isolatedData": {
+          "notes": [{ "id": 1, "title": "Synthetic work 1", "icon": "FileText", "emoji": null, "content": "<p>Work one</p>" }],
+          "activeNoteId": 1,
+          "nextNoteId": 2,
+          "pluginData": { "fixture.plugin": { "counter": 1 } }
+        },
+        "enabledExtensions": { "fixture.plugin": true },
+        "theme": "ocean",
+        "accent": "blue",
+        "material": "solid",
+        "sidebarWidth": 40,
+        "iconScale": 1.2,
+        "toggleWidth": 30,
+        "featureSpacing": 12,
+        "isPopupSmartPositioning": false
+      },
+      {
+        "id": "ws-wide",
+        "name": "Synthetic wide",
+        "isIsolated": false,
+        "accent": "amber",
+        "material": "solid",
+        "sidebarWidth": 80,
+        "iconScale": 1.5,
+        "isPopupSmartPositioning": true
+      },
+      {
+        "id": "ws-edge-low",
+        "name": "Synthetic edge 44",
+        "isIsolated": false,
+        "accent": "amber",
+        "material": "solid",
+        "sidebarWidth": 44,
+        "isPopupSmartPositioning": false
+      },
+      {
+        "id": "ws-edge-high",
+        "name": "Synthetic edge 52",
+        "isIsolated": false,
+        "accent": "amber",
+        "material": "solid",
+        "sidebarWidth": 52
+      },
+      {
+        "id": "ws-just-over",
+        "name": "Synthetic 52.5",
+        "isIsolated": false,
+        "accent": "amber",
+        "material": "solid",
+        "sidebarWidth": 52.5
+      },
+      {
+        "id": "ws-garbage",
+        "name": "Synthetic garbage",
+        "isIsolated": false,
+        "accent": "amber",
+        "material": "solid",
+        "sidebarWidth": "64",
+        "isPopupSmartPositioning": "yes"
+      },
+      {
+        "id": "ws-old",
+        "name": "Synthetic old record",
+        "isIsolated": false
+      }
+    ],
+    "settingsFeatureViewMode": "list",
+    "settingsWorkspaceViewMode": "cards",
+    "orientation": "vertical",
+    "edgePosition": "right"
+  }
+}

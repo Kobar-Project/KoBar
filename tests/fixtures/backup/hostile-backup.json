@@ -1,0 +1,173 @@
+{
+    "format": "kobar-backup",
+    "schemaVersion": 1,
+    "createdAt": "not-a-date",
+    "app": {
+        "name": "KoBar",
+        "version": "99.0.0"
+    },
+    "includesSecrets": false,
+    "secretsWarning": null,
+    "redactions": {
+        "removedKeys": [
+            {
+                "key": "com.thirdparty.notes:apiKey",
+                "reason": "secret-name"
+            },
+            {
+                "key": "kobar_plugin_events_api_key",
+                "reason": "secret-name"
+            }
+        ],
+        "redactedFields": [
+            {
+                "key": "kobar-storage",
+                "path": [
+                    "state",
+                    "globalPluginData",
+                    "com.thirdparty.notes",
+                    "apiKey"
+                ],
+                "reason": "field"
+            },
+            {
+                "key": "kobar_plugin_events",
+                "path": [
+                    "0",
+                    "token"
+                ],
+                "reason": "field"
+            },
+            {
+                "key": "kobar_plugin_todos",
+                "path": [
+                    "0",
+                    "text"
+                ],
+                "reason": "pattern"
+            },
+            {
+                "key": "com.thirdparty.notes:data",
+                "path": [
+                    "items",
+                    "0"
+                ],
+                "reason": "field"
+            },
+            {
+                "key": "com.thirdparty.notes:data",
+                "path": [
+                    "__proto__",
+                    "polluted"
+                ],
+                "reason": "field"
+            },
+            {
+                "key": "com.thirdparty.notes:data",
+                "path": [
+                    "constructor",
+                    "prototype",
+                    "x"
+                ],
+                "reason": "field"
+            },
+            {
+                "key": "com.thirdparty.notes:data",
+                "path": [
+                    "items",
+                    "5"
+                ],
+                "reason": "field"
+            },
+            {
+                "key": "com.thirdparty.notes:data",
+                "path": [],
+                "reason": "field"
+            },
+            {
+                "key": "kobar-storage",
+                "path": [],
+                "reason": "field"
+            },
+            {
+                "key": "kobar-storage",
+                "path": [
+                    "state"
+                ],
+                "reason": "field"
+            },
+            {
+                "key": "kobar-storage",
+                "path": [
+                    "state",
+                    "notes"
+                ],
+                "reason": "field"
+            }
+        ]
+    },
+    "excluded": [
+        "KoBox",
+        "plugin-code",
+        "automatic-backups"
+    ],
+    "localStorage": {
+        "kobar-storage": "{\"state\":{\"__proto__\":{\"polluted\":true},\"constructor\":{\"prototype\":{\"polluted\":true}},\"setTheme\":\"not-a-function\",\"theme\":\"<script>alert(1)</script>\",\"language\":\"tr\",\"sidebarWidth\":\"9999\",\"notes\":[{\"id\":1,\"title\":\"Synthetic note\",\"icon\":\"FileText\",\"emoji\":null,\"content\":\"<p>Synthetic note</p>\"},{\"id\":\"x\",\"title\":5}],\"globalNotes\":[{\"id\":1,\"title\":\"Synthetic note\",\"icon\":\"FileText\",\"emoji\":null,\"content\":\"<p>Synthetic note</p>\"},{\"id\":2,\"title\":\"Second note\",\"icon\":\"FileText\",\"emoji\":null,\"content\":\"<p>Second note</p>\"},{\"id\":3,\"content\":42}],\"globalPluginData\":{\"com.thirdparty.notes\":{\"apiKey\":\"\",\"color\":\"red\"}},\"activeWorkspaceId\":null,\"workspaces\":[{\"id\":\"ws1\",\"name\":\"Isolated\",\"isIsolated\":true,\"isolatedData\":{\"notes\":[{\"id\":1,\"title\":\"Isolated note\",\"icon\":\"FileText\",\"emoji\":null,\"content\":\"<p>Isolated note</p>\"}],\"pluginData\":{}}},{\"id\":5,\"name\":\"bad id\"},{\"id\":\"ws1\",\"name\":\"duplicate id\"},{\"id\":\"ws2\",\"name\":\"\",\"isIsolated\":\"yes\",\"theme\":\"ocean\",\"__proto__\":{\"polluted\":true}}]},\"version\":21}",
+        "kobar-chat-storage": "{\"state\": {\"chats\": [",
+        "__proto__": "x",
+        "setItem": "function () { [native code] }",
+        "getItem": "function () { [native code] }",
+        "removeItem": "function () { [native code] }",
+        "clear": "function () { [native code] }",
+        "kobar_license_key": "placeholder-not-a-key",
+        "kobar_force_theme_color": "javascript:alert(1)",
+        "kobar_language": 42,
+        "kobar_plugin_todos": "[{\"id\":1,\"text\":\"[redacted-secret] synthetic todo\"}]",
+        "kobar_plugin_todos_iso_ws1": "[{\"id\":1,\"text\":\"isolated todo\"}]",
+        "kobar_plugin_todos_iso_ghost": "[{\"id\":1,\"text\":\"orphan todo\"}]",
+        "kobar_plugin_events": "[{\"id\":1,\"token\":\"\"}]",
+        "kobar-storage_iso_ws1": "{\"state\":{},\"version\":23}",
+        "kobar-aihub-plugin-storage": {
+            "nested": {
+                "object": true
+            }
+        },
+        "com.thirdparty.notes:data": "{\"items\":[\"synthetic\"]}",
+        "com.thirdparty.notesextra": "no separator after the id",
+        "kobar_evil": "claimed by a third-party plugin called \"kobar\"",
+        "random-unknown-key": "no owner",
+        "bad\u0001key": "control character in the key",
+        "_iso_ws1": "empty base key"
+    },
+    "extensionsConfig": {
+        "todolist-plugin": true,
+        "ko-calender-plugin": true,
+        "com.thirdparty.notes": "yes",
+        "__proto__": true
+    },
+    "plugins": [
+        {
+            "id": "todolist-plugin",
+            "folder": "todolist-plugin",
+            "name": "ToDo",
+            "version": "1.0.0",
+            "enabled": true,
+            "githubRepo": "Kobar-Project/ToDo"
+        },
+        {
+            "id": "ko-calender-plugin",
+            "folder": "ko-calender-plugin",
+            "name": "KoCalendar",
+            "version": "1.0.0",
+            "enabled": true,
+            "githubRepo": ""
+        },
+        {
+            "id": 5
+        },
+        "junk"
+    ],
+    "evil": {
+        "unknownTopLevel": true
+    }
+}

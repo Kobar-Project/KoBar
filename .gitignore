@@ -24,9 +24,24 @@ dist-ssr
 *.sln
 *.sw?
 release/
- 
- # Build outputs
+
+# Build outputs
 dist-electron/
+
+# Secrets and certificates (never commit)
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+*.p8
+*.snk
+*.spc
+*.pvk
 
 # Firebase backend (private)
 functions/
@@ -59,3 +74,12 @@ Assets/notes/
 # Test Plugins
 pluginsPlayground/
 TestPlugins/
+.claude/settings.local.json
+
+# Google Calendar OAuth client (R2-15): never committed, never read by agents
+gcal-client.local.json
+
+# Maintainer-local files (not part of the public repository)
+remaster/
+.claude/
+CLAUDE.md

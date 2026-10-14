@@ -1,0 +1,8 @@
+{
+    "id": "e2e-smoke-plugin",
+    "name": "E2E Smoke Plugin",
+    "version": "1.0.0",
+    "description": "Synthetic v1 test plugin used only by tests/e2e/smoke.spec.ts.",
+    "icon": "science",
+    "entry": "index.js"
+}

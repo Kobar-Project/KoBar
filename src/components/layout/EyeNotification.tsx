@@ -24,14 +24,14 @@ const EyeNotification: React.FC = () => {
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             className={`absolute ${positionClasses} z-[100] w-64 p-4 rounded-2xl shadow-2xl animate-pop-in pointer-events-auto
-                ${design === 'style2' ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' border border-white/10') : 'bg-[var(--theme-bg-dark)] border border-[var(--theme-border)]'}`}
+                ${design === 'style2' ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' border border-stroke') : 'bg-[var(--theme-bg-dark)] border border-[var(--theme-border)]'}`}
             style={{
                 backgroundColor: design === 'style2' 
                     ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)` 
                     : 'var(--theme-bg-dark)'
             }}
         >
-            <p className="text-sm text-slate-300 mb-4">
+            <p className="text-sm text-fg-1 mb-4">
                 {notification.message.split(/\\n|\n/).map((line, i) => (
                     <React.Fragment key={i}>
                         {line}
@@ -43,11 +43,11 @@ const EyeNotification: React.FC = () => {
             {notification.buttons && notification.buttons.length > 0 && (
                 <div className="flex gap-2 justify-end">
                     {notification.buttons.map((btn, idx) => {
-                        let btnColorClass = 'bg-slate-700 hover:bg-slate-600 text-white';
+                        let btnColorClass = 'bg-fill-selected hover:bg-fill-hover text-fg-1';
                         if (btn.color === 'green') btnColorClass = 'bg-green-600 hover:bg-green-500 text-white';
                         if (btn.color === 'red') btnColorClass = 'bg-red-600 hover:bg-red-500 text-white';
                         if (btn.color === 'blue') btnColorClass = 'bg-blue-600 hover:bg-blue-500 text-white';
-                        if (btn.color === 'primary') btnColorClass = 'bg-primary/80 hover:bg-primary text-white';
+                        if (btn.color === 'primary') btnColorClass = 'bg-primary/80 hover:bg-primary text-[var(--kb-on-accent)]';
                         
                         return (
                             <button 
@@ -66,7 +66,7 @@ const EyeNotification: React.FC = () => {
             
             <button 
                 onClick={hideEyeNotification} 
-                className="absolute -top-2 -right-2 w-6 h-6 bg-slate-800 text-slate-400 rounded-full hover:text-white border border-[var(--theme-border)] flex items-center justify-center transition-colors"
+                className="absolute -top-2 -right-2 w-6 h-6 bg-surface text-fg-2 rounded-full hover:text-fg-1 border border-[var(--theme-border)] flex items-center justify-center transition-colors"
             >
                 <span className="material-symbols-outlined text-[14px]">close</span>
             </button>

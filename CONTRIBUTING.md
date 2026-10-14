@@ -45,9 +45,9 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ### Prerequisites
 
-- **Node.js** >= 18
-- **npm** >= 9
-- **Windows 10/11** or **macOS 12+**
+- **Node.js** `^22.22.1 || ^24.0.0 || >=26.0.0` (`engines` in `package.json`; `.nvmrc` pins 24)
+- **npm**
+- **Windows 10/11** (macOS support is experimental)
 
 ### Running in Development
 
@@ -57,16 +57,16 @@ npm run dev
 
 This concurrently starts:
 1. Vite dev server on `http://localhost:5173`
-2. TypeScript watcher for Electron files
+2. Electron bundle watcher (`tools/build-electron.mjs --watch`)
 3. Electron app (launches once all services are ready)
 
 ### Building for Production
 
 ```bash
-# Compile TypeScript & Vite bundle
+# Type-check and build (no packaging)
 npm run build
 
-# Package distributable
+# Package distributable (see the dist:* scripts in package.json)
 npm run kobar-build
 ```
 
@@ -81,19 +81,22 @@ KoBar/
 │   ├── preload.cts         # Context bridge (typed window.api)
 │   └── smtc-worker.cts     # Windows media monitoring worker
 ├── src/                    # React Renderer Process (frontend)
-│   ├── components/         # UI components organized by feature
-│   │   ├── layout/         # Sidebar, popups, utility widgets
-│   │   ├── clipboard/      # Clipboard manager
-│   │   ├── notes/          # Notes panel & editor
-│   │   ├── screenshot/     # Screenshot capture & annotation
-│   │   ├── chat/           # AI Hub
-│   │   └── calendar/       # KoCalendar
+│   ├── components/         # UI components organized by feature (layout, notes, plugins, extensions)
+│   ├── sidebar/            # Bar header, bar items, context menu
+│   ├── settings/           # Settings window (pages/)
+│   ├── backup/             # Full backup and restore
+│   ├── ui/                 # Shared UI primitives
+│   ├── theme/              # Colour scheme and accent handling
 │   ├── store/              # Zustand state stores
 │   ├── hooks/              # Custom React hooks
-│   ├── i18n/               # Translations (10 languages)
+│   ├── i18n/               # Translations (locales/*.json, 10 languages)
 │   ├── types/              # TypeScript type definitions
 │   └── config/             # Default state configs
-├── Assets/                 # Static resources (audio, templates, store assets)
+├── shared/                 # Types and helpers shared by main and renderer
+├── tests/                  # Unit and end-to-end tests
+├── tools/                  # Build and packaging scripts
+├── for-agents/             # Guides for AI coding agents
+├── Assets/                 # Static resources (images, melodies, note templates)
 └── build/                  # App icons & build resources
 ```
 
@@ -135,7 +138,7 @@ if (isWin) {
 - **Functional components only** (no class components)
 - **Zustand** for all global state. No Redux.
 - `useState` is only for purely local UI toggles (e.g., a dropdown open/close)
-- Create modular stores in `/store` (e.g., `useClipboardStore.ts`, `useAppStore.ts`)
+- Create modular stores in `src/store` (e.g., `useAppStore.ts`, `appearance.ts`)
 - Separate business logic into **custom hooks** rather than inlining it in JSX
 
 ### 4. TypeScript Strictness
@@ -159,7 +162,7 @@ if (isWin) {
 
 1. Ensure your code **builds without errors**: `npm run build`
 2. Ensure your changes work on **Windows**. If you have access to macOS, test there too.
-3. Update translations in `src/i18n/translations.ts` if you add any user-facing text.
+3. Update the translations in `src/i18n/locales/` if you add any user-facing text.
 4. Write a clear PR description explaining:
    - **What** you changed
    - **Why** you changed it
@@ -173,7 +176,7 @@ Use clear, descriptive commit messages:
 ```
 feat: add timer sound selection to Focus Mode
 fix: clipboard polling crash on empty image buffer
-refactor: extract color picker logic into useColorPicker hook
+refactor: extract panel resize logic into useUnifiedResize hook
 docs: update README with new KoCalendar section
 ```
 
@@ -199,7 +202,7 @@ When reporting a bug, please include:
 5. **Screenshots or screen recordings** if applicable
 6. **Console logs** if available (Dev Tools: `Ctrl+Shift+I`)
 
-Use the [Bug Report](https://github.com/eedali/KoBar/issues/new?template=bug_report.md) issue template.
+Use the [Bug Report](https://github.com/Kobar-Project/KoBar/issues/new?template=bug_report.md) issue template.
 
 ---
 
@@ -212,7 +215,7 @@ Feature requests are welcome! When suggesting a feature:
 3. Propose a **solution** (even if rough)
 4. Explain the **use case** and who benefits from it
 
-Use the [Feature Request](https://github.com/eedali/KoBar/issues/new?template=feature_request.md) issue template.
+Use the [Feature Request](https://github.com/Kobar-Project/KoBar/issues/new?template=feature_request.md) issue template.
 
 ---
 
@@ -220,8 +223,8 @@ Use the [Feature Request](https://github.com/eedali/KoBar/issues/new?template=fe
 
 ### File Naming
 
-- Components: `PascalCase.tsx` (e.g., `ClipboardSlots.tsx`)
-- Hooks: `camelCase.ts` with `use` prefix (e.g., `useSpeechToText.ts`)
+- Components: `PascalCase.tsx` (e.g., `NotePanel.tsx`)
+- Hooks: `camelCase.ts` with `use` prefix (e.g., `useUnifiedResize.ts`)
 - Stores: `camelCase.ts` with `use` prefix (e.g., `useAppStore.ts`)
 - Types: `camelCase.d.ts` (e.g., `global.d.ts`)
 
@@ -249,8 +252,8 @@ Example:
 
 If your contribution adds user-facing text:
 
-1. Add the English string to `src/i18n/translations.ts` under the `en` object
-2. Add translations for **all 10 supported languages** (or at minimum English and Turkish)
+1. Add the English string to `src/i18n/locales/en.json`
+2. Add translations to the other locale files in `src/i18n/locales/` for **all 10 supported languages** (or at minimum English and Turkish)
 3. Missing translations will be flagged in review
 
 Supported languages: `en`, `tr`, `de`, `fr`, `es`, `ru`, `ja`, `zh`, `ar`, `hi`
@@ -259,6 +262,6 @@ Supported languages: `en`, `tr`, `de`, `fr`, `es`, `ru`, `ja`, `zh`, `ar`, `hi`
 
 ## Questions?
 
-If you have any questions about contributing, feel free to open a [Discussion](https://github.com/eedali/KoBar/discussions) or reach out to the maintainer.
+If you have any questions about contributing, feel free to open a [Discussion](https://github.com/Kobar-Project/KoBar/discussions) or reach out to the maintainer.
 
 Thank you for helping make KoBar better! 🎉

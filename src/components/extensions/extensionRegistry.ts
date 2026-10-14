@@ -23,6 +23,19 @@ export interface ExtensionInlineWidget {
     render: () => React.ReactNode;
 }
 
+type RegistrationKind = 'button' | 'panel' | 'settingsPanel' | 'inlineWidget';
+
+/**
+ * T-409: the plugin whose script is running right now (the host injects every plugin as a <script data-extension-id>).
+ * null outside a plugin's synchronous script run (e.g. a registration made later from a timer or a promise).
+ */
+function currentExtensionId(): string | null {
+    if (typeof document === 'undefined') return null;
+    const script = document.currentScript;
+    const id = script instanceof HTMLScriptElement ? script.dataset.extensionId : undefined;
+    return typeof id === 'string' && id !== '' ? id : null;
+}
+
 class ExtensionRegistry {
     private buttons: ExtensionButton[] = [];
     private panels: Map<string, ExtensionPanel> = new Map();
@@ -31,6 +44,17 @@ class ExtensionRegistry {
     private manifests: Map<string, any> = new Map();
     private listeners: Set<() => void> = new Set();
     private isSuspended = false;
+    /** T-409: owner (extension id, or null = unknown) of every registered entry, per kind and entry id. */
+    private owners: Record<RegistrationKind, Map<string, string | null>> = {
+        button: new Map(),
+        panel: new Map(),
+        settingsPanel: new Map(),
+        inlineWidget: new Map(),
+    };
+
+    private trackOwner(kind: RegistrationKind, id: string) {
+        this.owners[kind].set(id, currentExtensionId());
+    }
 
     registerManifest(id: string, manifest: any) {
         this.manifests.set(id, manifest);
@@ -43,16 +67,19 @@ class ExtensionRegistry {
     registerSidebarButton(button: ExtensionButton) {
         this.buttons = this.buttons.filter(b => b.id !== button.id);
         this.buttons.push(button);
+        this.trackOwner('button', button.id);
         this.notify();
     }
 
     registerPanel(panelId: string, panel: ExtensionPanel) {
         this.panels.set(panelId, panel);
+        this.trackOwner('panel', panelId);
         this.notify();
     }
 
     registerSettingsPanel(panelId: string, panel: ExtensionSettingsPanel) {
         this.settingsPanels.set(panelId, panel);
+        this.trackOwner('settingsPanel', panelId);
         this.notify();
     }
 
@@ -70,7 +97,38 @@ class ExtensionRegistry {
 
     registerInlineWidget(widgetId: string, widget: ExtensionInlineWidget) {
         this.inlineWidgets.set(widgetId, widget);
+        this.trackOwner('inlineWidget', widgetId);
         this.notify();
+    }
+
+    /**
+     * T-409: removes everything `extensionId` registered (sidebar buttons, panels, settings panels, inline widgets and
+     * its manifest), so a disabled plugin can be unloaded without re-running the other plugins. Changes nothing and
+     * returns false when some entry has no known owner (it was registered outside a plugin's synchronous script run and
+     * may belong to this plugin): the host then reloads every plugin, as before.
+     */
+    unregisterExtension(extensionId: string): boolean {
+        const kinds = Object.keys(this.owners) as RegistrationKind[];
+        if (kinds.some((kind) => Array.from(this.owners[kind].values()).includes(null))) return false;
+        const owned = (kind: RegistrationKind, id: string) => this.owners[kind].get(id) === extensionId;
+        this.buttons = this.buttons.filter((b) => !owned('button', b.id));
+        for (const [map, kind] of [
+            [this.panels, 'panel'],
+            [this.settingsPanels, 'settingsPanel'],
+            [this.inlineWidgets, 'inlineWidget'],
+        ] as const) {
+            for (const id of Array.from(map.keys())) {
+                if (owned(kind, id)) map.delete(id);
+            }
+        }
+        for (const kind of kinds) {
+            for (const [id, owner] of Array.from(this.owners[kind])) {
+                if (owner === extensionId) this.owners[kind].delete(id);
+            }
+        }
+        this.manifests.delete(extensionId);
+        this.notify();
+        return true;
     }
 
     getInlineWidgets() {
@@ -119,6 +177,7 @@ class ExtensionRegistry {
         this.settingsPanels.clear();
         this.inlineWidgets.clear();
         this.manifests.clear();
+        for (const owners of Object.values(this.owners)) owners.clear();
         this.notify();
     }
 }

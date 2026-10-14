@@ -1,0 +1,211 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`profile fixture chain > v21 end state matches the expected snapshot 1`] = `
+{
+  "state": {
+    "accent": "custom",
+    "activeNoteId": 2,
+    "activeWorkspaceId": "ws-focus",
+    "currentExtensionsConfig": {
+      "fixture.plugin": {
+        "enabled": true,
+      },
+    },
+    "customThemeColor": "#aa22cc",
+    "density": "comfortable",
+    "design": "glass",
+    "edgePosition": "right",
+    "enableEyeAnimation": true,
+    "featureOrder": [
+      "com.kobar.aihub.btn",
+      "copypaste",
+      "kobox",
+      "ko-calender-plugin-btn",
+      "fixture.plugin-btn",
+    ],
+    "featureSpacing": 8,
+    "glassOpacity": 0.5,
+    "globalNotes": [
+      {
+        "content": "<p>Global fixture</p>",
+        "emoji": null,
+        "icon": "FileText",
+        "id": 1,
+        "title": "Synthetic v21 global note",
+      },
+    ],
+    "globalPluginData": {
+      "fixture.plugin": {
+        "items": [
+          "a",
+          "b",
+        ],
+      },
+    },
+    "iconScale": 1,
+    "isKoBoxEnabled": true,
+    "isPinInjectorEnabled": true,
+    "isPopupSmartPositioning": true,
+    "koBoxCleanupMode": "24h",
+    "language": "en",
+    "launchAtStartup": true,
+    "legacyBackup": {
+      "appearanceV26": {
+        "top": {
+          "values": {
+            "teleportShortcut": "Alt+K",
+          },
+        },
+      },
+      "cleanupV30": {
+        "settingsWorkspaceViewMode": "grid",
+      },
+      "densityV27": {
+        "top": {
+          "values": {
+            "isPopupSmartPositioning": false,
+          },
+        },
+        "workspaces": [
+          {
+            "id": "ws-focus",
+            "index": 0,
+            "values": {
+              "isPopupSmartPositioning": false,
+            },
+          },
+        ],
+      },
+      "onboardingV29": {
+        "added": true,
+        "tutorialState": {
+          "snoozeUntil": 1700000000000,
+          "status": "snoozed",
+          "version": "1.0.0",
+        },
+      },
+      "workspaceModelV24": {
+        "workspaces": [
+          {
+            "added": [
+              "toggleWidth",
+              "featureSpacing",
+              "showTooltips",
+              "theme",
+              "customThemeColor",
+              "design",
+              "glassOpacity",
+              "featureOrder",
+              "edgePosition",
+              "isPopupSmartPositioning",
+              "enableEyeAnimation",
+              "orientation",
+            ],
+            "id": "ws-focus",
+            "index": 0,
+            "values": {},
+          },
+        ],
+      },
+    },
+    "material": "solid",
+    "nextNoteId": 3,
+    "notePanelHeight": 500,
+    "notePanelWidth": 400,
+    "notes": [
+      {
+        "content": "<p>Current shape</p>",
+        "emoji": null,
+        "icon": "FileText",
+        "id": 1,
+        "title": "Synthetic v21 note",
+      },
+      {
+        "content": "<img src="data:image/png;base64,V21FIXTUREBASE64==" />",
+        "emoji": null,
+        "icon": "Image",
+        "id": 2,
+        "title": "Synthetic v21 image note",
+      },
+    ],
+    "onboarding": {
+      "migrated": true,
+      "status": "completed",
+      "version": 1,
+    },
+    "orientation": "vertical",
+    "scheme": "dark",
+    "settingsFeatureViewMode": "grid",
+    "showTooltips": true,
+    "sidebarWidth": 64,
+    "theme": "custom",
+    "toggleWidth": 22,
+    "tutorialState": {
+      "snoozeUntil": 1700000000000,
+      "status": "snoozed",
+      "version": "1.0.0",
+    },
+    "workspaces": [
+      {
+        "accent": "custom",
+        "customThemeColor": "#aa22cc",
+        "density": "comfortable",
+        "design": "glass",
+        "edgePosition": "right",
+        "enableEyeAnimation": true,
+        "featureOrder": [
+          "com.kobar.aihub.btn",
+          "copypaste",
+          "kobox",
+          "ko-calender-plugin-btn",
+          "fixture.plugin-btn",
+        ],
+        "featureSpacing": 8,
+        "glassOpacity": 0.5,
+        "iconScale": 1,
+        "id": "ws-focus",
+        "isIsolated": true,
+        "isKoBoxEnabled": true,
+        "isPinInjectorEnabled": true,
+        "isPopupSmartPositioning": true,
+        "isolatedData": {
+          "activeNoteId": 1,
+          "nextNoteId": 2,
+          "notes": [
+            {
+              "content": "<p>Focus fixture</p>",
+              "emoji": null,
+              "icon": "FileText",
+              "id": 1,
+              "title": "Focus note",
+            },
+          ],
+          "pluginData": {},
+        },
+        "koBoxCleanupMode": "24h",
+        "material": "solid",
+        "name": "Synthetic Focus",
+        "orientation": "vertical",
+        "showTooltips": true,
+        "sidebarWidth": 64,
+        "theme": "custom",
+        "toggleWidth": 22,
+      },
+      {
+        "accent": "amber",
+        "density": "comfortable",
+        "iconScale": 1,
+        "id": "ws-shared",
+        "isIsolated": false,
+        "isKoBoxEnabled": true,
+        "isPinInjectorEnabled": false,
+        "koBoxCleanupMode": "quit",
+        "material": "solid",
+        "name": "Synthetic Shared",
+        "sidebarWidth": 64,
+      },
+    ],
+  },
+  "version": 32,
+}
+`;

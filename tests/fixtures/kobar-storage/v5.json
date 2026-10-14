@@ -1,0 +1,46 @@
+{
+  "version": 5,
+  "state": {
+    "notes": [
+      {
+        "id": 1,
+        "title": "Synthetic note",
+        "icon": "FileText",
+        "emoji": null,
+        "content": "<ul><li>alpha</li><li>beta</li></ul>"
+      },
+      {
+        "id": 4,
+        "title": "Synthetic code note",
+        "icon": "Code",
+        "emoji": null,
+        "content": "<pre><code>const x = 1;</code></pre>"
+      }
+    ],
+    "activeNoteId": 1,
+    "nextNoteId": 5,
+    "theme": "light",
+    "language": "tr",
+    "showTooltips": false,
+    "sidebarWidth": 72,
+    "iconScale": 1.1,
+    "launchAtStartup": false,
+    "featureOrder": [
+      "shortcuts",
+      "copypaste",
+      "todolist-plugin-btn",
+      "pininjector",
+      "kobar-colorpicker-plugin-btn",
+      "calculator",
+      "kobox"
+    ],
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": false,
+    "koBoxCleanupMode": "quit",
+    "snippets": [
+      { "id": "s1", "title": "Synthetic snippet", "content": "echo fixture" },
+      { "id": "s2", "title": "Synthetic snippet 2", "content": "ls -la", "password": "" }
+    ],
+    "todos": []
+  }
+}

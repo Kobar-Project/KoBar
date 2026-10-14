@@ -7,8 +7,15 @@ const Accordion: React.FC<{
     defaultOpen?: boolean;
     children: React.ReactNode;
     masterToggle?: { isOn: boolean; onToggle: () => void };
-}> = ({ title, icon, defaultOpen = true, children, masterToggle }) => {
+    /** Increase to expand the accordion from outside (T-215 backup hint). */
+    openSignal?: number;
+}> = ({ title, icon, defaultOpen = true, children, masterToggle, openSignal }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
+    const [seenSignal, setSeenSignal] = useState(openSignal);
+    if (openSignal !== seenSignal) {
+        setSeenSignal(openSignal);
+        if (openSignal) setIsOpen(true);
+    }
     const design = useAppStore(state => state.design);
 
     return (
@@ -20,18 +27,18 @@ const Accordion: React.FC<{
         >
             <div className="w-full flex items-center justify-between p-6">
                 <button
-                    className="flex-1 flex items-center gap-2 cursor-pointer hover:bg-black/10 transition-colors text-left"
+                    className="flex-1 flex items-center gap-2 cursor-pointer hover:bg-fill-hover transition-colors text-left"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     <span className="material-symbols-outlined text-primary">{icon}</span>
-                    <h3 className="text-lg font-medium text-slate-300">{title}</h3>
+                    <h3 className="text-lg font-medium text-fg-1">{title}</h3>
                 </button>
                 
                 <div className="flex items-center gap-4">
                     {masterToggle && (
                         <button
                             onClick={masterToggle.onToggle}
-                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region shrink-0 ${masterToggle.isOn ? 'bg-primary' : 'bg-slate-600'}`}
+                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region shrink-0 ${masterToggle.isOn ? 'bg-primary' : 'bg-fill-selected'}`}
                         >
                             <span
                                 className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${masterToggle.isOn ? 'translate-x-5' : 'translate-x-0'}`}
@@ -39,7 +46,7 @@ const Accordion: React.FC<{
                         </button>
                     )}
                     <button onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
-                        <span className={`material-symbols-outlined text-slate-400 text-[20px] transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                        <span className={`material-symbols-outlined text-fg-2 text-[20px] transition-transform ${isOpen ? 'rotate-180' : ''}`}>
                             expand_more
                         </span>
                     </button>

@@ -1,39 +1,47 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { useT } from '../../i18n/useT';
 import { setIsResizingGlobal } from '../../App';
 import EyeNotification from './EyeNotification';
+import { getWindowGeometry, subscribeWindowGeometry, useWindowGeometry } from '../../utils/windowGeometry';
+import { exceedsDragThreshold } from '../../utils/dragThreshold';
+import { computeVisibleArea, defaultEyePosition, windowOriginForDisplay } from '../../utils/visibleArea';
 
 const FloatingEye: React.FC = () => {
-    const edgePosition = useAppStore(state => state.edgePosition);
-    const miniModePosition = useAppStore(state => state.miniModePosition);
-    const design = useAppStore(state => state.design);
-    const glassOpacity = useAppStore(state => state.glassOpacity);
-    const iconScale = useAppStore(state => state.iconScale);
-    const screenBounds = useAppStore(state => state.screenBounds);
-    const enableEyeAnimation = useAppStore(state => state.enableEyeAnimation);
+    const edgePosition = useAppStore((state) => state.edgePosition);
+    const miniModePosition = useAppStore((state) => state.miniModePosition);
+    const design = useAppStore((state) => state.design);
+    const glassOpacity = useAppStore((state) => state.glassOpacity);
+    const iconScale = useAppStore((state) => state.iconScale);
+    const screenBounds = useAppStore((state) => state.screenBounds);
+    const enableEyeAnimation = useAppStore((state) => state.enableEyeAnimation);
 
-    // Calculate safe fallback coordinates using actual monitor dimensions.
-    // The ghost window is 6000×4000, but the visible area matches `screenBounds`.
-    // Using window.innerWidth/Height (6000/4000) would place the Eye at Y=2000,
-    // far off-screen on most monitors. Instead, use screenBounds as the sizing reference.
-    const visibleH = screenBounds?.height ?? 800;
-    const visibleW = screenBounds?.width ?? 1920;
+    const isMac = useAppStore((state) => state.isMac);
+    const t = useT();
+    // T-322: the live window model (re-renders after a re-fit); the store keeps the eye on screen (store/windowLayoutSync.ts).
+    const windowGeometry = useWindowGeometry();
 
-    // For X: place the Eye near the current edge within the visible viewport.
-    // The sidebar is centered in the ghost window via CSS justify-center,
-    // so its left offset ≈ (6000 - sidebarWidth) / 2.
-    // For the fallback, stay near the sidebar's edge:
-    // left edge → slightly inward from the sidebar's expected CSS position
-    // right edge → slightly inward from the other side
-    const isMac = useAppStore(state => state.isMac);
-    const centerX = isMac ? Math.floor(window.innerWidth / 2) : 3000;
-    const safeDefaultX = edgePosition === 'left'
-        ? (centerX - visibleW / 2 + 60)   // Near left edge of visible area within ghost window
-        : (centerX + visibleW / 2 - 60);  // Near right edge of visible area within ghost window
-
-    // For Y: the sidebar starts at CSS top ≈ 20px. Place the Eye at the
-    // vertical center of the visible monitor area, referenced from that origin.
-    const safeDefaultY = 20 + (visibleH / 2);
+    let safeDefaultX: number;
+    let safeDefaultY: number;
+    if (isMac) {
+        // Calculate safe fallback coordinates using actual monitor dimensions: the visible area matches `screenBounds`.
+        const visibleH = screenBounds?.height ?? getWindowGeometry().fallbackScreenHeight;
+        const visibleW = screenBounds?.width ?? getWindowGeometry().fallbackScreenWidth;
+        // For X: place the Eye near the current edge within the visible viewport.
+        const centerX = Math.floor(window.innerWidth / 2);
+        safeDefaultX =
+            edgePosition === 'left'
+                ? centerX - visibleW / 2 + 60 // Near left edge of visible area
+                : centerX + visibleW / 2 - 60; // Near right edge of visible area
+        // For Y: the sidebar starts at CSS top ≈ 20px. Place the Eye at the
+        // vertical center of the visible monitor area, referenced from that origin.
+        safeDefaultY = 20 + visibleH / 2;
+    } else {
+        // T-322: near the docked edge of the usable screen area (window coordinates), vertically at its centre.
+        const fallback = defaultEyePosition(computeVisibleArea(windowGeometry, screenBounds), edgePosition);
+        safeDefaultX = fallback.x;
+        safeDefaultY = fallback.y;
+    }
 
     const defaultX = miniModePosition?.x ?? safeDefaultX;
     const defaultY = miniModePosition?.y ?? safeDefaultY;
@@ -45,11 +53,11 @@ const FloatingEye: React.FC = () => {
     const eyeButtonRef = useRef<HTMLButtonElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isDev, setIsDev] = useState(false);
-    const dragInitRef = useRef({ dragged: false, offsetX: 0, offsetY: 0 });
+    const dragInitRef = useRef({ dragged: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 });
     const windowPosRef = useRef({ x: 0, y: 0 });
-    const localDisplaysRef = useRef<{ primaryDisplay: any, allDisplays: any[] } | null>(null);
+    const localDisplaysRef = useRef<{ primaryDisplay: any; allDisplays: any[] } | null>(null);
 
-    // If teleport is triggered while already in Mini Mode, update pos to the new cursor center
+    // If the mini-mode position changes while already in Mini Mode, sync the local pos
     useEffect(() => {
         if (miniModePosition) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -74,15 +82,20 @@ const FloatingEye: React.FC = () => {
         useAppStore.getState().setIsDraggingGlobal(true);
         dragInitRef.current = {
             dragged: false,
+            startX: e.clientX,
+            startY: e.clientY,
             offsetX: e.clientX - posRef.current.x,
             offsetY: e.clientY - posRef.current.y,
         };
 
         // Fetch display info and window position
         if (window.api?.getDisplaysInfo) {
-            window.api.getDisplaysInfo().then(info => {
-                localDisplaysRef.current = info;
-            }).catch(err => console.warn('IPC getDisplaysInfo not ready:', err));
+            window.api
+                .getDisplaysInfo()
+                .then((info) => {
+                    localDisplaysRef.current = info;
+                })
+                .catch((err) => console.warn('IPC getDisplaysInfo not ready:', err));
         }
         if (window.api?.getWindowPositionSync) {
             const [wx, wy] = window.api.getWindowPositionSync();
@@ -94,6 +107,14 @@ const FloatingEye: React.FC = () => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isDragging) return;
 
+            // R-08: a press that has not travelled past the threshold is still a click; do not move anything yet.
+            if (
+                !dragInitRef.current.dragged &&
+                !exceedsDragThreshold({ x: dragInitRef.current.startX, y: dragInitRef.current.startY }, { x: e.clientX, y: e.clientY })
+            ) {
+                return;
+            }
+
             let mouseX = e.clientX;
             let mouseY = e.clientY;
 
@@ -104,15 +125,19 @@ const FloatingEye: React.FC = () => {
             // Find if we crossed display boundary
             if (localDisplaysRef.current && !isMac) {
                 const allDisplays = localDisplaysRef.current.allDisplays;
-                const activeDisplay = allDisplays.find(d => 
-                    physicalCursorX >= d.bounds.x && physicalCursorX < (d.bounds.x + d.bounds.width) &&
-                    physicalCursorY >= d.bounds.y && physicalCursorY < (d.bounds.y + d.bounds.height)
+                const activeDisplay = allDisplays.find(
+                    (d) =>
+                        physicalCursorX >= d.bounds.x &&
+                        physicalCursorX < d.bounds.x + d.bounds.width &&
+                        physicalCursorY >= d.bounds.y &&
+                        physicalCursorY < d.bounds.y + d.bounds.height
                 );
 
-                if (activeDisplay) {
-                    const windowWidth = 6000;
-                    const newWinX = Math.floor(activeDisplay.workArea.x + (activeDisplay.workArea.width / 2) - (windowWidth / 2));
-                    const newWinY = activeDisplay.workArea.y;
+                // T-322: the window origin for that display from the live model (window model A: the display's origin).
+                const targetOrigin = windowOriginForDisplay(activeDisplay, getWindowGeometry());
+                if (targetOrigin) {
+                    const newWinX = targetOrigin.x;
+                    const newWinY = targetOrigin.y;
 
                     if (newWinX !== windowPosRef.current.x || newWinY !== windowPosRef.current.y) {
                         const dx = newWinX - windowPosRef.current.x;
@@ -127,7 +152,7 @@ const FloatingEye: React.FC = () => {
                         // Adjust last values and DOM positions
                         posRef.current.x -= dx;
                         posRef.current.y -= dy;
-                        
+
                         if (containerRef.current) {
                             containerRef.current.style.left = `${posRef.current.x}px`;
                             containerRef.current.style.top = `${posRef.current.y}px`;
@@ -146,7 +171,7 @@ const FloatingEye: React.FC = () => {
             const dx = newX - posRef.current.x;
             const dy = newY - posRef.current.y;
 
-            // If moved more than 0.5px, consider it a drag so we don't trigger click
+            // Past the click threshold (checked above): this press is a drag, so the click that follows is ignored.
             if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
                 dragInitRef.current.dragged = true;
             }
@@ -163,32 +188,56 @@ const FloatingEye: React.FC = () => {
             if (isDragging) {
                 setIsDragging(false);
                 setIsResizingGlobal(false);
-                useAppStore.getState().setIsDraggingGlobal(false);
 
-                if (dragInitRef.current.dragged) {
-                    let finalPos = { x: posRef.current.x, y: posRef.current.y };
-                    if (window.api?.recenterWindowOnWidget && !isMac) {
-                        const result = await window.api.recenterWindowOnWidget(finalPos.x, finalPos.y, 48, 48);
-                        if (result) {
-                            finalPos = { x: result.x, y: result.y };
+                try {
+                    if (dragInitRef.current.dragged) {
+                        let finalPos = { x: posRef.current.x, y: posRef.current.y };
+                        if (window.api?.recenterWindowOnWidget && !isMac) {
+                            // T-322: a failed call keeps the drop where it is (and still ends the drag below).
+                            const result = await window.api.recenterWindowOnWidget(finalPos.x, finalPos.y, 48, 48).catch((err: unknown) => {
+                                console.warn('[KoBar] recenterWindowOnWidget failed:', err);
+                                return null;
+                            });
+                            if (result) {
+                                finalPos = { x: result.x, y: result.y };
+                            }
                         }
-                    }
 
-                    // Re-sync React state once drag completes
-                    setPos(finalPos);
-                    // Persist the final position to global store so Sidebar knows where the Eye was
-                    useAppStore.getState().setMiniMode(true, finalPos);
+                        // Re-sync React state once drag completes
+                        setPos(finalPos);
+                        // Persist the final position to global store so Sidebar knows where the Eye was
+                        useAppStore.getState().setMiniMode(true, finalPos);
+                    }
+                } catch (err) {
+                    console.warn('[KoBar] eye drop failed:', err);
                 }
+
+                // T-322: always reached (a catch rather than finally: the React Compiler behind the react-hooks lint rules does not
+                // support try/finally). Cleared only after the drop position is committed, so the re-fit announced during
+                // recenterWindowOnWidget does not re-clamp the stale pre-drag position (store/windowLayoutSync.ts skips while dragging).
+                // isDragging / isResizingGlobal were cleared above, before anything that can fail.
+                useAppStore.getState().setIsDraggingGlobal(false);
             }
         };
 
+        // T-322: main re-fits the window after the drag moved it onto another display (size and origin can differ from what
+        // moveWindow asked for, e.g. mixed DPI); re-read the real window position so the cursor maths does not use a stale origin.
+        let unsubscribeGeometry: (() => void) | null = null;
         if (isDragging) {
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
+            if (!isMac) {
+                unsubscribeGeometry = subscribeWindowGeometry(() => {
+                    if (!window.api?.getWindowPositionSync) return;
+                    const [wx, wy] = window.api.getWindowPositionSync();
+                    if (Number.isFinite(wx) && Number.isFinite(wy)) windowPosRef.current = { x: wx, y: wy };
+                });
+            }
         }
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+            unsubscribeGeometry?.();
         };
     }, [isDragging, isMac]);
 
@@ -204,23 +253,23 @@ const FloatingEye: React.FC = () => {
 
         const handleGlobalMouseMove = (e: MouseEvent) => {
             if (!innerEyeRef.current || !eyeButtonRef.current) return;
-            
+
             const rect = eyeButtonRef.current.getBoundingClientRect();
             const btnX = rect.left + rect.width / 2;
             const btnY = rect.top + rect.height / 2;
-            
+
             const dx = e.clientX - btnX;
             const dy = e.clientY - btnY;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            
+
             const maxTranslate = 6; // px
-            
+
             if (distance > 0) {
                 const theta = Math.atan2(dy, dx);
                 const pull = Math.min(distance / 150, 1);
                 const tx = Math.cos(theta) * pull * maxTranslate;
                 const ty = Math.sin(theta) * pull * maxTranslate;
-                
+
                 innerEyeRef.current.style.transition = 'none';
                 innerEyeRef.current.style.transform = `translate(${tx}px, ${ty}px)`;
             } else {
@@ -238,7 +287,7 @@ const FloatingEye: React.FC = () => {
 
         window.addEventListener('mousemove', handleGlobalMouseMove);
         document.addEventListener('mouseleave', handleMouseLeave);
-        
+
         return () => {
             window.removeEventListener('mousemove', handleGlobalMouseMove);
             document.removeEventListener('mouseleave', handleMouseLeave);
@@ -246,7 +295,9 @@ const FloatingEye: React.FC = () => {
     }, [enableEyeAnimation]);
 
     const handleClick = () => {
-        if (!dragInitRef.current.dragged) {
+        const wasDrag = dragInitRef.current.dragged;
+        dragInitRef.current.dragged = false; // a later keyboard activation must not inherit this flag
+        if (!wasDrag) {
             // Persist current Eye position so Sidebar opens at the same spot
             useAppStore.getState().setMiniMode(false, { x: posRef.current.x, y: posRef.current.y });
         }
@@ -257,24 +308,28 @@ const FloatingEye: React.FC = () => {
             ref={containerRef}
             className="fixed z-[999] pointer-events-auto"
             style={{ left: pos.x, top: pos.y, transform: `translate(-50%, -50%) scale(${iconScale})`, transformOrigin: 'center center' }}
-            onMouseDown={handleMouseDown}
-            onClick={handleClick}
         >
-            <button 
+            <button
                 ref={eyeButtonRef}
+                type="button"
+                title={t('eyeExpand')}
+                aria-label={t('eyeExpand')}
+                onMouseDown={handleMouseDown}
+                onClick={handleClick}
                 className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing group relative
-                    ${design === 'style2' ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-xl') + ' shadow-[0_0_20px_rgba(255,255,255,0.05)]') : 'shadow-[0_0_20px_rgba(244,161,37,0.4)]'}`}
+                    shadow-e2 ${design === 'style2' ? (isMac ? 'backdrop-blur-md' : 'backdrop-blur-xl') : ''}`}
                 style={{
-                    backgroundColor: design === 'style2' 
-                        ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)` 
-                        : 'var(--theme-bg-dark)'
+                    backgroundColor:
+                        design === 'style2'
+                            ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)`
+                            : 'var(--theme-bg-dark)',
                 }}
             >
                 <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
                     <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">visibility</span>
                 </span>
                 {isDev && (
-                    <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.6)] select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
+                    <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
                         dev
                     </span>
                 )}

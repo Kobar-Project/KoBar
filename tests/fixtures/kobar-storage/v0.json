@@ -1,0 +1,36 @@
+{
+  "version": 0,
+  "state": {
+    "notes": [
+      {
+        "id": 1,
+        "title": "Synthetic note one",
+        "icon": "FileText",
+        "emoji": null,
+        "content": "<h1>Fixture heading</h1><p>Plain <strong>bold</strong> paragraph.</p>"
+      },
+      {
+        "id": 2,
+        "title": "Synthetic note with image",
+        "icon": "Image",
+        "emoji": "📝",
+        "content": "<p>Image below</p><img src=\"data:image/png;base64,AAAAFIXTUREBASE64PLACEHOLDERAAAA\" />"
+      }
+    ],
+    "activeNoteId": 2,
+    "nextNoteId": 3,
+    "theme": "dark",
+    "language": "en",
+    "showTooltips": true,
+    "sidebarWidth": 64,
+    "iconScale": 1,
+    "featureOrder": ["copypaste", "todolist", "shortcuts", "aihub"],
+    "isTodoListEnabled": true,
+    "todos": [
+      { "id": "t1", "text": "Synthetic todo", "done": false }
+    ],
+    "isColorPickerEnabled": true,
+    "colorPalettes": [["#111111", "#222222"]],
+    "currentColor": "#333333"
+  }
+}

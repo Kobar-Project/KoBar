@@ -1,6 +1,8 @@
 import { useRef, useState, useCallback } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { setIsResizingGlobal } from '../App';
+import { getWindowGeometry } from '../utils/windowGeometry';
+import { usableScreenRect } from '../utils/visibleArea';
 
 type ResizeDirection = 'side' | 'bottom' | 'corner';
 type ResizeTarget = 'note';
@@ -44,11 +46,13 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
             const currentState = useAppStore.getState();
             const { edgePosition, screenBounds, sidebarWidth } = currentState;
 
-            // Multi-monitor aware bounds
-            const boundsX = screenBounds?.x ?? 0;
-            const boundsY = screenBounds?.y ?? 0;
-            const maxW = (screenBounds?.width ?? 1920) - sidebarWidth - 40;
-            const maxH = (screenBounds?.height ?? 800) - 100;
+            // Multi-monitor aware bounds (screen coordinates, like moveEvent.screenX/Y). T-322: before main reports screenBounds,
+            // the live window model's work area instead of the fixed fallback size (off macOS).
+            const screenRect = usableScreenRect(getWindowGeometry(), screenBounds, currentState.isMac);
+            const boundsX = screenRect.x;
+            const boundsY = screenRect.y;
+            const maxW = screenRect.width - sidebarWidth - 40;
+            const maxH = screenRect.height - 100;
 
             let newWidth = startSizeRef.current.width;
             let newHeight = startSizeRef.current.height;
@@ -62,7 +66,7 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
                         newWidth = startSizeRef.current.width - deltaX;
                     }
                 } else {
-                    if (deltaX > 0 && moveEvent.screenX >= boundsX + (screenBounds?.width ?? 1920) - 20) {
+                    if (deltaX > 0 && moveEvent.screenX >= boundsX + screenRect.width - 20) {
                         newWidth = maxW;
                     } else {
                         newWidth = startSizeRef.current.width + deltaX;
@@ -72,7 +76,7 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
 
             if (direction === 'bottom' || direction === 'corner') {
                 const deltaY = moveEvent.screenY - startPosRef.current.y;
-                if (deltaY > 0 && moveEvent.screenY >= boundsY + (screenBounds?.height ?? 800) - 30) {
+                if (deltaY > 0 && moveEvent.screenY >= boundsY + screenRect.height - 30) {
                      newHeight = maxH;
                 } else {
                     newHeight = startSizeRef.current.height + deltaY;
@@ -101,8 +105,9 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
             
             const currentState = useAppStore.getState();
             const { edgePosition, screenBounds, sidebarWidth } = currentState;
-            const maxW = (screenBounds?.width ?? 1920) - sidebarWidth - 40;
-            const maxH = (screenBounds?.height ?? 800) - 100;
+            const screenRect = usableScreenRect(getWindowGeometry(), screenBounds, currentState.isMac);
+            const maxW = screenRect.width - sidebarWidth - 40;
+            const maxH = screenRect.height - 100;
             
             let finalWidth = startSizeRef.current.width;
             let finalHeight = startSizeRef.current.height;
@@ -145,7 +150,7 @@ export const useUnifiedResize = ({ target, direction, onResizeTemp, onResizeEnd 
         const state = useAppStore.getState();
         const { screenBounds } = state;
         const defaultW = 400;
-        const defaultH = Math.min(600, (screenBounds?.height ?? 800) - 40);
+        const defaultH = Math.min(600, usableScreenRect(getWindowGeometry(), screenBounds, state.isMac).height - 40);
 
         if (direction === 'side' || direction === 'corner') {
             state.setNotePanelWidth(defaultW);

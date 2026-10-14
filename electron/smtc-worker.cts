@@ -10,7 +10,7 @@ if (isWin) {
         const smtcModule = require('@coooookies/windows-smtc-monitor');
         SMTCMonitor = smtcModule.SMTCMonitor;
         smtcAvailable = true;
-    } catch (e) {
+    } catch {
         smtcAvailable = false;
     }
 }
@@ -35,7 +35,7 @@ if (parentPort) {
                             sourceAppId: session.sourceAppId || '',
                         };
                     }
-                } catch (e) {
+                } catch {
                     // Ignore
                 }
             }

@@ -1,0 +1,103 @@
+{
+  "version": 21,
+  "state": {
+    "notes": [
+      { "id": 1, "title": "Synthetic A1", "icon": "FileText", "emoji": null, "content": "<p>A1 body</p>" },
+      { "id": 2, "title": "Synthetic A2", "icon": "FileText", "emoji": null, "content": "<p>A2 body</p>" },
+      { "id": 2, "title": "Synthetic A2 duplicate", "icon": "Image", "emoji": null, "content": "<p>A2 duplicate body</p>" },
+      { "id": 1, "title": "Synthetic A1 duplicate", "icon": "FileText", "emoji": null, "content": "<p>A1 duplicate body</p>" }
+    ],
+    "activeNoteId": 2,
+    "nextNoteId": 2,
+    "globalNotes": [
+      { "id": 1, "title": "Synthetic G1", "icon": "FileText", "emoji": null, "content": "<p>G1 body</p>" },
+      { "id": 3, "title": "Synthetic G3", "icon": "FileText", "emoji": null, "content": "<p>G3 body</p>" },
+      { "id": 3, "title": "Synthetic G3 duplicate", "icon": "FileText", "emoji": null, "content": "<p>G3 duplicate body</p>" }
+    ],
+    "globalPluginData": { "fixture.plugin": { "items": ["x"] } },
+    "currentExtensionsConfig": { "fixture.plugin": { "enabled": true } },
+    "activeWorkspaceId": "ws-a",
+    "notePanelWidth": 400,
+    "notePanelHeight": 500,
+    "tutorialState": { "version": "1.0.0", "status": "completed" },
+    "theme": "ember",
+    "customThemeColor": "#f4a125",
+    "language": "en",
+    "showTooltips": true,
+    "sidebarWidth": 64,
+    "iconScale": 1,
+    "teleportShortcut": "Alt+K",
+    "launchAtStartup": false,
+    "enableEyeAnimation": true,
+    "isPinInjectorEnabled": true,
+    "isKoBoxEnabled": true,
+    "koBoxCleanupMode": "24h",
+    "featureOrder": ["com.kobar.aihub.btn", "copypaste", "kobox", "ko-calender-plugin-btn"],
+    "design": "style1",
+    "glassOpacity": 0.5,
+    "workspaces": [
+      {
+        "id": "ws-a",
+        "name": "Synthetic Isolated A",
+        "isIsolated": true,
+        "isolatedData": {
+          "notes": [
+            { "id": 1, "title": "Synthetic A1", "icon": "FileText", "emoji": null, "content": "<p>A1 body</p>" },
+            { "id": 2, "title": "Synthetic A2", "icon": "FileText", "emoji": null, "content": "<p>A2 body</p>" },
+            { "id": 2, "title": "Synthetic A2 duplicate", "icon": "Image", "emoji": null, "content": "<p>A2 duplicate body</p>" },
+            { "id": 1, "title": "Synthetic A1 duplicate", "icon": "FileText", "emoji": null, "content": "<p>A1 duplicate body</p>" }
+          ],
+          "activeNoteId": 2,
+          "nextNoteId": 2,
+          "pluginData": {}
+        },
+        "isPinInjectorEnabled": true,
+        "isKoBoxEnabled": true,
+        "koBoxCleanupMode": "24h",
+        "toggleWidth": 40,
+        "sidebarWidth": 64,
+        "iconScale": 1,
+        "featureSpacing": 20,
+        "isPopupSmartPositioning": true
+      },
+      {
+        "id": "ws-b",
+        "name": "Synthetic Isolated B",
+        "isIsolated": true,
+        "isolatedData": {
+          "notes": [
+            { "id": 5, "title": "Synthetic B5", "icon": "FileText", "emoji": null, "content": "<p>B5 body</p>" },
+            { "id": 5, "title": "Synthetic B5 duplicate", "icon": "FileText", "emoji": null, "content": "<p>B5 duplicate body</p>" },
+            { "id": 6, "title": "Synthetic B6", "icon": "FileText", "emoji": null, "content": "<p>B6 body</p>" },
+            { "id": 5, "title": "Synthetic B5 second duplicate", "icon": "FileText", "emoji": null, "content": "<p>B5 second duplicate body</p>" }
+          ],
+          "activeNoteId": 9,
+          "nextNoteId": 3,
+          "pluginData": { "fixture.plugin": { "counter": 1 } }
+        },
+        "isPinInjectorEnabled": false,
+        "isKoBoxEnabled": true,
+        "koBoxCleanupMode": "quit",
+        "toggleWidth": 30,
+        "sidebarWidth": 72,
+        "iconScale": 1,
+        "featureSpacing": 12,
+        "isPopupSmartPositioning": false
+      },
+      {
+        "id": "ws-c",
+        "name": "Synthetic Shared C",
+        "isIsolated": false,
+        "isPinInjectorEnabled": true,
+        "isKoBoxEnabled": true,
+        "koBoxCleanupMode": "24h",
+        "sidebarWidth": 64,
+        "iconScale": 1
+      }
+    ],
+    "settingsFeatureViewMode": "list",
+    "settingsWorkspaceViewMode": "list",
+    "orientation": "vertical",
+    "edgePosition": "right"
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { parsePipParams } from '../../pip/params';
 
 /** Convert a raw URL to the best playable form for the webview */
 function getPlayableUrl(rawUrl: string): string {
@@ -45,10 +46,7 @@ function sanitizeImageUrl(url: string | null): string | null {
 }
 
 const PipPlayer: React.FC = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const rawUrl = decodeURIComponent(urlParams.get('url') || '');
-    const initialTitle = decodeURIComponent(urlParams.get('title') || 'PIP Video');
-    const initialAlbumArt = decodeURIComponent(urlParams.get('albumArt') || '');
+    const { url: rawUrl, title: initialTitle, albumArt: initialAlbumArt } = parsePipParams(window.location.search);
 
     const finalUrl = getPlayableUrl(rawUrl);
 
@@ -86,9 +84,9 @@ const PipPlayer: React.FC = () => {
     const [mediaTitle, setMediaTitle] = useState(initialTitle);
     const [mediaArt, setMediaArt] = useState(sanitizeImageUrl(initialAlbumArt));
 
-    // Subscribe to SMTC media updates (same as KoPlayer — preload has full api bridge)
+    // Subscribe to SMTC media updates (same as KoPlayer — narrow pip preload bridge)
     useEffect(() => {
-        const unsub = window.api?.onMediaUpdate?.((data) => {
+        const unsub = window.pipApi?.onMediaUpdate?.((data) => {
             if (data) {
                 if (data.title) setMediaTitle(data.title);
                 if (data.albumArt) setMediaArt(sanitizeImageUrl(data.albumArt));
@@ -104,7 +102,6 @@ const PipPlayer: React.FC = () => {
         if (!container || !finalUrl) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setError('No video URL provided.');
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLoading(false);
             return;
         }
@@ -124,6 +121,10 @@ const PipPlayer: React.FC = () => {
         // Allow autoplay and fullscreen inside the iframe
         iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
         iframe.setAttribute('allowfullscreen', 'true');
+        // SEC-07: confine the embedded page (no top navigation, popups, forms or downloads).
+        // `allow-popups` is intentionally NOT granted (T-136), so links inside the embed (YouTube logo, video title)
+        // are inert in the PiP. Opening them would need a main-process external-open path; that is a product decision.
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
 
         iframe.addEventListener('load', () => {
             setLoading(false);
@@ -146,7 +147,7 @@ const PipPlayer: React.FC = () => {
     }, []);
 
     const handleClose = () => {
-        window.api?.closePip?.();
+        window.pipApi?.close?.();
     };
 
     const hasArt = !!mediaArt;
@@ -159,7 +160,7 @@ const PipPlayer: React.FC = () => {
                 position: 'relative',
                 overflow: 'hidden',
                 background: '#000',
-                fontFamily: "'Space Grotesk', 'Inter', sans-serif",
+                fontFamily: "'Space Grotesk Variable', 'Space Grotesk', 'Inter', sans-serif",
             }}
         >
             {/* Edge hit-boxes to reliably trigger hover since the cross-origin iframe swallows document-level mouse events */}
@@ -310,9 +311,8 @@ const PipPlayer: React.FC = () => {
 
                 </div>
 
-            {/* Animations + font preload */}
+            {/* Animations */}
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
                 @keyframes pip-spin { to { transform: rotate(360deg); } }
                 * { box-sizing: border-box; }
                 button:focus { outline: none !important; box-shadow: none !important; }

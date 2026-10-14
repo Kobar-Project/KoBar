@@ -1,0 +1,38 @@
+# Normalize all text files to LF in the repository and in the working tree,
+# regardless of the local core.autocrlf setting.
+* text=auto eol=lf
+
+# Binary file types: never diff or line-ending-convert these.
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.bmp binary
+
+# Audio
+*.ogg binary
+*.mp3 binary
+*.wav binary
+
+# Fonts
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+
+# Archives and documents
+*.zip binary
+*.pdf binary
+
+# Video and installers
+*.mp4 binary
+*.webm binary
+*.exe binary
+*.msix binary
+*.appx binary
+*.asar binary
