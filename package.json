@@ -40,7 +40,7 @@
     "@tiptap/starter-kit": "^3.31.4",
     "adm-zip": "^0.6.1",
     "electron-updater": "^6.8.9",
-    "emoji-picker-react": "^4.18.0",
+    "emoji-picker-react": "^5.0.0",
     "material-symbols": "^0.44.9",
     "pdf-parse": "^2.4.5",
     "react": "^19.2.0",
