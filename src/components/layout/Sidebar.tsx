@@ -14,6 +14,7 @@ import { useExtensionRegistry } from '../extensions/extensionRegistry';
 import { getWindowGeometry, refreshWindowGeometry, subscribeWindowGeometry } from '../../utils/windowGeometry';
 import { computeVisibleArea, hasDisplayInfo, visibleAreaFromWorkArea, windowOriginForDisplay } from '../../utils/visibleArea';
 import { exceedsDragThreshold } from '../../utils/dragThreshold';
+import KoBarHead from './KoBarHead';
 
 const Sidebar: React.FC = () => {
     const toggleNotePanel = useAppStore(state => state.toggleNotePanel);
@@ -64,7 +65,6 @@ const Sidebar: React.FC = () => {
     
     const dragRef = React.useRef({ startX: 0, startY: 0, dragged: false });
     const eyeButtonRef = React.useRef<HTMLButtonElement>(null);
-    const innerEyeRef = React.useRef<HTMLSpanElement>(null);
     const sidebarContainerRef = React.useRef<HTMLDivElement>(null);
     const toolbarHandlers = useRovingToolbar(sidebarContainerRef, orientation === 'horizontal' ? 'horizontal' : 'vertical');
 
@@ -549,59 +549,6 @@ const Sidebar: React.FC = () => {
 
 
 
-    // Eye icon cursor tracking
-    React.useEffect(() => {
-        if (!enableEyeAnimation) {
-            if (innerEyeRef.current) {
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-            }
-            return;
-        }
-
-        const handleGlobalMouseMove = (e: MouseEvent) => {
-            if (!innerEyeRef.current || !eyeButtonRef.current) return;
-            
-            const rect = eyeButtonRef.current.getBoundingClientRect();
-            const btnX = rect.left + rect.width / 2;
-            const btnY = rect.top + rect.height / 2;
-            
-            const dx = e.clientX - btnX;
-            const dy = e.clientY - btnY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            const maxTranslate = 5; // px
-            
-            if (distance > 0) {
-                const theta = Math.atan2(dy, dx);
-                const pull = Math.min(distance / 150, 1);
-                const tx = Math.cos(theta) * pull * maxTranslate;
-                const ty = Math.sin(theta) * pull * maxTranslate;
-                
-                innerEyeRef.current.style.transition = 'none';
-                innerEyeRef.current.style.transform = `translate(${tx}px, ${ty}px)`;
-            } else {
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-            }
-        };
-
-        const handleMouseLeave = () => {
-            if (innerEyeRef.current) {
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-            }
-        };
-
-        window.addEventListener('mousemove', handleGlobalMouseMove);
-        document.addEventListener('mouseleave', handleMouseLeave);
-        
-        return () => {
-            window.removeEventListener('mousemove', handleGlobalMouseMove);
-            document.removeEventListener('mouseleave', handleMouseLeave);
-        };
-    }, [enableEyeAnimation]);
-
     // R-09: a press/right-click on the bar's own background (not on a plugin button) counts as empty bar space.
     const isEmptyBarSpace = (e: React.MouseEvent) =>
         e.target === e.currentTarget || (e.target as HTMLElement).dataset?.barEmpty === 'true';
@@ -783,8 +730,8 @@ const Sidebar: React.FC = () => {
                             onClick={handleEyeClick}
                             className={`cursor-grab active:cursor-grabbing ${orientation === 'horizontal' ? '' : 'mt-2'}`}
                         >
-                            <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
-                                <span className="material-symbols-outlined" style={{ fontSize: 'var(--kb-bar-icon)' }}>visibility</span>
+                            <span className="flex items-center justify-center pointer-events-none">
+                                <KoBarHead className="size-[calc(var(--kb-bar-icon)*1.35)]" follow={enableEyeAnimation} anchorRef={eyeButtonRef} />
                             </span>
                             {isDev && (
                                 <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 select-none pointer-events-none tracking-wide uppercase leading-none font-sans">

@@ -110,7 +110,7 @@ const MyCustomPanel = (props) => {
             left: pos.left,
             width: 300,
             height: 400,
-            backgroundColor: '#1a1612',
+            backgroundColor: '#18181B',
             border: '1px solid #333',
             borderRadius: '12px',
             padding: '16px',

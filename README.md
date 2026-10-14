@@ -1,8 +1,9 @@
-<p align="center">
-  <img src="build/icon.png" alt="KoBar logo" width="128" height="128" />
-</p>
-
-<h1 align="center">KoBar</h1>
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Assets/images/kobar-lockup-on-dark.svg" />
+    <img src="Assets/images/kobar-lockup-on-light.svg" alt="KoBar" height="96" />
+  </picture>
+</h1>
 
 <p align="center">
   A modular, always-on-top desktop sidebar for notes and plugins.

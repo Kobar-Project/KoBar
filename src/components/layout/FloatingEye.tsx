@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useT } from '../../i18n/useT';
 import { setIsResizingGlobal } from '../../App';
 import EyeNotification from './EyeNotification';
+import KoBarHead from './KoBarHead';
 import { getWindowGeometry, subscribeWindowGeometry, useWindowGeometry } from '../../utils/windowGeometry';
 import { exceedsDragThreshold } from '../../utils/dragThreshold';
 import { computeVisibleArea, defaultEyePosition, windowOriginForDisplay } from '../../utils/visibleArea';
@@ -15,6 +16,7 @@ const FloatingEye: React.FC = () => {
     const iconScale = useAppStore((state) => state.iconScale);
     const screenBounds = useAppStore((state) => state.screenBounds);
     const enableEyeAnimation = useAppStore((state) => state.enableEyeAnimation);
+    const notificationVisible = useAppStore((state) => state.eyeNotification?.isVisible === true);
 
     const isMac = useAppStore((state) => state.isMac);
     const t = useT();
@@ -49,7 +51,6 @@ const FloatingEye: React.FC = () => {
     const [pos, setPos] = useState({ x: defaultX, y: defaultY });
     const posRef = useRef({ x: defaultX, y: defaultY });
     const containerRef = useRef<HTMLDivElement>(null);
-    const innerEyeRef = useRef<HTMLSpanElement>(null);
     const eyeButtonRef = useRef<HTMLButtonElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isDev, setIsDev] = useState(false);
@@ -241,59 +242,6 @@ const FloatingEye: React.FC = () => {
         };
     }, [isDragging, isMac]);
 
-    // Eye icon cursor tracking
-    useEffect(() => {
-        if (!enableEyeAnimation) {
-            if (innerEyeRef.current) {
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-            }
-            return;
-        }
-
-        const handleGlobalMouseMove = (e: MouseEvent) => {
-            if (!innerEyeRef.current || !eyeButtonRef.current) return;
-
-            const rect = eyeButtonRef.current.getBoundingClientRect();
-            const btnX = rect.left + rect.width / 2;
-            const btnY = rect.top + rect.height / 2;
-
-            const dx = e.clientX - btnX;
-            const dy = e.clientY - btnY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            const maxTranslate = 6; // px
-
-            if (distance > 0) {
-                const theta = Math.atan2(dy, dx);
-                const pull = Math.min(distance / 150, 1);
-                const tx = Math.cos(theta) * pull * maxTranslate;
-                const ty = Math.sin(theta) * pull * maxTranslate;
-
-                innerEyeRef.current.style.transition = 'none';
-                innerEyeRef.current.style.transform = `translate(${tx}px, ${ty}px)`;
-            } else {
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-            }
-        };
-
-        const handleMouseLeave = () => {
-            if (innerEyeRef.current) {
-                innerEyeRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                innerEyeRef.current.style.transform = 'translate(0px, 0px)';
-            }
-        };
-
-        window.addEventListener('mousemove', handleGlobalMouseMove);
-        document.addEventListener('mouseleave', handleMouseLeave);
-
-        return () => {
-            window.removeEventListener('mousemove', handleGlobalMouseMove);
-            document.removeEventListener('mouseleave', handleMouseLeave);
-        };
-    }, [enableEyeAnimation]);
-
     const handleClick = () => {
         const wasDrag = dragInitRef.current.dragged;
         dragInitRef.current.dragged = false; // a later keyboard activation must not inherit this flag
@@ -325,8 +273,14 @@ const FloatingEye: React.FC = () => {
                             : 'var(--theme-bg-dark)',
                 }}
             >
-                <span ref={innerEyeRef} className="flex items-center justify-center pointer-events-none">
-                    <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">visibility</span>
+                <span className="flex items-center justify-center pointer-events-none transition-transform group-hover:scale-110">
+                    <KoBarHead
+                        size={30}
+                        color="var(--kb-mini-head)"
+                        follow={enableEyeAnimation}
+                        attention={notificationVisible}
+                        anchorRef={eyeButtonRef}
+                    />
                 </span>
                 {isDev && (
                     <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">

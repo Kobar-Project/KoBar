@@ -4,6 +4,15 @@ All notable changes to KoBar are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.2] - 2026-10-15
+
+A visual release. No stored data changes (`kobar-storage` stays at v32) and the plugin contract is unchanged.
+
+### Changed
+
+- New KoBar logo and app icons: the installer, the app and tray icons, the Microsoft Store tiles (including the large tile, small tile and splash screen), the README header and the plugin default image.
+- The mini-mode button and the sidebar header show the new KoBar head. Its eyes follow the cursor when "cursor tracking" is on, and otherwise only while the pointer is over it; it blinks once when a notification arrives. Nothing animates while idle, while the window is hidden, or when the system asks for reduced motion.
+
 ## [1.4.1] - 2026-10-15
 
 A maintenance release that replaces the 1.4.0 pre-release. No stored data changes (`kobar-storage` stays at v32).

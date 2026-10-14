@@ -155,7 +155,7 @@ function createBuilderConfig({ env, readSettings, readSecrets }) {
             applicationId: 'KoBar',
             ...resolveAppxIdentity(env, readSecrets),
             displayName: 'KoBar',
-            backgroundColor: '#1a1612',
+            backgroundColor: '#18181B',
             capabilities: ['runFullTrust'],
             addAutoLaunchExtension: true,
         };
