@@ -63,6 +63,11 @@ declare global {
             // Auto-launch
             getAutoLaunch: InvokeMethod<'get-auto-launch'>;
             setAutoLaunch: SendMethod<'set-auto-launch'>;
+            syncAutoLaunch: InvokeMethod<'sync-auto-launch'>;
+            // Notes: import .txt / .md files
+            pickTextFiles: InvokeMethod<'pick-text-files'>;
+            takeOpenTextFiles: InvokeMethod<'take-open-text-files'>;
+            onOpenTextFilesAvailable: EventMethod<'open-text-files-available'>;
             // Focus Audio
             getMelodyAudio: InvokeMethod<'get-melody-audio'>;
             // License API

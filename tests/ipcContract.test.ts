@@ -226,6 +226,9 @@ describe('IPC contract vs. window.api typings', () => {
         expectTypeOf<InvokeResult<'get-app-version'>>().toEqualTypeOf<Resolved<Api['getAppVersion']>>();
         expectTypeOf<InvokeResult<'is-dev'>>().toEqualTypeOf<Resolved<Api['isDev']>>();
         expectTypeOf<InvokeResult<'get-auto-launch'>>().toEqualTypeOf<Resolved<Api['getAutoLaunch']>>();
+        expectTypeOf<InvokeResult<'sync-auto-launch'>>().toEqualTypeOf<Resolved<Api['syncAutoLaunch']>>();
+        expectTypeOf<InvokeResult<'pick-text-files'>>().toEqualTypeOf<Resolved<Api['pickTextFiles']>>();
+        expectTypeOf<InvokeResult<'take-open-text-files'>>().toEqualTypeOf<Resolved<Api['takeOpenTextFiles']>>();
         expectTypeOf<InvokeResult<'get-melody-audio'>>().toEqualTypeOf<Resolved<Api['getMelodyAudio']>>();
         expectTypeOf<InvokeResult<'get-smtc-source'>>().toEqualTypeOf<Resolved<Api['getSmtcSource']>>();
         expectTypeOf<InvokeResult<'get-active-video-urls'>>().toEqualTypeOf<Resolved<Api['getActiveVideoUrls']>>();
@@ -324,6 +327,7 @@ const API_CHANNELS = {
     startEyeDropper: [],
     stopEyeDropper: [],
     onOpenSettings: ['on:open-settings'],
+    onOpenTextFilesAvailable: ['on:open-text-files-available'],
     setGlobalPasteMode: ['send:set-global-paste-mode'],
     onRequestNextPaste: ['on:request-next-paste'],
     executeGlobalPaste: ['send:execute-global-paste'],
@@ -341,6 +345,9 @@ const API_CHANNELS = {
     getFilePath: ['send:grant-path'],
     getAutoLaunch: ['invoke:get-auto-launch'],
     setAutoLaunch: ['send:set-auto-launch'],
+    syncAutoLaunch: ['invoke:sync-auto-launch'],
+    pickTextFiles: ['invoke:pick-text-files'],
+    takeOpenTextFiles: ['invoke:take-open-text-files'],
     getMelodyAudio: ['invoke:get-melody-audio'],
     getHwid: [],
     parseFile: ['invoke:parse-file'],
@@ -719,6 +726,7 @@ type V1WindowApi = {
     startEyeDropper: () => Promise<{ x: number; y: number }>;
     stopEyeDropper: () => Promise<void>;
     onOpenSettings: (callback: () => void) => () => void;
+    onOpenTextFilesAvailable: (callback: () => void) => () => void;
     // Global Paste Support
     setGlobalPasteMode: (isActive: boolean) => void;
     onRequestNextPaste: (callback: () => void) => () => void;
@@ -772,6 +780,16 @@ type V1WindowApi = {
     // Auto-launch
     getAutoLaunch: () => Promise<boolean>;
     setAutoLaunch: (enabled: boolean) => void;
+    syncAutoLaunch: (desired: boolean) => Promise<{ enabled: boolean } | null>;
+    takeOpenTextFiles: () => Promise<{
+        files: { name: string; data: Uint8Array }[];
+        rejected: { name: string; reason: 'too-large' | 'unsupported' | 'unreadable' }[];
+    }>;
+    pickTextFiles: () => Promise<{
+        canceled: boolean;
+        files: { name: string; data: Uint8Array }[];
+        rejected: { name: string; reason: 'too-large' | 'unsupported' | 'unreadable' }[];
+    }>;
     // Focus Audio
     getMelodyAudio: (name: string) => Promise<string | null>;
     // License API

@@ -10,6 +10,7 @@ import PluginSettingsHost from '../plugins/PluginSettingsHost';
 import ResizerHandle from './ResizerHandle';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
+import { finishTextImport, importTextFilesFromDialog, readDroppedTextFiles } from '../../notes/importTextFiles';
 
 const NotePanel: React.FC = () => {
     const isNotePanelOpen = useAppStore((state) => state.isNotePanelOpen);
@@ -129,9 +130,28 @@ const NotePanel: React.FC = () => {
         setEmojiPickerTabId(tabId);
     };
 
+    // Dropping .txt / .md files on the panel imports them as notes. During the drag only the MIME type is visible, so the panel accepts a
+    // drag that carries a text/markdown/unknown-type file (a .md file has no type on Windows); a drag of images, ZIPs etc. is not accepted.
+    const draggedFilesLookLikeText = (e: React.DragEvent): boolean =>
+        Array.from(e.dataTransfer?.items ?? []).some(
+            (item) => item.kind === 'file' && ['', 'text/plain', 'text/markdown'].includes(item.type)
+        );
+    const handleDragOver = (e: React.DragEvent) => {
+        if (e.defaultPrevented || !draggedFilesLookLikeText(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    };
+    const handleDrop = (e: React.DragEvent) => {
+        if (e.defaultPrevented || e.dataTransfer.files.length === 0) return;
+        e.preventDefault();
+        void readDroppedTextFiles(Array.from(e.dataTransfer.files)).then(({ files, rejected }) => finishTextImport(t, files, rejected));
+    };
+
     return (
         <div
             ref={panelRef}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
             className={`relative flex flex-col border z-30 shadow-2xl shrink-0 pointer-events-auto ${isNotePanelOpen ? 'opacity-100' : 'pointer-events-none opacity-0 border-none'}
                 ${design === 'style2' ? 'rounded-[2.5rem]' : ''}
                 ${isResizing ? '' : 'transition-all duration-500'}`}
@@ -159,6 +179,7 @@ const NotePanel: React.FC = () => {
                     labels={{
                         list: t('notesList'),
                         add: t('addNewNote'),
+                        import: t('noteImport'),
                         changeIcon: t('changeIcon'),
                         close: t('closeTab'),
                         resize: t('resizeNoteList'),
@@ -168,6 +189,7 @@ const NotePanel: React.FC = () => {
                     onWidthReset={() => setNoteListWidth(NOTE_LIST_WIDTH_DEFAULT)}
                     onSelect={setActiveNoteId}
                     onAdd={addNote}
+                    onImport={() => void importTextFilesFromDialog(t)}
                     onClose={(id) => handleDelete(id)}
                     onChangeIcon={(id) => toggleEmojiPicker(id)}
                     footer={

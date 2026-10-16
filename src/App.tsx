@@ -20,6 +20,7 @@ import { createPluginLoader, injectExtensionScript, removeExtensionScripts } fro
 import { startThemeSync } from './theme';
 import { ToastRegion } from './ui';
 import { translate } from './i18n/translate';
+import { useOpenWithFiles } from './notes/useOpenWithFiles';
 import { pluginSync } from './store/pluginSyncHost';
 import { applyRootAppearance, effectiveThemePrefs } from './theme/root';
 
@@ -76,6 +77,7 @@ const App: React.FC = () => {
   const customThemeColor = useAppStore(state => state.customThemeColor);
 
   const isHydrated = useAppStore(state => state.isHydrated);
+  useOpenWithFiles(isHydrated);
 
   const activeExtensionPanelId = useAppStore(state => state.activeExtensionPanelId);
   const activeExtensionAnchorRect = useAppStore(state => state.activeExtensionAnchorRect);

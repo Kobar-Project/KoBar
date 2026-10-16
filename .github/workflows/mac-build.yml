@@ -1,6 +1,6 @@
 name: Mac Build
 
-# Manual only. This workflow builds an unsigned macOS package and never publishes.
+# Manual only. This workflow checks that an unsigned macOS package builds; it never publishes and uploads no artifacts (Actions storage quota).
 on:
   workflow_dispatch:
 
@@ -34,12 +34,3 @@ jobs:
         CSC_IDENTITY_AUTO_DISCOVERY: "false"
         # Unsigned CI builds must never self-update.
         KOBAR_AUTO_UPDATE: "false"
-
-    - name: Upload macOS Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: KoBar-macOS-Build
-        path: |
-          release/*.dmg
-          release/*.zip
-        retention-days: 7

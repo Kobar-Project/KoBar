@@ -30,6 +30,16 @@ describe('createTopmostKeeper', () => {
         expect(calls).toEqual(['aot:true:screen-saver:1', 'moveTop']);
     });
 
+    it('runs afterAssert only when the window was actually re-asserted', () => {
+        const after = vi.fn();
+        const shown = fakeWindow();
+        createTopmostKeeper({ getWindow: () => shown.win, level: 'screen-saver', afterAssert: after }).assertNow('t');
+        expect(after).toHaveBeenCalledTimes(1);
+        const hidden = fakeWindow({ visible: false });
+        createTopmostKeeper({ getWindow: () => hidden.win, level: 'screen-saver', afterAssert: after }).assertNow('t');
+        expect(after).toHaveBeenCalledTimes(1);
+    });
+
     it('debounces bursts into one assertion', () => {
         const { win, calls } = fakeWindow();
         const k = createTopmostKeeper({ getWindow: () => win, level: 'screen-saver', debounceMs: 100 });

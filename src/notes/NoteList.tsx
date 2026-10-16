@@ -15,6 +15,8 @@ export interface NoteListLabels {
     /** aria-label of the list. */
     list: string;
     add: string;
+    /** Label of the import (.txt / .md files) button next to add. */
+    import: string;
     changeIcon: string;
     close: string;
     /** aria-label of the resize separator. */
@@ -27,6 +29,7 @@ export interface NoteListProps {
     labels: NoteListLabels;
     onSelect: (id: number) => void;
     onAdd: () => void;
+    onImport: () => void;
     onClose: (id: number, event: React.MouseEvent<HTMLButtonElement>) => void;
     onChangeIcon: (id: number, event: React.MouseEvent<HTMLButtonElement>) => void;
     /** Extra footer controls next to the add button (panel shortcuts). */
@@ -44,6 +47,7 @@ export function NoteList({
     labels,
     onSelect,
     onAdd,
+    onImport,
     onClose,
     onChangeIcon,
     footer,
@@ -97,6 +101,7 @@ export function NoteList({
             </ul>
             <div className="flex shrink-0 items-center gap-1 border-t border-stroke p-2">
                 <IconButton icon="add" label={labels.add} size={32} tooltip={false} onClick={onAdd} />
+                <IconButton icon="upload_file" label={labels.import} size={32} tooltip={false} onClick={onImport} />
                 {footer}
             </div>
             <NoteListResizer width={width} label={labels.resize} onChange={onWidthChange} onReset={onWidthReset} />

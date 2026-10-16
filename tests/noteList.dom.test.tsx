@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NoteList, type NoteListEntry } from '../src/notes/NoteList';
 import { cleanup, render } from './ui/render';
 
-const labels = { list: 'Notes', add: 'Add note', changeIcon: 'Change icon', close: 'Close', resize: 'Resize' };
+const labels = { list: 'Notes', add: 'Add note', import: 'Import', changeIcon: 'Change icon', close: 'Close', resize: 'Resize' };
 const entries: NoteListEntry[] = [
     { id: 1, title: 'Ideas', icon: 'note', emoji: null, pseudo: false },
     { id: 2, title: 'Todo', icon: 'note', emoji: '📝', pseudo: false },
@@ -15,6 +15,7 @@ function setup(activeNoteId: number | null) {
     const fns = {
         onSelect: vi.fn(),
         onAdd: vi.fn(),
+        onImport: vi.fn(),
         onClose: vi.fn(),
         onChangeIcon: vi.fn(),
         width: 192,

@@ -25,6 +25,7 @@ import {
 } from '../../lib/windowModel.cjs';
 import type { AppPaths } from '../lib/appPaths.cjs';
 import { appState } from '../state.cjs';
+import { raiseOpenSettingsWindow } from './settingsWindow.cjs';
 import { FALLBACK_SCREEN_HEIGHT, FALLBACK_SCREEN_WIDTH, GHOST_WINDOW_WIDTH } from '../../../shared/geometry.js';
 import type { IpcWindowGeometry } from '../../../shared/ipc-contract.js' with { 'resolution-mode': 'import' };
 
@@ -245,11 +246,14 @@ function setupTopmostKeeper(): void {
         shouldSkip: () => appState.isAwaitingPinTarget || modelSuspended,
         level: isMac ? 'floating' : 'screen-saver',
         log: (m) => console.warn(m),
+        // The Settings window stays in front of the bar while it is open.
+        afterAssert: raiseOpenSettingsWindow,
     });
     topmostKeeper = keeper;
     keeper.start();
     win.on('show', () => requestTopmost('show'));
     win.on('restore', () => requestTopmost('restore'));
+    win.on('focus', raiseOpenSettingsWindow);
     win.on('closed', () => {
         keeper.stop();
         if (topmostKeeper === keeper) topmostKeeper = null;

@@ -4,6 +4,25 @@ All notable changes to KoBar are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.3] - 2026-10-16
+
+No stored data changes (`kobar-storage` stays at v32) and the plugin contract is unchanged (`window.api` gains three additive methods: `pickTextFiles`, `takeOpenTextFiles`, `onOpenTextFilesAvailable`).
+
+### Added
+
+- Import notes from text files: an "Import" button next to "+" at the bottom of the note list opens a multi-select dialog for `.txt` and `.md` files, and files can also be dropped onto the note panel. Each file becomes one note titled by its file name. UTF-8, UTF-8 with BOM, UTF-16 and Windows-1254 (Turkish ANSI) files are decoded correctly; files over 5 MB are skipped with a clear message.
+- "Open with KoBar" for `.txt` files. KoBar is added to the Windows "Open with" list; it is **not** made the default app for `.txt`. The file opens as a copy in a new note (the original is never changed), also when KoBar is already running. The installer registers it under `OpenWithProgids` and `Applications\KoBar.exe` and the uninstaller removes exactly those entries; the Microsoft Store package declares the same file type association.
+
+### Fixed
+
+- Launch at login: the setting is now reconciled with the real Windows state on every start. A stale entry left behind by an older install location is removed, and the default "on" is actually registered, so KoBar starts with Windows again.
+- The Settings window stays in front of the bar while it is open.
+- Saving a note as a `.txt` file works again: Ctrl+S, Ctrl+Shift+S and the new menu next to the note title. The suggested file name is the note title.
+
+### Changed
+
+- Dependabot runs monthly with at most 2 pull requests and ignores major updates; CI artifacts are kept only on failure, for 3 days.
+
 ## [1.4.2] - 2026-10-15
 
 A visual release. No stored data changes (`kobar-storage` stays at v32) and the plugin contract is unchanged.

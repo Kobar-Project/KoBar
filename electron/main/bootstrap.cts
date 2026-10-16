@@ -25,6 +25,8 @@ import {
 import { psRequest } from './services/native.cjs';
 import { registerFullBackupIpc, registerStorageBackupIpc } from './services/backup.cjs';
 import { registerNoteExportIpc } from './services/noteExport.cjs';
+import { registerNoteImportIpc } from './services/noteImport.cjs';
+import { registerOpenWithFileIpc } from './services/openWithFile.cjs';
 import { registerStorageIpc } from './services/storage/storageIpc.cjs';
 import { registerSecretsIpc } from './services/secrets/secretsIpc.cjs';
 import { createGcalServiceForApp, registerGcalIpc } from './services/gcal.cjs';
@@ -78,6 +80,8 @@ export function registerCoreIpc(ctx: MainContext): void {
     registerUpdaterIpc({ getUiLanguage });
 
     registerNoteExportIpc({ dialogPathsFile });
+    registerNoteImportIpc({ dialogPathsFile });
+    registerOpenWithFileIpc();
 
     // T-309: enter-pin-targeting, unpin-current-window, unpin-all-windows and get/set-pin-border-style live in electron/main/services/pin.cts.
     registerPinIpc();

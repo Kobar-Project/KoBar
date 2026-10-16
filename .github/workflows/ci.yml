@@ -62,6 +62,7 @@ jobs:
           name: e2e-results
           path: node_modules/.cache/playwright-results
           if-no-files-found: ignore
+          retention-days: 3
 
   ubuntu-fast:
     name: Ubuntu (fast checks)

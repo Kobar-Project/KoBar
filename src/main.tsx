@@ -15,6 +15,7 @@ import './index.css'
 import App from './App.tsx'
 import { useAppStore } from './store/useAppStore'
 import { createAutoLaunchResync } from './store/autoLaunchResync'
+import { startAutoLaunchBootSync } from './store/autoLaunchBootSync'
 import './components/extensions/extensionRegistry'
 import { setupLocalStorageIsolation } from './utils/localStorageIsolation'
 import { migrateLocalStorageSnapshot, scheduleLocalStorageSnapshot } from './storage/migrateFromLocalStorage'
@@ -29,6 +30,12 @@ window.useAppStore = useAppStore;
 const resyncAutoLaunch = createAutoLaunchResync({
   win: window,
   read: () => window.api?.getAutoLaunch?.(),
+  apply: (enabled) => useAppStore.setState({ launchAtStartup: enabled }),
+});
+startAutoLaunchBootSync({
+  persist: useAppStore.persist,
+  getDesired: () => useAppStore.getState().launchAtStartup,
+  sync: window.api?.syncAutoLaunch,
   apply: (enabled) => useAppStore.setState({ launchAtStartup: enabled }),
 });
 // T-615: openSettingsTab / openPluginsTab open the Settings window through the claimed bridge.

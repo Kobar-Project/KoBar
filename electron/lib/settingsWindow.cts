@@ -97,6 +97,28 @@ export interface FocusableWindow {
     focus(): void;
 }
 
+/** The part of a BrowserWindow the always-in-front step uses. */
+export interface RaisableWindow {
+    isDestroyed(): boolean;
+    isVisible(): boolean;
+    isMinimized(): boolean;
+    setAlwaysOnTop(flag: boolean, level?: 'floating' | 'screen-saver', relativeLevel?: number): void;
+    moveTop(): void;
+}
+
+/**
+ * While the Settings window is open it stays in front of the bar, the notes panel and the plugin panels (all of them live in or
+ * above the always-on-top band of the main window). Same level as the main window, one relative level above it, and moveTop()
+ * (never focus(), so no focus is stolen) because Windows orders windows of one band by recency. Hidden or minimized windows are
+ * left alone. Returns true when it touched the window.
+ */
+export function raiseSettingsWindow(win: RaisableWindow | null | undefined, level: 'floating' | 'screen-saver'): boolean {
+    if (!win || win.isDestroyed() || !win.isVisible() || win.isMinimized()) return false;
+    win.setAlwaysOnTop(true, level, 2);
+    win.moveTop();
+    return true;
+}
+
 /** Re-opening the Settings window brings the existing one to the front instead of creating a second one. */
 export function focusExistingWindow(win: FocusableWindow): void {
     if (win.isMinimized()) win.restore();

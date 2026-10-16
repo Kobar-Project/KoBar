@@ -158,6 +158,8 @@ function createBuilderConfig({ env, readSettings, readSecrets }) {
             backgroundColor: '#18181B',
             capabilities: ['runFullTrust'],
             addAutoLaunchExtension: true,
+            // "Open with KoBar" for .txt (not the default handler); the NSIS counterpart is build/installer.nsh.
+            customExtensionsPath: 'build/appx/extensions.xml',
         };
     }
 

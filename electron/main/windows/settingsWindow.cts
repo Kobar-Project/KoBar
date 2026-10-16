@@ -19,6 +19,7 @@ import { shouldOpenDevTools } from '../../lib/devTools.cjs';
 import type { MainLang } from '../../lib/mainStrings.cjs';
 import {
     canOpenSettingsWindow,
+    raiseSettingsWindow,
     focusExistingWindow,
     isSettingsPageName,
     settingsPageLocation,
@@ -33,6 +34,19 @@ import { appState } from '../state.cjs';
 import { registerSettingsSyncIpc } from './settingsSync.cjs';
 
 const isDev = !app.isPackaged;
+const isMac = process.platform === 'darwin';
+const SETTINGS_LEVEL = isMac ? 'floating' : 'screen-saver';
+
+/** Puts the open Settings window back in front of the bar (no focus change). Safe to call when none is open. */
+export function raiseOpenSettingsWindow(): void {
+    raiseSettingsWindow(appState.settingsWindow, SETTINGS_LEVEL);
+}
+
+/** Shows the window in front of KoBar and gives it focus. */
+function bringSettingsToFront(win: BrowserWindow): void {
+    focusExistingWindow(win);
+    raiseSettingsWindow(win, SETTINGS_LEVEL);
+}
 const DEV_ORIGIN = 'http://localhost:5173';
 
 export interface SettingsWindowDeps {
@@ -51,7 +65,7 @@ let opening: Promise<void> | null = null;
 export function openSettingsWindow(page?: SettingsPageName): Promise<void> {
     const existing = appState.settingsWindow;
     if (existing && !existing.isDestroyed()) {
-        focusExistingWindow(existing);
+        bringSettingsToFront(existing);
         if (page) existing.webContents.send('settings:show-page', page);
         return Promise.resolve();
     }
@@ -76,7 +90,7 @@ async function createSettingsWindow(deps: SettingsWindowDeps, page?: SettingsPag
     if (!canOpenSettingsWindow(appState.mainWindow)) return;
     const existing = appState.settingsWindow;
     if (existing && !existing.isDestroyed()) {
-        focusExistingWindow(existing);
+        bringSettingsToFront(existing);
         if (page) existing.webContents.send('settings:show-page', page);
         return;
     }
@@ -99,8 +113,11 @@ async function createSettingsWindow(deps: SettingsWindowDeps, page?: SettingsPag
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.once('closed', closeWithMain);
 
     win.once('ready-to-show', () => {
-        if (!win.isDestroyed()) win.show();
+        if (!win.isDestroyed()) bringSettingsToFront(win);
     });
+    // Another window of the app (the bar) was raised or clicked: the Settings window goes back in front.
+    win.on('show', raiseOpenSettingsWindow);
+    win.on('restore', raiseOpenSettingsWindow);
 
     win.on('closed', () => {
         if (mainWindow && !mainWindow.isDestroyed()) mainWindow.removeListener('closed', closeWithMain);

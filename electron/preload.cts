@@ -145,6 +145,10 @@ contextBridge.exposeInMainWorld('api', {
     // Auto-launch
     getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
     setAutoLaunch: (enabled: boolean) => ipcRenderer.send('set-auto-launch', enabled),
+    syncAutoLaunch: (desired: boolean) => ipcRenderer.invoke('sync-auto-launch', desired),
+    pickTextFiles: () => ipcRenderer.invoke('pick-text-files'),
+    takeOpenTextFiles: () => ipcRenderer.invoke('take-open-text-files'),
+    onOpenTextFilesAvailable: (callback: () => void) => subscribe('open-text-files-available', () => callback()),
 
     // Focus Audio
     getMelodyAudio: (name: string) => ipcRenderer.invoke('get-melody-audio', name),

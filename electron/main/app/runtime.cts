@@ -5,6 +5,7 @@ import { app } from 'electron';
 import * as path from 'path';
 import type { AppPaths } from '../lib/appPaths.cjs';
 import { appState } from '../state.cjs';
+import { queueOpenFileArgs } from '../services/openWithFile.cjs';
 import { teleportToPrimaryCenter } from '../windows/mainWindow.cjs';
 
 export interface RuntimeEnv {
@@ -64,7 +65,9 @@ export function claimSingleInstance(env: RuntimeEnv): void {
     if (!gotTheLock) {
         app.quit();
     } else {
-        app.on('second-instance', () => {
+        app.on('second-instance', (_event, argv) => {
+            // "Open with KoBar": a .txt file passed to the second instance becomes a note in this one.
+            void queueOpenFileArgs(argv);
             // Someone tried to run a second instance, we should focus our window.
             if (appState.mainWindow) {
                 // Teleport to primary display center instead of just showing

@@ -11,7 +11,7 @@ export const DIALOG_PATHS_FILE_MAX_BYTES = 16 * 1024;
 export const DIALOG_PATH_MAX_LENGTH = 1024;
 
 /** Only these dialogs remember their folder. Unknown keys in the file are dropped. */
-export const DIALOG_KINDS = ['save-note-text', 'install-zip', 'save-full-backup'] as const;
+export const DIALOG_KINDS = ['save-note-text', 'install-zip', 'save-full-backup', 'import-notes'] as const;
 export type DialogKind = (typeof DIALOG_KINDS)[number];
 export type DialogPaths = Partial<Record<DialogKind, string>>;
 

@@ -11,6 +11,7 @@ import {
     canOpenSettingsWindow,
     focusExistingWindow,
     isSettingsPageName,
+    raiseSettingsWindow,
     settingsPageLocation,
     settingsWindowFrameOptions,
 } from '../electron/lib/settingsWindow.cjs';
@@ -257,7 +258,7 @@ describe('electron/main/windows/settingsWindow.cts (source)', () => {
     });
 
     it('is a single instance and closes with the main window', () => {
-        expect(source).toContain('focusExistingWindow(existing)');
+        expect(source).toContain('bringSettingsToFront(existing)');
         expect(source).toContain("mainWindow.once('closed', closeWithMain)");
         expect(source).toContain('if (appState.settingsWindow === win) appState.settingsWindow = null;');
     });
@@ -278,5 +279,41 @@ describe('electron/main/windows/settingsWindow.cts (source)', () => {
         const preloadSrc = readRepoFile('electron/preload.cts');
         expect(preloadSrc.slice(preloadSrc.indexOf("contextBridge.exposeInMainWorld('api', {"))).not.toContain('settings:open');
         expect(readRepoFile('electron/pip-preload.cts')).not.toContain('settings:open');
+    });
+});
+
+describe('raiseSettingsWindow (always in front of the bar)', () => {
+    const fake = (over: Partial<{ destroyed: boolean; visible: boolean; minimized: boolean }> = {}) => {
+        const state = { destroyed: false, visible: true, minimized: false, ...over };
+        return {
+            isDestroyed: () => state.destroyed,
+            isVisible: () => state.visible,
+            isMinimized: () => state.minimized,
+            setAlwaysOnTop: vi.fn(),
+            moveTop: vi.fn(),
+        };
+    };
+
+    it('goes above the main window level (relative level 2 vs 1) and moves to the top without focusing', () => {
+        const win = fake();
+        expect(raiseSettingsWindow(win, 'screen-saver')).toBe(true);
+        expect(win.setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver', 2);
+        expect(win.moveTop).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves hidden, minimized, destroyed or missing windows alone', () => {
+        for (const w of [fake({ visible: false }), fake({ minimized: true }), fake({ destroyed: true })]) {
+            expect(raiseSettingsWindow(w, 'floating')).toBe(false);
+            expect(w.setAlwaysOnTop).not.toHaveBeenCalled();
+        }
+        expect(raiseSettingsWindow(null, 'floating')).toBe(false);
+    });
+
+    it('is wired: opening focuses and raises, the keeper and the main window focus put it back on top', () => {
+        const settings = readRepoFile('electron/main/windows/settingsWindow.cts');
+        expect(settings).toMatch(/bringSettingsToFront\(win\)/);
+        const main = readRepoFile('electron/main/windows/mainWindow.cts');
+        expect(main).toContain('afterAssert: raiseOpenSettingsWindow');
+        expect(main).toContain("win.on('focus', raiseOpenSettingsWindow)");
     });
 });

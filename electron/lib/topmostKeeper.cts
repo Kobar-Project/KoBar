@@ -25,6 +25,8 @@ export interface TopmostKeeperOptions {
     setIntervalTimer?: (fn: () => void, ms: number) => unknown;
     clearIntervalTimer?: (handle: unknown) => void;
     log?: (message: string) => void;
+    /** Runs after the window was re-asserted (e.g. to put a window that must stay above it back on top). */
+    afterAssert?: () => void;
 }
 
 export interface TopmostKeeper {
@@ -58,6 +60,7 @@ export function createTopmostKeeper(opts: TopmostKeeperOptions): TopmostKeeper {
             if (opts.shouldSkip?.()) return false;
             win.setAlwaysOnTop(true, opts.level, 1);
             win.moveTop();
+            opts.afterAssert?.();
             return true;
         } catch (err) {
             opts.log?.(`[KoBar] topmost re-assert failed (${reason}): ${String(err)}`);

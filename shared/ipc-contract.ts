@@ -641,6 +641,25 @@ export interface IpcSecretStatus {
     unreadable: boolean;
 }
 
+export interface IpcTextFile {
+    name: string;
+    /** The checked file bytes; the renderer decodes them (UTF-8, UTF-16, Windows-1254). */
+    data: Uint8Array;
+}
+
+export type IpcTextRejectReason = 'too-large' | 'unsupported' | 'unreadable';
+
+export interface IpcTextReject {
+    name: string;
+    reason: IpcTextRejectReason;
+}
+
+export interface IpcTextPickResult {
+    canceled: boolean;
+    files: IpcTextFile[];
+    rejected: IpcTextReject[];
+}
+
 export interface IpcSecretResult {
     success: boolean;
     reason?: IpcSecretFailure;
@@ -670,6 +689,12 @@ export interface IpcInvokeMap {
     /** Resolves when the request ends; the answer itself streams through the `llm-stream-*` events. */
     'llm-request': { args: [data: IpcLlmRequest]; result: void };
     'get-auto-launch': { args: []; result: boolean };
+    /** Once per start: reconciles the persisted setting with the OS login items; `null` when refused. */
+    'sync-auto-launch': { args: [desired: boolean]; result: { enabled: boolean } | null };
+    /** Opens a multi-select dialog for .txt / .md files; main reads and checks them, the renderer decodes the bytes into notes. */
+    'pick-text-files': { args: []; result: IpcTextPickResult };
+    /** "Open with KoBar": hands over (and clears) the .txt files main checked after a launch or second-instance with a file argument. */
+    'take-open-text-files': { args: []; result: Pick<IpcTextPickResult, 'files' | 'rejected'> };
     'start-screenshot-capture': { args: []; result: IpcScreenshotCaptureResult };
     'save-screenshot': { args: [data: IpcSaveScreenshotRequest]; result: IpcSaveResult };
     'get-active-video-urls': { args: []; result: string[] };
@@ -808,6 +833,8 @@ export interface IpcEventMap {
     'window-geometry-changed': { args: [geometry: IpcWindowGeometry] };
     'clipboard-updated': { args: [data: IpcClipboardUpdate] };
     'open-settings': { args: [] };
+    /** "Open with KoBar": files are waiting; the renderer collects them with `take-open-text-files`. */
+    'open-text-files-available': { args: [] };
     'request-next-paste': { args: [] };
     'clipboard-paste-error': { args: [data: { error: string; message: string }] };
     'pinned-window-changed': { args: [hwnd: number | null] };

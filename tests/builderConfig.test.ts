@@ -87,6 +87,7 @@ describe('createBuilderConfig', () => {
             displayName: 'KoBar',
             capabilities: ['runFullTrust'],
             addAutoLaunchExtension: true,
+            customExtensionsPath: 'build/appx/extensions.xml',
         });
         expect(readSecrets).not.toHaveBeenCalled();
     });

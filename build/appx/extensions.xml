@@ -1,0 +1,9 @@
+
+          <uap:Extension Category="windows.fileTypeAssociation">
+            <uap:FileTypeAssociation Name="kobartext">
+              <uap:DisplayName>KoBar</uap:DisplayName>
+              <uap:SupportedFileTypes>
+                <uap:FileType>.txt</uap:FileType>
+              </uap:SupportedFileTypes>
+            </uap:FileTypeAssociation>
+          </uap:Extension>
