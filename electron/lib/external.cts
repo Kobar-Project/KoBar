@@ -146,7 +146,24 @@ export type LaunchDecision =
     | { kind: 'url'; decision: Exclude<ExternalDecision, { kind: 'deny' }> }
     | { kind: 'path'; path: string; reason: string }
     | { kind: 'confirm-path'; path: string; reason: string }
+    // MAC-021: macOS only. A local script/automation file; opening it runs code, so it always needs a confirmation.
+    | { kind: 'confirm-script'; path: string; reason: string }
     | { kind: 'deny'; reason: string };
+
+/**
+ * MAC-021 (owner decision K-12): file extensions that macOS runs when opened (Terminal scripts, Automator workflows,
+ * AppleScript). On darwin `launch-file` asks before opening one; a `.app` bundle is not in this list and still opens
+ * silently (the Shortcuts plugin's main use). Lower case, with the dot. Kept to exactly the K-12 list.
+ */
+export const MAC_SCRIPT_EXTENSIONS: ReadonlySet<string> = new Set(['.command', '.terminal', '.tool', '.workflow', '.scpt', '.sh']);
+
+/** MAC-021: lower-cased extension of a POSIX path ignoring trailing slashes (`/x/Y.COMMAND/` gives `.command`). */
+function posixExtension(p: string): string {
+    const trimmed = p.replace(/\/+$/, '');
+    const base = trimmed.slice(trimmed.lastIndexOf('/') + 1);
+    const dot = base.lastIndexOf('.');
+    return dot > 0 ? base.slice(dot).toLowerCase() : '';
+}
 
 const MAX_PATH_LENGTH = 32768;
 // eslint-disable-next-line no-control-regex
@@ -156,19 +173,25 @@ const CONTROL_CHARS = /[\u0000-\u001f\u007f-\u009f]/;
  * Classifies the string a plugin passes to `window.api.launchFile` (the Shortcuts plugin sends
  * absolute local paths, .lnk/.exe files, folders and http(s) URLs). Lexical checks only.
  */
-export function classifyLaunchTarget(raw: unknown): LaunchDecision {
+export function classifyLaunchTarget(raw: unknown, platform: string = process.platform): LaunchDecision {
     if (typeof raw !== 'string' || raw.length === 0) return { kind: 'deny', reason: 'not a non-empty string' };
     if (raw.length > MAX_PATH_LENGTH) return { kind: 'deny', reason: 'too long' };
     if (CONTROL_CHARS.test(raw)) return { kind: 'deny', reason: 'control character' };
 
     // Absolute local path: drive letter ("C:\x", "C:/x") or POSIX root ("/x"). Checked before the
     // scheme test so a drive letter is never mistaken for a one-letter scheme.
-    if (/^[a-zA-Z]:[\\/]/.test(raw) || /^\/[^/]/.test(raw)) return { kind: 'path', path: raw, reason: 'absolute local path' };
+    if (/^[a-zA-Z]:[\\/]/.test(raw) || /^\/[^/]/.test(raw)) {
+        // MAC-021: darwin only; every other platform keeps the plain 'path' result.
+        if (platform === 'darwin' && raw.startsWith('/') && MAC_SCRIPT_EXTENSIONS.has(posixExtension(raw))) {
+            return { kind: 'confirm-script', path: raw, reason: `macOS script type ${posixExtension(raw)}` };
+        }
+        return { kind: 'path', path: raw, reason: 'absolute local path' };
+    }
 
     // Any "scheme:" (the old handler passed these to shell.openPath, which also opens URL protocols).
     // They now go through the external-URL gate; only `file:` is mapped back onto a path.
     if (/^[a-z][a-z0-9+.-]+:/i.test(raw)) {
-        if (/^file:/i.test(raw)) return classifyFileUrl(raw);
+        if (/^file:/i.test(raw)) return classifyFileUrl(raw, platform);
         const decision = classifyExternalUrl(raw);
         if (decision.kind === 'deny') return { kind: 'deny', reason: decision.reason };
         return { kind: 'url', decision };
@@ -184,7 +207,7 @@ export function classifyLaunchTarget(raw: unknown): LaunchDecision {
 }
 
 /** `file:///C:/x.lnk` (empty host or localhost) is a local path; any other host is a UNC share. */
-function classifyFileUrl(raw: string): LaunchDecision {
+function classifyFileUrl(raw: string, platform: string): LaunchDecision {
     let url: URL;
     try {
         url = new URL(raw);
@@ -195,14 +218,19 @@ function classifyFileUrl(raw: string): LaunchDecision {
     try {
         // The URL parser already normalises a `localhost` host to the empty string for file: URLs.
         if (url.hostname === '') {
-            const local = fileURLToPath(url);
-            return classifyLaunchTarget(local).kind === 'path'
+            // MAC-021: on darwin the URL path is already a POSIX path (also keeps this testable on a Windows host).
+            const local = platform === 'darwin' ? decodeURIComponent(url.pathname) : fileURLToPath(url);
+            const inner = classifyLaunchTarget(local, platform);
+            // MAC-021: a file URL to a macOS script keeps its confirmation.
+            if (inner.kind === 'confirm-script') return { kind: 'confirm-script', path: local, reason: 'file URL to ' + inner.reason };
+            return inner.kind === 'path'
                 ? { kind: 'path', path: local, reason: 'file URL to local path' }
                 : { kind: 'deny', reason: 'file URL is not an absolute local path' };
         }
         const unc = '\\\\' + url.hostname + decodeURIComponent(url.pathname).replace(/\//g, '\\');
         // Re-run the raw-path rules so decoded control characters and \\.\ / \\?\ device paths are refused.
-        if (classifyLaunchTarget(unc).kind !== 'confirm-path') return { kind: 'deny', reason: 'file URL is not a valid UNC path' };
+        if (classifyLaunchTarget(unc, platform).kind !== 'confirm-path')
+            return { kind: 'deny', reason: 'file URL is not a valid UNC path' };
         return { kind: 'confirm-path', path: unc, reason: 'file URL with remote host (UNC)' };
     } catch {
         return { kind: 'deny', reason: 'malformed file URL' };

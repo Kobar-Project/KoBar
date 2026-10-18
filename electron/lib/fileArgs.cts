@@ -128,6 +128,20 @@ export function isProtectedPath(target: string, protectedRoots: readonly string[
     return !allowed.some((r) => lexicallyInside(r, effective));
 }
 
+/**
+ * MAC-021: reason to refuse launching `target` (null = fine). Anything inside the app's own data (userData,
+ * userData/extensions) is refused so a plugin cannot launch a file it wrote there; KoBox stays the user-facing
+ * exception, exactly as in isProtectedPath. Links are resolved on both sides (isProtectedPath), so a link outside
+ * userData that points into it is caught too.
+ */
+export function launchRefusalForProtectedRoot(
+    target: string,
+    protectedRoots: readonly string[],
+    koBoxRoots: readonly string[]
+): string | null {
+    return isProtectedPath(target, protectedRoots, koBoxRoots) ? 'target is inside application data' : null;
+}
+
 // ─── save-screenshot ─────────────────────────────────────────────
 
 export type ImageKind = 'png' | 'jpeg' | 'webp';

@@ -136,7 +136,7 @@ describe('main.cts uses no raw English text in native dialogs and notices', () =
         expect(external).toContain("t(lang, 'openAddress'");
         expect(external).toContain("t(lang, 'onlyContinueIfTrust')");
         const launchAt = main.indexOf("ipcMain.on('launch-file'");
-        const launch = main.slice(launchAt, launchAt + 1500);
+        const launch = main.slice(launchAt, launchAt + 2500);
         expect(launch).toContain("t(lang, 'openNetworkLocation'");
         expect(launch).toContain("t(lang, 'networkCredentialsRisk')");
         // The message/detail const lines next to each confirmWithUser call hold no raw quoted text.

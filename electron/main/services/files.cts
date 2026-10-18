@@ -10,6 +10,7 @@ import {
     classifyParseFile,
     isPlainAbsolutePath,
     isProtectedPath,
+    launchRefusalForProtectedRoot,
     readRegularFileLimitedAsync,
 } from '../../lib/fileArgs.cjs';
 import { type MainLang, t } from '../../lib/mainStrings.cjs';
@@ -20,6 +21,7 @@ import { GET_FILE_ICON_OPTIONS, PARSE_FILE_OPTIONS } from '../ipc/schemas.cjs';
 import { notifyBlockedFileAccess } from './notifications.cjs';
 
 const isWin = process.platform === 'win32';
+const isMac = process.platform === 'darwin';
 
 export interface FilesDeps {
     registry: IpcRegistry;
@@ -109,6 +111,21 @@ export function registerFilesIpc(deps: FilesDeps): void {
             if (target.kind === 'url') {
                 await openExternalChecked(filePath, target.decision);
                 return;
+            }
+            // MAC-021: macOS only. Never launch a file inside the app's own data (a plugin could have written it there).
+            if (isMac && (target.kind === 'path' || target.kind === 'confirm-script')) {
+                const refusal = launchRefusalForProtectedRoot(target.path, getProtectedAppRoots(), getKoBoxRoots());
+                if (refusal) {
+                    console.error('Launch refused:', refusal);
+                    return;
+                }
+            }
+            if (target.kind === 'confirm-script') {
+                // MAC-021 (K-12): scripts and automation files run code when opened, so ask first (Cancel is the default).
+                const lang = await getUiLanguage();
+                const message = t(lang, 'runScript', { target: truncateForDialog(target.path) });
+                const detail = t(lang, 'scriptRisk');
+                if (!(await confirmWithUser(message, detail))) return;
             }
             if (target.kind === 'confirm-path') {
                 const lang = await getUiLanguage();
