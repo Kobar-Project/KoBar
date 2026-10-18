@@ -14,7 +14,9 @@ import { startPsBridge, stopPsBridge } from '../services/native.cjs';
 import { waitForKoBoxCleanup } from '../services/kobox.cjs';
 import { registerPinTargetingHandler } from '../services/pin.cjs';
 import { setupUpdater } from '../services/updater.cjs';
-import { createWindow } from '../windows/mainWindow.cjs';
+import { isMac } from '../platform.cjs';
+import { appState } from '../state.cjs';
+import { createWindow, isMainWindowReady, teleportToPrimaryCenter } from '../windows/mainWindow.cjs';
 import type { MainContext } from './context.cjs';
 import { installPermissionHandlers, setupCspDiagnostics } from './security.cjs';
 
@@ -70,7 +72,18 @@ export function registerAppLifecycle(ctx: MainContext): void {
         updateMediaDemand({ appPaths });
 
         app.on('activate', () => {
-            if (BrowserWindow.getAllWindows().length === 0) createWindow(windowDeps());
+            if (BrowserWindow.getAllWindows().length === 0) {
+                createWindow(windowDeps());
+                return;
+            }
+            // MAC-015: macOS agent app (LSUIElement, no Dock icon): a re-launch from Finder / Spotlight / Launchpad fires `activate`
+            // while the bar is hidden (hide-app / tray). Decide on the main window's own visibility, not on other windows
+            // (Settings / PiP), and use the same show path as the tray. Before ready-to-show the window is not loaded yet and a
+            // --hidden / login launch must stay hidden, so an early `activate` is ignored.
+            const main = appState.mainWindow;
+            if (isMac && isMainWindowReady() && main && !main.isDestroyed() && !main.isVisible()) {
+                teleportToPrimaryCenter();
+            }
         });
 
         // First quit waits (bounded) for the renderer to flush its debounced persist state; later quits pass through.
@@ -97,6 +110,7 @@ export function registerAppLifecycle(ctx: MainContext): void {
     });
 
     app.on('window-all-closed', () => {
+        // MAC-015: intended on macOS: the agent app keeps running in the menu bar when every window is closed.
         if (process.platform !== 'darwin') {
             app.quit();
         }
