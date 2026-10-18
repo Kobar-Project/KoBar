@@ -11,7 +11,9 @@ import {
     type ExclusionVerdict,
     createExclusionRetryGate,
     imageSignature,
+    hasMacConcealedMarker,
     inspectClipboardTypes,
+    MAC_CONCEALED_FORMATS,
     osClipboardMime,
     shouldSkipClipboard,
     textSignature,
@@ -202,6 +204,18 @@ function broadcastClipboardUpdate(data: { type: 'text' | 'image'; content: strin
 // Returns 'allow', 'skip' (excluded: record it as seen, never announce) or 'retry' (lookup failed:
 // do not announce and do not record, so the next tick re-evaluates).
 async function checkClipboardExclusion(items: Electron.ClipboardItem[]): Promise<ExclusionVerdict> {
+    // MAC-018: macOS password managers mark secrets with nspasteboard.org types; fail closed like Windows.
+    if (process.platform === 'darwin') {
+        try {
+            if (hasMacConcealedMarker(items.flatMap((item) => item.types))) return 'skip';
+            for (const uti of MAC_CONCEALED_FORMATS) {
+                if (await clipboard.has(osClipboardMime(uti))) return 'skip';
+            }
+            return 'allow';
+        } catch {
+            return 'retry';
+        }
+    }
     if (process.platform !== 'win32') return 'allow';
     try {
         const info = inspectClipboardTypes(items.flatMap((item) => item.types));
