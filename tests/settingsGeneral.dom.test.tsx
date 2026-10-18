@@ -33,7 +33,9 @@ const NEW_KEYS = [
     'settingsLanguageHint',
     'settingsShowTips',
     'settingsShowTipsDesc',
+    'settingsLanguageHintMac',
     'settingsLaunchAtStartupDesc',
+    'settingsLaunchAtStartupDescMac',
     'settingsWaiting',
 ] as const;
 
@@ -156,6 +158,28 @@ describe('GeneralPage', () => {
         const { host } = render(<GeneralPage t={tEn} storeFlavor />);
         expect(host.querySelector('[data-testid="autostart-store-note"]')!.textContent).toBe(tEn('launchAtStartupStoreNote'));
         expect(switches(host)).toHaveLength(1);
+    });
+
+    // MAC-024: macOS wording; the Microsoft Store note is Windows-only and never shows on mac.
+    it('on macOS shows the mac hint and startup description, and never the Store note', () => {
+        ready();
+        const { host } = render(<GeneralPage t={tEn} storeFlavor mac />);
+        expect(host.querySelector('[data-testid="autostart-store-note"]')).toBeNull();
+        expect(switches(host)).toHaveLength(2);
+        expect(host.textContent).toContain(tEn('settingsLanguageHintMac'));
+        expect(host.textContent).toContain(tEn('settingsLaunchAtStartupDescMac'));
+        expect(host.textContent).not.toContain(tEn('settingsLanguageHint'));
+        expect(host.textContent).not.toContain(tEn('settingsLaunchAtStartupDesc'));
+        expect(host.textContent).not.toContain(tEn('launchAtStartupStoreNote'));
+    });
+
+    it('keeps the Windows wording when mac is false', () => {
+        ready();
+        const { host } = render(<GeneralPage t={tEn} storeFlavor={false} mac={false} />);
+        expect(host.textContent).toContain(tEn('settingsLanguageHint'));
+        expect(host.textContent).toContain(tEn('settingsLaunchAtStartupDesc'));
+        expect(host.textContent).not.toContain(tEn('settingsLanguageHintMac'));
+        expect(host.textContent).not.toContain(tEn('settingsLaunchAtStartupDescMac'));
     });
 });
 

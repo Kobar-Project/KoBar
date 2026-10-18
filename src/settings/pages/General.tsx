@@ -6,6 +6,7 @@
 // toggle is replaced by a note, as in the old panel (T-139). T-615a adds "restart tutorial" (a relayed system action).
 import { useMemo, type ChangeEvent } from 'react';
 import { IS_STORE_FLAVOR } from '../../buildFlags';
+import { isMacPlatform } from '../../platform';
 import { Button, Surface, Select, Toggle } from '../../ui';
 import { getEndonymOptions, readSystemLocales, resolveSystemLanguage } from '../language';
 import { dispatchSettingsAction, dispatchSystemAction, useSettingsState, useSystemSummary } from '../mirror';
@@ -18,9 +19,11 @@ export const SYSTEM_LANGUAGE_OPTION = 'system';
 export interface GeneralPageProps extends SettingsPageProps {
     /** Shows the Microsoft Store note instead of the startup toggle (defaults to the build flavor). */
     storeFlavor?: boolean;
+    /** MAC-024: macOS wording (defaults to the platform of this window). */
+    mac?: boolean;
 }
 
-export function GeneralPage({ t, storeFlavor = IS_STORE_FLAVOR }: GeneralPageProps) {
+export function GeneralPage({ t, storeFlavor = IS_STORE_FLAVOR, mac = isMacPlatform() }: GeneralPageProps) {
     const ready = useSettingsState((s) => s.status === 'ready' && s.state !== null);
     const language = useSettingsState((s) => s.state?.language);
     const launchAtStartup = useSettingsState((s) => s.state?.launchAtStartup === true);
@@ -56,7 +59,7 @@ export function GeneralPage({ t, storeFlavor = IS_STORE_FLAVOR }: GeneralPagePro
                 <div className="p-4">
                     <Select
                         label={t('language')}
-                        hint={t('settingsLanguageHint')}
+                        hint={mac ? t('settingsLanguageHintMac') : t('settingsLanguageHint')}
                         value={current}
                         onChange={onLanguageChange}
                         disabled={!ready}
@@ -70,7 +73,8 @@ export function GeneralPage({ t, storeFlavor = IS_STORE_FLAVOR }: GeneralPagePro
                     </Select>
                 </div>
                 <div className="p-4">
-                    {storeFlavor ? (
+                    {/* MAC-024: the Store note is Windows-only; the startup toggle shows on macOS too. */}
+                    {storeFlavor && !mac ? (
                         <div className="flex flex-col">
                             <span className="text-[0.8125rem] leading-5 text-fg-1">{t('launchAtStartup')}</span>
                             <span className="text-[0.6875rem] leading-4 text-fg-2" data-testid="autostart-store-note">
@@ -81,7 +85,7 @@ export function GeneralPage({ t, storeFlavor = IS_STORE_FLAVOR }: GeneralPagePro
                         <Toggle
                             fullWidth
                             label={t('launchAtStartup')}
-                            description={t('settingsLaunchAtStartupDesc')}
+                            description={mac ? t('settingsLaunchAtStartupDescMac') : t('settingsLaunchAtStartupDesc')}
                             checked={launchAtStartup}
                             disabled={!ready}
                             onChange={(value) => dispatchSettingsAction('setLaunchAtStartup', value)}
