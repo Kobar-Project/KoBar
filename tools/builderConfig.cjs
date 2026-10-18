@@ -95,6 +95,7 @@ function resolveAppxIdentity(env, readSecrets) {
  * @param {() => unknown} inputs.readSecrets  returns parsed kobar-secrets.json (or null); only called for the store flavor
  *
  * Env opt-out: KOBAR_AUTO_UPDATE=false forces kobarAutoUpdate to false (e.g. CI builds that must never self-update).
+ * Env: KOBAR_MAC_SIGNED=true enables the macOS hardened runtime (signed + notarized release builds only; any other value = off).
  */
 function createBuilderConfig({ env, readSettings, readSecrets }) {
     const flavor = parseFlavor(env.KOBAR_FLAVOR);
@@ -140,12 +141,31 @@ function createBuilderConfig({ env, readSettings, readSecrets }) {
             artifactName: 'KoBar-Setup-${version}.${ext}',
         },
         mac: {
-            target: ['dmg', 'zip'],
+            target: [
+                { target: 'dmg', arch: ['arm64'] },
+                // zip is required by electron-updater (macOS updates).
+                { target: 'zip', arch: ['arm64'] },
+            ],
             icon: 'build/icon.icns',
-            hardenedRuntime: true,
+            category: 'public.app-category.productivity',
+            darkModeSupport: true,
+            artifactName: 'KoBar-${version}-${arch}.${ext}',
             gatekeeperAssess: false,
+            entitlements: 'build/entitlements.mac.plist',
+            entitlementsInherit: 'build/entitlements.mac.inherit.plist',
+            // Hardened runtime only for signed builds: unsigned CI test builds are ad-hoc signed, and hardened runtime with library
+            // validation (no disable-library-validation entitlement) can refuse to load the Electron framework under an ad-hoc
+            // signature. Notarization, the only reason to need it, requires a real Developer ID anyway. The signed release
+            // workflow sets KOBAR_MAC_SIGNED=true.
+            hardenedRuntime: env.KOBAR_MAC_SIGNED === 'true',
+            // No `identity` and no credentials here: electron-builder reads the Apple notarization credentials
+            // (APPLE_API_KEY, APPLE_API_KEY_ID, APPLE_API_ISSUER) from the environment only.
+            // No `minimumSystemVersion` on purpose (K-6): electron-builder then keeps Electron's own LSMinimumSystemVersion.
             extendInfo: {
+                // K-4: agent app, no Dock icon.
+                LSUIElement: true,
                 NSScreenCaptureUsageDescription: 'KoBar needs access to your screen to let you capture and edit screenshots.',
+                NSAppleEventsUsageDescription: 'KoBar controls Spotify and Music so you can play, pause and skip tracks from the bar.',
             },
         },
     };

@@ -297,3 +297,78 @@ describe('PDF worker packaging (T-141)', () => {
         expect(fs.existsSync(path.join(root, 'electron', 'pdf-worker.cts'))).toBe(true);
     });
 });
+
+describe('macOS packaging (MAC-011)', () => {
+    const mk = (env: Record<string, string | undefined> = {}) =>
+        createBuilderConfig({ env: { KOBAR_FLAVOR: 'direct', ...env }, readSettings: () => SETTINGS, readSecrets: noSecrets });
+    const keysOf = (rel: string) => [...read(rel).matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
+
+    it('mac block: arm64 dmg + zip, metadata and entitlement paths', () => {
+        const mac = mk().mac as Record<string, unknown> & { extendInfo: Record<string, unknown> };
+        expect(mac.target).toEqual([
+            { target: 'dmg', arch: ['arm64'] },
+            { target: 'zip', arch: ['arm64'] },
+        ]);
+        expect(mac.category).toBe('public.app-category.productivity');
+        expect(mac.artifactName).toBe('KoBar-${version}-${arch}.${ext}');
+        expect(mac.darkModeSupport).toBe(true);
+        expect(mac.entitlements).toBe('build/entitlements.mac.plist');
+        expect(mac.entitlementsInherit).toBe('build/entitlements.mac.inherit.plist');
+        expect(mac.extendInfo.LSUIElement).toBe(true);
+        expect(String(mac.extendInfo.NSScreenCaptureUsageDescription).length).toBeGreaterThan(0);
+        expect(String(mac.extendInfo.NSAppleEventsUsageDescription).length).toBeGreaterThan(0);
+    });
+
+    it('mac block has no minimumSystemVersion, identity or notarize credentials', () => {
+        const mac = mk({ APPLE_API_KEY: 'k-secret', APPLE_API_KEY_ID: 'id-secret', APPLE_API_ISSUER: 'iss-secret' }).mac;
+        expect(mac).not.toHaveProperty('minimumSystemVersion');
+        expect(mac).not.toHaveProperty('identity');
+        expect(mac).not.toHaveProperty('notarize');
+        expect(JSON.stringify(mac)).not.toMatch(/APPLE_API|k-secret|id-secret|iss-secret/);
+    });
+
+    it('hardenedRuntime only when KOBAR_MAC_SIGNED is exactly "true"', () => {
+        expect(mk().mac.hardenedRuntime).toBe(false);
+        for (const v of ['', 'false', 'TRUE', '1', 'yes']) expect(mk({ KOBAR_MAC_SIGNED: v }).mac.hardenedRuntime).toBe(false);
+        expect(mk({ KOBAR_MAC_SIGNED: 'true' }).mac.hardenedRuntime).toBe(true);
+    });
+
+    it('Windows and Store configuration is unchanged', () => {
+        const direct = mk();
+        expect(direct.win).toEqual({ target: ['nsis'], icon: 'build/icon.ico' });
+        expect(direct.nsis).toEqual({
+            oneClick: false,
+            allowToChangeInstallationDirectory: true,
+            artifactName: 'KoBar-Setup-${version}.${ext}',
+        });
+        expect(direct).not.toHaveProperty('appx');
+        const store = createBuilderConfig({
+            env: { KOBAR_FLAVOR: 'store', ...IDENTITY_ENV },
+            readSettings: () => SETTINGS,
+            readSecrets: noSecrets,
+        });
+        expect(store.win).toEqual({ target: ['appx'], icon: 'build/icon.ico' });
+        expect(store.appx).toEqual({
+            applicationId: 'KoBar',
+            identityName: 'Env.Identity',
+            publisher: 'CN=ENV-PUBLISHER',
+            publisherDisplayName: 'Env Publisher',
+            displayName: 'KoBar',
+            backgroundColor: '#18181B',
+            capabilities: ['runFullTrust'],
+            addAutoLaunchExtension: true,
+            customExtensionsPath: 'build/appx/extensions.xml',
+        });
+    });
+
+    it('entitlement plists contain exactly the expected keys', () => {
+        const jit = 'com.apple.security.cs.allow-jit';
+        const mem = 'com.apple.security.cs.allow-unsigned-executable-memory';
+        const apple = 'com.apple.security.automation.apple-events';
+        expect(keysOf('build/entitlements.mac.plist').sort()).toEqual([apple, jit, mem].sort());
+        expect(keysOf('build/entitlements.mac.inherit.plist').sort()).toEqual([jit, mem].sort());
+        for (const f of ['build/entitlements.mac.plist', 'build/entitlements.mac.inherit.plist']) {
+            expect(read(f)).not.toMatch(/disable-library-validation|app-sandbox/);
+        }
+    });
+});
