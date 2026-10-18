@@ -2,12 +2,13 @@
 // lock/unlock, sleep/resume or another app grabbing the topmost band, and Electron's setAlwaysOnTop(true) alone can be a no-op when the
 // flag is already set. The keeper re-asserts the level AND raises the window with moveTop() (never focus(), so no focus is stolen).
 // Pure: the window, the timers and the skip rules are injected, so it is testable without Electron.
+import type { TopmostLevel } from './platform.cjs';
 
 export interface TopmostWindowLike {
     isDestroyed(): boolean;
     isVisible(): boolean;
     isMinimized(): boolean;
-    setAlwaysOnTop(flag: boolean, level?: 'floating' | 'screen-saver', relativeLevel?: number): void;
+    setAlwaysOnTop(flag: boolean, level?: TopmostLevel, relativeLevel?: number): void;
     moveTop(): void;
 }
 
@@ -15,7 +16,7 @@ export interface TopmostKeeperOptions {
     getWindow: () => TopmostWindowLike | null;
     /** True while re-asserting would be wrong (pin-target picking, screenshot session, ...). */
     shouldSkip?: () => boolean;
-    level: 'floating' | 'screen-saver';
+    level: TopmostLevel;
     /** Burst coalescing delay. */
     debounceMs?: number;
     /** Low-frequency safety re-assertion; 0 disables it. */

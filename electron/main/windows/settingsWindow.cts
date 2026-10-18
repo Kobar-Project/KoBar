@@ -31,11 +31,11 @@ import type { IpcRegistry } from '../ipc/registry.cjs';
 import { SETTINGS_OPEN_OPTIONS } from '../ipc/schemas.cjs';
 import type { AppPaths } from '../lib/appPaths.cjs';
 import { appState } from '../state.cjs';
+import { topmostLevel } from '../platform.cjs';
 import { registerSettingsSyncIpc } from './settingsSync.cjs';
 
 const isDev = !app.isPackaged;
-const isMac = process.platform === 'darwin';
-const SETTINGS_LEVEL = isMac ? 'floating' : 'screen-saver';
+const SETTINGS_LEVEL = topmostLevel();
 
 /** Puts the open Settings window back in front of the bar (no focus change). Safe to call when none is open. */
 export function raiseOpenSettingsWindow(): void {

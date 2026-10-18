@@ -5,6 +5,7 @@ import { secureWebPreferences } from '../../lib/webPrefs.cjs';
 import type { createChangeFilter } from '../../lib/dedupe.cjs';
 import type { AppPaths } from '../lib/appPaths.cjs';
 import { appState } from '../state.cjs';
+import { topmostLevel } from '../platform.cjs';
 import {
     PIP_WINDOW_HEIGHT,
     PIP_WINDOW_MIN_HEIGHT,
@@ -13,7 +14,6 @@ import {
     PIP_WINDOW_WIDTH,
 } from '../../../shared/geometry.js';
 
-const isMac = process.platform === 'darwin';
 const isDev = !app.isPackaged;
 
 export interface PipWindowDeps {
@@ -72,7 +72,7 @@ export function createPipWindow(deps: PipWindowDeps, videoUrl: string, title: st
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
     win.setAspectRatio(16 / 9);
-    win.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 2);
+    win.setAlwaysOnTop(true, topmostLevel(), 2);
 
     const encodedUrl = encodeURIComponent(videoUrl);
     const encodedTitle = encodeURIComponent(title);

@@ -14,6 +14,7 @@ import type { PathGrants } from '../../lib/pathGrants.cjs';
 import type { IpcRegistry } from '../ipc/registry.cjs';
 import { SAVE_SCREENSHOT_OPTIONS } from '../ipc/schemas.cjs';
 import { appState } from '../state.cjs';
+import { topmostLevel } from '../platform.cjs';
 import { registerCopyScreenshotIpc } from './clipboard.cjs';
 import { isPsAvailable, psWrite, restartPsBridgeIfDown } from './native.cjs';
 import { notifyBlockedFileAccess } from './notifications.cjs';
@@ -67,7 +68,7 @@ function flashDisplays(displays: Electron.Display[]) {
             }, 200);
             w.setBounds(d.bounds); // re-apply: mixed-DPI setups can scale the constructor bounds
             w.setIgnoreMouseEvents(true);
-            w.setAlwaysOnTop(true, 'screen-saver', 2);
+            w.setAlwaysOnTop(true, topmostLevel(), 2);
             w.setOpacity(0.3);
             w.showInactive();
             w.moveTop();
@@ -116,7 +117,7 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
                 exec('screencapture -i -c', () => {
                     if (hideApp && appState.mainWindow) {
                         appState.mainWindow.show();
-                        appState.mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                        appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
                     }
                 });
             }
@@ -236,7 +237,7 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
             // 7. Show KoBar back so the overlay React component becomes visible
             if (appState.mainWindow) {
                 appState.mainWindow.show();
-                appState.mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+                appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
             }
         } catch (err) {
             // T-321: a failed capture must not leave KoBar hidden, stretched over all displays and its window model suspended.
@@ -247,7 +248,7 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
                     if (preScreenshotBounds) appState.mainWindow.setBounds(preScreenshotBounds);
                     resumeMainWindowModel('screenshot-error');
                     appState.mainWindow.show();
-                    appState.mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+                    appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
                 } catch (restoreErr) {
                     console.warn('[KoBar] window restore after a failed capture failed:', restoreErr);
                 }
@@ -272,7 +273,7 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
             // T-321: back on the window model; re-fits only if the displays changed during the session.
             resumeMainWindowModel('screenshot-end');
             appState.mainWindow.show();
-            appState.mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+            appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
         }
     });
 
@@ -317,7 +318,7 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
                 });
 
                 // Restore alwaysOnTop
-                if (appState.mainWindow) appState.mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                if (appState.mainWindow) appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
 
                 if (result.canceled || !result.filePath) return { success: false, reason: 'cancelled' };
                 savePath = result.filePath;
@@ -354,7 +355,7 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
             // T-321: back on the window model; re-fits only if the displays changed during the session.
             resumeMainWindowModel('screenshot-end');
             appState.mainWindow.show();
-            appState.mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+            appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
         }
     });
 }

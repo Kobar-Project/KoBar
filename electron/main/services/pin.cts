@@ -25,6 +25,7 @@ import {
     writePinStyleFileAtomic,
 } from '../../lib/pinBorder.cjs';
 import { appState } from '../state.cjs';
+import { topmostLevel } from '../platform.cjs';
 import { isPsAvailable, psRequest, psWrite, restartPsBridgeIfDown } from './native.cjs';
 
 const isMac = process.platform === 'darwin';
@@ -98,7 +99,7 @@ export function registerPinTargetingHandler() {
                     }
                 } else if (isMac) {
                     if (appState.mainWindow) {
-                        appState.mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                        appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
                         appState.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
                         pinnedHwnd = 1; // Fake truthy value for macOS to signify pinned status
                         appState.mainWindow.webContents.send('pin-targeting-complete');
@@ -117,7 +118,7 @@ export function registerPinIpc() {
             // macOS: Panel windows don't fire blur events reliably.
             // Implement pseudo-pin: immediately elevate KoBar to screen-saver level.
             if (appState.mainWindow) {
-                appState.mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+                appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
                 appState.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
                 pinnedHwnd = 1;
                 appState.mainWindow.webContents.send('pinned-window-changed', 1);
@@ -144,7 +145,7 @@ export function registerPinIpc() {
             allPinnedHwnds.delete(hwndToUnpin);
             stopWindowTracking();
         } else if (isMac && appState.mainWindow) {
-            appState.mainWindow.setAlwaysOnTop(true, 'floating', 1);
+            appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
             pinnedHwnd = null;
             appState.mainWindow.webContents.send('pinned-window-changed', null);
         }
@@ -229,7 +230,7 @@ function applyBorderBounds(win: BrowserWindow, phys: PinRect) {
         return;
     }
     // Keep it above the pinned window even after that window is re-focused (both are topmost).
-    win.setAlwaysOnTop(true, 'screen-saver', 1);
+    win.setAlwaysOnTop(true, topmostLevel(), 1);
     lastBorderZOrderAt = now;
 }
 
@@ -283,7 +284,7 @@ function startWindowTracking(hwnd: number) {
     });
     borderWindow.setIgnoreMouseEvents(true);
     borderWindow.showInactive();
-    borderWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    borderWindow.setAlwaysOnTop(true, topmostLevel(), 1);
     lastBorderZOrderAt = Date.now();
     // Static, script-free page that starts hidden; visibility and live style changes are inserted stylesheets.
     const wc = borderWindow.webContents;

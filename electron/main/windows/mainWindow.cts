@@ -25,6 +25,7 @@ import {
 } from '../../lib/windowModel.cjs';
 import type { AppPaths } from '../lib/appPaths.cjs';
 import { appState } from '../state.cjs';
+import { topmostLevel } from '../platform.cjs';
 import { raiseOpenSettingsWindow } from './settingsWindow.cjs';
 import { FALLBACK_SCREEN_HEIGHT, FALLBACK_SCREEN_WIDTH, GHOST_WINDOW_WIDTH } from '../../../shared/geometry.js';
 import type { IpcWindowGeometry } from '../../../shared/ipc-contract.js' with { 'resolution-mode': 'import' };
@@ -123,11 +124,11 @@ export function createWindow(deps: MainWindowDeps) {
         appState.mainWindow.setSize(winWidth, winHeight);
     }
     // Win: screen-saver (highest DWM level) | Mac: floating (above Dock, below TCC prompts)
-    appState.mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+    appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
     if (isMac) {
         // Ensure KoBar stays above Dock, Mission Control overlays, and full-screen apps on macOS
         appState.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-        appState.mainWindow.setAlwaysOnTop(true, 'floating', 1); // re-enforce after workspace registration
+        appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1); // re-enforce after workspace registration
     }
     appState.mainWindow.setIgnoreMouseEvents(true, { forward: true });
     setupTopmostKeeper();
@@ -183,11 +184,11 @@ export function createWindow(deps: MainWindowDeps) {
             if (!isHidden) {
                 appState.mainWindow.show();
             }
-            appState.mainWindow.setAlwaysOnTop(true, isMac ? 'floating' : 'screen-saver', 1);
+            appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
             if (isMac) {
                 // Re-enforce workspace visibility after window is fully loaded
                 appState.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-                appState.mainWindow.setAlwaysOnTop(true, 'floating', 1);
+                appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
             }
             handleWindowMove(true);
 
@@ -244,7 +245,7 @@ function setupTopmostKeeper(): void {
     const keeper = createTopmostKeeper({
         getWindow: () => appState.mainWindow,
         shouldSkip: () => appState.isAwaitingPinTarget || modelSuspended,
-        level: isMac ? 'floating' : 'screen-saver',
+        level: topmostLevel(),
         log: (m) => console.warn(m),
         // The Settings window stays in front of the bar while it is open.
         afterAssert: raiseOpenSettingsWindow,
@@ -358,7 +359,7 @@ export function teleportToPrimaryCenter(showWindow = true) {
     if (showWindow) {
         appState.mainWindow.show();
         if (appState.mainWindow.isMinimized()) appState.mainWindow.restore();
-        appState.mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+        appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
         appState.mainWindow.focus();
     }
 

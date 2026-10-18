@@ -12,6 +12,7 @@ import { createPasteSession, type PasteSession } from '../../lib/pasteSession.cj
 import { injectPasteScript, isKeyDownScript, parseKeyDownReply } from '../../lib/pasteScripts.cjs';
 import type { PsRequests } from '../../lib/psRequests.cjs';
 import { appState } from '../state.cjs';
+import { topmostLevel } from '../platform.cjs';
 import { runClipboardTask, writeClipboardEntryVerified } from './clipboard.cjs';
 
 const isMac = process.platform === 'darwin';
@@ -98,7 +99,7 @@ function injectMac(): Promise<boolean> {
                     if (err) console.error('[Clipboard] macOS Paste Error:', stderr || err);
                     if (appState.mainWindow) {
                         appState.mainWindow.show();
-                        appState.mainWindow.setAlwaysOnTop(true, 'floating', 1);
+                        appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
                     }
                     setTimeout(() => resolve(!err), 150);
                 }

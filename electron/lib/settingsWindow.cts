@@ -2,6 +2,7 @@
 // bundled settings.html with a query) and the "focus the open one" step of the single-instance rule. No Electron runtime import
 // (types only), so tests/settingsWindow.test.ts covers it without launching Electron. electron/main/windows/settingsWindow.cts wires it.
 import type { BrowserWindowConstructorOptions } from 'electron';
+import type { TopmostLevel } from './platform.cjs';
 
 export const SETTINGS_WINDOW_WIDTH = 920;
 export const SETTINGS_WINDOW_HEIGHT = 640;
@@ -102,7 +103,7 @@ export interface RaisableWindow {
     isDestroyed(): boolean;
     isVisible(): boolean;
     isMinimized(): boolean;
-    setAlwaysOnTop(flag: boolean, level?: 'floating' | 'screen-saver', relativeLevel?: number): void;
+    setAlwaysOnTop(flag: boolean, level?: TopmostLevel, relativeLevel?: number): void;
     moveTop(): void;
 }
 
@@ -112,7 +113,7 @@ export interface RaisableWindow {
  * (never focus(), so no focus is stolen) because Windows orders windows of one band by recency. Hidden or minimized windows are
  * left alone. Returns true when it touched the window.
  */
-export function raiseSettingsWindow(win: RaisableWindow | null | undefined, level: 'floating' | 'screen-saver'): boolean {
+export function raiseSettingsWindow(win: RaisableWindow | null | undefined, level: TopmostLevel): boolean {
     if (!win || win.isDestroyed() || !win.isVisible() || win.isMinimized()) return false;
     win.setAlwaysOnTop(true, level, 2);
     win.moveTop();
