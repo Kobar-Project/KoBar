@@ -1,0 +1,76 @@
+name: macOS CI
+
+# Separate from ci.yml on purpose: a workflow-level `paths` filter in ci.yml would also gate the
+# Windows/Linux jobs, and GitHub cannot path-filter a single job without a third-party action.
+# This workflow only runs when code that can affect the macOS build changes.
+on:
+    push:
+        branches: ['master', 'remaster', 'MacOS', 'macos']
+        paths:
+            - 'electron/**'
+            - 'src/**'
+            - 'shared/**'
+            - 'tests/**'
+            - 'tools/**'
+            - 'build/**'
+            - '*.html'
+            - 'vite.config.*'
+            - 'vitest.config.*'
+            - 'eslint.config.*'
+            - 'electron-builder.config.cjs'
+            - 'tsconfig*.json'
+            - 'package.json'
+            - 'package-lock.json'
+            - '.nvmrc'
+            - '.github/workflows/mac-ci.yml'
+    pull_request:
+        branches: ['master', 'remaster', 'MacOS', 'macos']
+        paths:
+            - 'electron/**'
+            - 'src/**'
+            - 'shared/**'
+            - 'tests/**'
+            - 'tools/**'
+            - 'build/**'
+            - '*.html'
+            - 'vite.config.*'
+            - 'vitest.config.*'
+            - 'eslint.config.*'
+            - 'electron-builder.config.cjs'
+            - 'tsconfig*.json'
+            - 'package.json'
+            - 'package-lock.json'
+            - '.nvmrc'
+            - '.github/workflows/mac-ci.yml'
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+    macos:
+        name: macOS (arm64)
+        runs-on: macos-14
+        timeout-minutes: 25
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  persist-credentials: false
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+            - run: npm ci
+            - name: Typecheck (renderer)
+              run: npx tsc -b
+            - name: Typecheck (electron main)
+              run: npx tsc -p electron/tsconfig.json --noEmit
+            - name: Lint
+              run: npm run lint:ci
+            - name: Test
+              run: npm test
+            - name: Build
+              run: npm run build

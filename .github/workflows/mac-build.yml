@@ -1,6 +1,8 @@
 name: Mac Build
 
-# Manual only. This workflow checks that an unsigned macOS package builds; it never publishes and uploads no artifacts (Actions storage quota).
+# Manual only. Builds an UNSIGNED arm64 macOS test package (macos-14); it never publishes.
+# The dmg and zip are uploaded as an artifact kept for 3 days.
+# Testers: after copying KoBar.app out of the dmg, run `xattr -dr com.apple.quarantine KoBar.app`.
 on:
   workflow_dispatch:
 
@@ -9,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
     timeout-minutes: 30
 
     steps:
@@ -34,3 +36,57 @@ jobs:
         CSC_IDENTITY_AUTO_DISCOVERY: "false"
         # Unsigned CI builds must never self-update.
         KOBAR_AUTO_UPDATE: "false"
+
+    # Only the dmg and zip: zipping the raw .app breaks framework symlinks and executable bits.
+    # Uploaded BEFORE verification so a failing check still leaves the package for diagnosis on a Mac.
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: KoBar-macOS-arm64-unsigned
+        path: |
+          release/*.dmg
+          release/*.zip
+        retention-days: 3
+        if-no-files-found: error
+
+    - name: Verify package
+      shell: bash
+      run: |
+        set -euo pipefail
+        ls -la release/ || true
+        APP="release/mac-arm64/KoBar.app"
+        if [ ! -d "$APP" ]; then
+          echo "::error::Expected $APP was not produced"
+          exit 1
+        fi
+        PLIST="$APP/Contents/Info.plist"
+
+        # 1. Info.plist keys
+        [ "$(plutil -extract LSUIElement raw "$PLIST")" = "true" ] || { echo "::error::LSUIElement is not true"; exit 1; }
+        for key in NSAppleEventsUsageDescription NSScreenCaptureUsageDescription; do
+          val="$(plutil -extract "$key" raw "$PLIST" || true)"
+          [ -n "$val" ] || { echo "::error::$key is missing or empty"; exit 1; }
+        done
+        echo "LSMinimumSystemVersion: $(plutil -extract LSMinimumSystemVersion raw "$PLIST" || echo n/a)"
+        echo "CFBundleShortVersionString: $(plutil -extract CFBundleShortVersionString raw "$PLIST" || echo n/a)"
+
+        # 2. Signature (arm64 needs at least ad-hoc)
+        codesign -dv --verbose=2 "$APP" 2>&1 || true
+        codesign --verify --deep --strict --verbose=2 "$APP"
+
+        # 3. Entitlements: warnings only here. This unsigned build has no hardened runtime, so entitlements are not enforced, and
+        # electron-builder may skip its own signing step (then only Electron's ad-hoc signature is present). The signed release
+        # workflow (MAC-072) checks them fail-closed.
+        ENT="$(codesign -d --entitlements :- "$APP" 2>/dev/null || true)"
+        echo "$ENT"
+        echo "$ENT" | grep -q "com.apple.security.automation.apple-events" || echo "::warning::apple-events entitlement not present in the unsigned build"
+        if echo "$ENT" | grep -q "disable-library-validation"; then echo "::warning::disable-library-validation present in the unsigned build"; fi
+        if echo "$ENT" | grep -q "app-sandbox"; then echo "::warning::app-sandbox present in the unsigned build"; fi
+
+        # 4. Unused native module must not be packed
+        LIST="$(npx --no-install asar list "$APP/Contents/Resources/app.asar")"
+        if echo "$LIST" | grep -q "@napi-rs/canvas"; then
+          echo "::error::@napi-rs/canvas found in app.asar"
+          exit 1
+        fi
+        echo "Package verification passed"
