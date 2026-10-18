@@ -7,8 +7,8 @@
 // the main window). T-606: its OWN narrow preload (electron/settings-preload.cts) exposes only `window.settingsBridge` (settings
 // snapshots in, actions out; see windows/settingsSync.cts); never the main window preload, so no window.api, no storage channels,
 // and it can neither read nor write persisted state. The window's menu is removed, so on Windows / Linux it has no Reload /
-// Toggle DevTools accelerators (on macOS the default application menu is app-wide and still offers them: a pre-existing gap
-// shared by every window). DevTools follow the same dev-only KOBAR_DEVTOOLS=1 opt-in as the main window.
+// Toggle DevTools accelerators (on macOS the app-wide menu is built by app/appMenu.cts, MAC-014: no Reload / DevTools in
+// packaged builds). DevTools follow the same dev-only KOBAR_DEVTOOLS=1 opt-in as the main window.
 //
 // IPC: `settings:open` (fire and forget, optional page name) is accepted only from the main window's top frame. T-615: its sender
 // is the claim-once host bridge `__kobarSettingsSync.claim().openSettings(page)` (nothing in window.api, nothing plugin-visible).
@@ -102,7 +102,7 @@ async function createSettingsWindow(deps: SettingsWindowDeps, page?: SettingsPag
     });
     appState.settingsWindow = win;
     // Windows / Linux: no File/Edit/View menu and none of its accelerators (Reload, Toggle DevTools), packaged builds included.
-    // macOS keeps the app-wide default menu (pre-existing gap, see the header).
+    // macOS uses the app-wide menu from app/appMenu.cts (MAC-014), which has no Reload / DevTools item in packaged builds.
     win.removeMenu();
 
     // The window closes with the main window (the app's lifetime), so it never outlives the sidebar.

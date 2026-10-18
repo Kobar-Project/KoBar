@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ensureDevShortcut } from '../../lib/devShortcut.cjs';
 import { createTray } from '../tray.cjs';
+import { installMacAppMenu } from './appMenu.cjs';
 import { stopMediaPolling, updateMediaDemand } from '../services/media.cjs';
 import { startPsBridge, stopPsBridge } from '../services/native.cjs';
 import { waitForKoBoxCleanup } from '../services/kobox.cjs';
@@ -58,6 +59,8 @@ export function registerAppLifecycle(ctx: MainContext): void {
         setupCspDiagnostics(ctx);
         createWindow(windowDeps());
         createTray(appPaths, getUiLanguage);
+        // MAC-014: macOS only (returns at once elsewhere): the app menu with the Edit roles and without Reload / DevTools in production.
+        installMacAppMenu(getUiLanguage);
 
         // Default-deny permission model (see electron/lib/permissions.cts). Only the main app window may write the clipboard.
         installPermissionHandlers(ctx);
