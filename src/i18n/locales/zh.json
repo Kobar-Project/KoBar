@@ -509,7 +509,7 @@
     "month_9": "10月",
     "month_10": "11月",
     "month_11": "12月",
-    "pluginPanelMoveHandle": "移动面板：拖动，或按 Alt 加方向键。双击可重置。",
+    "pluginPanelMoveHandle": "移动面板：拖动，或按 {alt} 加方向键。双击可重置。",
     "noteEditorPlaceholder": "开始书写你的笔记…",
     "noteBold": "粗体",
     "noteItalic": "斜体",

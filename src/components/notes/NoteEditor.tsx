@@ -7,6 +7,7 @@ import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useAppStore } from '../../store/useAppStore';
 import { useT } from '../../i18n/useT';
+import { formatShortcut, modifierLabel } from '../../utils/formatShortcut';
 
 const NoteEditor: React.FC = React.memo(() => {
     const activeNoteId = useAppStore((s) => s.activeNoteId);
@@ -58,7 +59,7 @@ const NoteEditor: React.FC = React.memo(() => {
                         if (!anchor) return false;
                         // Read the translation at event time: the editor config is created once.
                         const st = useAppStore.getState();
-                        const mod = st.isMac ? '⌘' : st.language === 'de' ? 'Strg' : 'Ctrl';
+                        const mod = modifierLabel('mod', { mac: st.isMac, language: st.language }); // MAC-023
                         const hint = st.t('noteLinkHint').replace('{mod}', mod);
                         if (anchor.title !== hint) anchor.title = hint;
                         return false;
@@ -254,7 +255,7 @@ const NoteEditor: React.FC = React.memo(() => {
                             id: 'save-as-text',
                             icon: 'download',
                             label: t('noteSaveAsText'),
-                            shortcut: 'Ctrl+S',
+                            shortcut: formatShortcut('Mod+S'), // MAC-023
                             onSelect: () => void saveAsText(),
                         },
                     ]}

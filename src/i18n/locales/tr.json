@@ -509,7 +509,7 @@
     "persistFailedTitle": "KoBar değişikliklerinizi kaydedemedi",
     "persistFailedBody": "KoBar son değişikliklerinizi kaydedemedi (depolama kullanılamıyor). Uygulamayı kapatırsanız değişiklikleriniz kaybolabilir. Verilerinizi dışa aktarın veya yedekleyin ve uygulamayı yeniden başlatın.",
     "persistFailedQuotaBody": "KoBar son değişikliklerinizi kaydedemedi (depolama dolu). Uygulamayı kapatırsanız değişiklikleriniz kaybolabilir. Verilerinizi dışa aktarın veya yedekleyin ve KoBar'da artık ihtiyacınız olmayan notları, görselleri veya diğer içerikleri silin.",
-    "pluginPanelMoveHandle": "Paneli taşı: sürükleyin veya Alt ile ok tuşlarına basın. Sıfırlamak için çift tıklayın.",
+    "pluginPanelMoveHandle": "Paneli taşı: sürükleyin veya {alt} ile ok tuşlarına basın. Sıfırlamak için çift tıklayın.",
     "noteEditorPlaceholder": "Notunu yazmaya başla…",
     "noteBold": "Kalın",
     "noteItalic": "İtalik",

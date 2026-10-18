@@ -509,7 +509,7 @@
     "persistFailedTitle": "KoBar は変更を保存できませんでした",
     "persistFailedBody": "KoBar は最新の変更を保存できませんでした（ストレージが利用できません）。アプリを閉じると変更が失われる可能性があります。データをエクスポートまたはバックアップし、アプリを再起動してください。",
     "persistFailedQuotaBody": "KoBar は最新の変更を保存できませんでした（ストレージがいっぱいです）。アプリを閉じると変更が失われる可能性があります。データをエクスポートまたはバックアップし、KoBar 内の不要なノート、画像、その他のコンテンツを削除してください。",
-    "pluginPanelMoveHandle": "パネルを移動: ドラッグするか、Alt と矢印キーを押します。ダブルクリックでリセット。",
+    "pluginPanelMoveHandle": "パネルを移動: ドラッグするか、{alt} と矢印キーを押します。ダブルクリックでリセット。",
     "noteEditorPlaceholder": "ノートを書き始めましょう…",
     "noteBold": "太字",
     "noteItalic": "斜体",

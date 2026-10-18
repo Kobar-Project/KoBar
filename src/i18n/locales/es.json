@@ -509,7 +509,7 @@
     "contentPlaceholder": "Pega aquí tu fragmento...",
     "tagsLabel": "Etiquetas (separadas por comas)",
     "tagsPlaceholder": "p. ej., dev, claves, prod",
-    "pluginPanelMoveHandle": "Mover panel: arrastre o pulse Alt con una tecla de flecha. Doble clic para restablecer.",
+    "pluginPanelMoveHandle": "Mover panel: arrastre o pulse {alt} con una tecla de flecha. Doble clic para restablecer.",
     "noteEditorPlaceholder": "Empieza a escribir tu nota…",
     "noteBold": "Negrita",
     "noteItalic": "Cursiva",

@@ -509,7 +509,7 @@
     "persistFailedTitle": "KoBar konnte Ihre Änderungen nicht speichern",
     "persistFailedBody": "KoBar konnte Ihre letzten Änderungen nicht speichern (Speicher nicht verfügbar). Beim Schließen der App können Änderungen verloren gehen. Exportieren oder sichern Sie Ihre Daten und starten Sie die App neu.",
     "persistFailedQuotaBody": "KoBar konnte Ihre letzten Änderungen nicht speichern (Speicher voll). Beim Schließen der App können Änderungen verloren gehen. Exportieren oder sichern Sie Ihre Daten und löschen Sie Notizen, Bilder oder andere Inhalte in KoBar, die Sie nicht mehr brauchen.",
-    "pluginPanelMoveHandle": "Panel verschieben: ziehen oder Alt mit einer Pfeiltaste drücken. Doppelklick setzt zurück.",
+    "pluginPanelMoveHandle": "Panel verschieben: ziehen oder {alt} mit einer Pfeiltaste drücken. Doppelklick setzt zurück.",
     "noteEditorPlaceholder": "Beginne, deine Notiz zu schreiben…",
     "noteBold": "Fett",
     "noteItalic": "Kursiv",

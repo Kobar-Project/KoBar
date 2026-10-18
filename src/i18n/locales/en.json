@@ -509,7 +509,7 @@
     "persistFailedTitle": "KoBar could not save your changes",
     "persistFailedBody": "KoBar could not save your latest changes (storage is unavailable). Your changes may be lost when you close the app. Export or back up your data and restart the app.",
     "persistFailedQuotaBody": "KoBar could not save your latest changes (storage is full). Your changes may be lost when you close the app. Export or back up your data and delete notes, images or other content you no longer need in KoBar.",
-    "pluginPanelMoveHandle": "Move panel: drag, or press Alt with an arrow key. Double-click to reset.",
+    "pluginPanelMoveHandle": "Move panel: drag, or press {alt} with an arrow key. Double-click to reset.",
     "noteEditorPlaceholder": "Start writing your note…",
     "noteBold": "Bold",
     "noteItalic": "Italic",

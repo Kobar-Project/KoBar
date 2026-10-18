@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useT } from '../../i18n/useT';
 import { cx, INTERACTIVE } from '../../ui/cx';
 import { exceedsDragThreshold } from '../../utils/dragThreshold';
+import { modifierLabel } from '../../utils/formatShortcut';
 import {
     clampPanelOffset,
     isInteractiveTarget,
@@ -231,7 +232,7 @@ export function PluginPanelHost({ pluginId, orientation, area, children }: Plugi
                 data-scheme="dark"
                 role="button"
                 tabIndex={0}
-                aria-label={t('pluginPanelMoveHandle')}
+                aria-label={t('pluginPanelMoveHandle').replace('{alt}', modifierLabel('alt'))} // MAC-023
                 data-plugin-panel-handle={pluginId}
                 onPointerDown={begin}
                 onDoubleClick={reset}

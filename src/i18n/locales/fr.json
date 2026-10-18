@@ -509,7 +509,7 @@
     "persistFailedTitle": "KoBar n'a pas pu enregistrer vos modifications",
     "persistFailedBody": "KoBar n'a pas pu enregistrer vos dernières modifications (stockage indisponible). Vos modifications peuvent être perdues à la fermeture de l'application. Exportez ou sauvegardez vos données et redémarrez l'application.",
     "persistFailedQuotaBody": "KoBar n'a pas pu enregistrer vos dernières modifications (stockage plein). Vos modifications peuvent être perdues à la fermeture de l'application. Exportez ou sauvegardez vos données et supprimez dans KoBar les notes, images ou autres contenus dont vous n'avez plus besoin.",
-    "pluginPanelMoveHandle": "Déplacer le panneau : faites glisser ou appuyez sur Alt avec une flèche. Double-clic pour réinitialiser.",
+    "pluginPanelMoveHandle": "Déplacer le panneau : faites glisser ou appuyez sur {alt} avec une flèche. Double-clic pour réinitialiser.",
     "noteEditorPlaceholder": "Commencez à écrire votre note…",
     "noteBold": "Gras",
     "noteItalic": "Italique",
