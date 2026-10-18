@@ -10,6 +10,7 @@ import { Button, Surface, Toggle } from '../../ui';
 import { dispatchSystemAction, useSettingsState, useSystemSummary } from '../mirror';
 import type { SettingsPageProps } from '../pages';
 import type { SystemActionType } from '../../store/systemSummary';
+import { RELEASES_URL } from '../../config/links';
 
 const HINT = 'text-[0.6875rem] leading-4 text-fg-2';
 const SECTION_LABEL = 'text-[0.8125rem] leading-5 font-semibold text-fg-1';
@@ -141,6 +142,33 @@ export function BackupPage({ t }: SettingsPageProps) {
                     </div>
                 ))}
             </Surface>
+            {summary?.manualUpdate && (
+                // MAC-016: unsigned macOS build: no self-update. A plain anchor like the About page (main's navigation guard opens it).
+                <Surface
+                    as="section"
+                    level="surface"
+                    elevation="e1"
+                    radius="lg"
+                    aria-labelledby={updateId}
+                    className="flex flex-col gap-3 p-4"
+                >
+                    <span id={updateId} className={SECTION_LABEL}>
+                        {t('updateCenter')}
+                    </span>
+                    <p className={BODY}>
+                        {t('version')}: <span className="font-mono text-fg-1">{summary.version || '…'}</span>
+                    </p>
+                    <p className={BODY}>{t('updateManualDesc')}</p>
+                    <a
+                        href={RELEASES_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-[var(--kb-accent)] hover:underline"
+                    >
+                        {t('updateManualLink')}
+                    </a>
+                </Surface>
+            )}
             {summary?.updatesEnabled && (
                 <Surface
                     as="section"

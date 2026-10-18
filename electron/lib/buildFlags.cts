@@ -29,6 +29,14 @@ export function resolveFlavor({ packageFlavor, windowsStore, isPackaged }: Flavo
  * Whether the electron-updater IPCs may run. Only 'direct' builds self-update, and only when the build opted in
  * via `kobarAutoUpdate: true` in the packaged package.json (mirrors `enableAutoUpdate` in kobar-settings.json).
  */
-export function canSelfUpdateFor(flavor: KobarFlavor, packageAutoUpdate: unknown): boolean {
+export function canSelfUpdateFor(
+    flavor: KobarFlavor,
+    packageAutoUpdate: unknown,
+    // MAC-016: optional so Windows callers/results stay identical. Squirrel.Mac verifies the code signature, so an unsigned
+    // macOS build can never self-update; `kobarMacSigned` is only written into package.json by signed builds (KOBAR_MAC_SIGNED=true).
+    platform?: string,
+    packageMacSigned?: unknown
+): boolean {
+    if (platform === 'darwin' && packageMacSigned !== true) return false;
     return flavor === 'direct' && packageAutoUpdate === true;
 }

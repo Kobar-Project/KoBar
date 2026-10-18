@@ -17,7 +17,7 @@ export interface FuseConfig {
 
 export interface BuilderConfig {
     appId: string;
-    extraMetadata: { kobarFlavor: DistFlavor; kobarAutoUpdate: boolean; version?: string };
+    extraMetadata: { kobarFlavor: DistFlavor; kobarAutoUpdate: boolean; kobarMacSigned?: true; version?: string };
     publish: { provider: string; owner: string; repo: string }[];
     asar: boolean;
     directories: { output: string; buildResources: string };

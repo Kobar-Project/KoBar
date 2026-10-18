@@ -232,6 +232,7 @@ const WORKSPACE_SUMMARY_SCHEMA = z.strictObject({
 const SYSTEM_SUMMARY_SCHEMA = z.strictObject({
     version: z.string().max(64),
     updatesEnabled: z.boolean(),
+    manualUpdate: z.boolean().optional(), // MAC-016
     update: z.strictObject({
         status: z.enum(['idle', 'checking', 'upToDate', 'available', 'downloading', 'downloaded', 'error']),
         version: z.string().max(64),

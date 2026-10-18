@@ -8,6 +8,8 @@
     "alreadyLatest": "Ya estás usando la última versión de KoBar.",
     "updateError": "Ocurrió un error al buscar actualizaciones.",
     "updateCenter": "Centro de actualizaciones",
+    "updateManualDesc": "Esta compilación de KoBar no está firmada, por lo que no puede actualizarse sola. Descarga las nuevas versiones manualmente desde la página de versiones.",
+    "updateManualLink": "Abrir la página de versiones",
     "newVersionAvailable": "Nueva versión disponible: v{version}",
     "downloadAndInstall": "Descargar e instalar actualización",
     "downloadingUpdate": "Descargando actualización...",

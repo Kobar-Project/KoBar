@@ -9,6 +9,8 @@
     "alreadyLatest": "You are already using the latest version of KoBar.",
     "updateError": "An error occurred while checking for updates.",
     "updateCenter": "Update Center",
+    "updateManualDesc": "This build of KoBar is not code-signed, so it cannot update itself. Download new versions manually from the releases page.",
+    "updateManualLink": "Open the releases page",
     "newVersionAvailable": "New Version Available: v{version}",
     "downloadAndInstall": "Download & Install Update",
     "downloadingUpdate": "Downloading Update...",

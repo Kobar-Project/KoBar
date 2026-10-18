@@ -8,6 +8,8 @@
     "alreadyLatest": "أنت تستخدم بالفعل أحدث إصدار من KoBar.",
     "updateError": "حدث خطأ أثناء التحقق من وجود تحديثات.",
     "updateCenter": "مركز التحديثات",
+    "updateManualDesc": "هذه النسخة من KoBar غير موقّعة، لذلك لا يمكنها تحديث نفسها. نزّل الإصدارات الجديدة يدويًا من صفحة الإصدارات.",
+    "updateManualLink": "فتح صفحة الإصدارات",
     "newVersionAvailable": "يتوفر إصدار جديد: v{version}",
     "downloadAndInstall": "تنزيل وتثبيت التحديث",
     "downloadingUpdate": "جاري تنزيل التحديث...",

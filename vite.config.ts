@@ -22,6 +22,8 @@ export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss()],
   define: {
     __KOBAR_FLAVOR__: JSON.stringify(resolveRendererFlavor(command)),
+    // MAC-016: signed macOS builds only (env KOBAR_MAC_SIGNED=true, as in tools/builderConfig.cjs); everything else is unsigned.
+    __KOBAR_MAC_SIGNED__: JSON.stringify(process.env.KOBAR_MAC_SIGNED === 'true'),
   },
   build: {
     rollupOptions: {

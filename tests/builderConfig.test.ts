@@ -347,6 +347,12 @@ describe('macOS packaging (MAC-011)', () => {
         expect(mk({ KOBAR_MAC_SIGNED: 'true' }).mac.hardenedRuntime).toBe(true);
     });
 
+    it('MAC-016: kobarMacSigned is written only for KOBAR_MAC_SIGNED=true', () => {
+        expect(mk().extraMetadata).not.toHaveProperty('kobarMacSigned');
+        for (const v of ['', 'false', 'TRUE', '1']) expect(mk({ KOBAR_MAC_SIGNED: v }).extraMetadata).not.toHaveProperty('kobarMacSigned');
+        expect(mk({ KOBAR_MAC_SIGNED: 'true' }).extraMetadata.kobarMacSigned).toBe(true);
+    });
+
     it('Windows and Store configuration is unchanged', () => {
         const direct = mk();
         expect(direct.win).toEqual({ target: ['nsis'], icon: 'build/icon.ico' });

@@ -16,11 +16,13 @@ export interface UpdaterIpcDeps {
 
 // T-216: the build flavor comes from `kobarFlavor` / `kobarAutoUpdate` in the packaged package.json plus process.windowsStore
 // (see electron/lib/buildFlags.cts). Source files are no longer rewritten for this.
-function readPackagedBuildMetadata(): { kobarFlavor?: unknown; kobarAutoUpdate?: unknown } {
+function readPackagedBuildMetadata(): { kobarFlavor?: unknown; kobarAutoUpdate?: unknown; kobarMacSigned?: unknown } {
     if (!app.isPackaged) return {};
     try {
         const parsed: unknown = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), 'package.json'), 'utf8'));
-        return parsed && typeof parsed === 'object' ? (parsed as { kobarFlavor?: unknown; kobarAutoUpdate?: unknown }) : {};
+        return parsed && typeof parsed === 'object'
+            ? (parsed as { kobarFlavor?: unknown; kobarAutoUpdate?: unknown; kobarMacSigned?: unknown })
+            : {};
     } catch {
         return {};
     }
@@ -32,7 +34,12 @@ const kobarFlavor: KobarFlavor = resolveFlavor({
     isPackaged: app.isPackaged,
 });
 // Store and dev builds must never self-update; every updater IPC checks this flag (REL-14).
-const canSelfUpdate: boolean = canSelfUpdateFor(kobarFlavor, packagedBuildMetadata.kobarAutoUpdate);
+const canSelfUpdate: boolean = canSelfUpdateFor(
+    kobarFlavor,
+    packagedBuildMetadata.kobarAutoUpdate,
+    process.platform,
+    packagedBuildMetadata.kobarMacSigned
+); // MAC-016: unsigned macOS builds never self-update
 let lastUpdateVersion: string | null = null;
 
 /** Called from the app.whenReady() callback, at the point where the updater used to be configured inline. */
@@ -76,7 +83,8 @@ export function setupUpdater() {
     });
 
     if (canSelfUpdate) {
-        autoUpdater.checkForUpdates();
+        // MAC-016: the `error` event above already reports failures to the UI; this only stops an unhandled rejection.
+        autoUpdater.checkForUpdates().catch(() => undefined);
     }
 }
 

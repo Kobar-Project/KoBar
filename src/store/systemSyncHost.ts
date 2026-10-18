@@ -3,7 +3,7 @@
 import { getDataTransferMode, openDataTransferDialog } from '../backup/dataTransferDialog';
 import { isRestoreDialogOpen, openRestoreDialog } from '../backup/restoreDialog';
 import { exportFullBackup } from '../backup/exportBackup';
-import { IS_STORE_FLAVOR } from '../buildFlags';
+import { IS_MAC_SIGNED, IS_STORE_FLAVOR, KOBAR_FLAVOR, isManualUpdateOnly } from '../buildFlags';
 import { createSystemSync, type SystemSyncApi } from './systemSync';
 import { useAppStore } from './useAppStore';
 
@@ -17,10 +17,18 @@ function bringWindowForward(): void {
     }
 }
 
+// MAC-016: unsigned macOS build: no update centre, the Settings window shows a manual-download link instead.
+const manualUpdate = isManualUpdateOnly(
+    KOBAR_FLAVOR,
+    (globalThis as { api?: { getPlatform?: () => string } }).api?.getPlatform?.(),
+    IS_MAC_SIGNED
+);
+
 export const systemSync = createSystemSync({
     api: () => (globalThis as { api?: SystemSyncApi }).api,
     isHydrated: () => useAppStore.getState().isHydrated,
-    updatesEnabled: !IS_STORE_FLAVOR,
+    updatesEnabled: !IS_STORE_FLAVOR && !manualUpdate,
+    manualUpdate,
     exportBackup: (options) => exportFullBackup(options),
     openRestore: () => {
         // T-615b: the restore and the data transfer dialogs are never open together.

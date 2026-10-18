@@ -9,6 +9,8 @@
     "alreadyLatest": "Zaten en son KoBar sürümünü kullanıyorsunuz.",
     "updateError": "Güncelleme kontrolü sırasında bir hata oluştu.",
     "updateCenter": "Güncelleme Merkezi",
+    "updateManualDesc": "Bu KoBar sürümü kod imzalı olmadığı için kendini güncelleyemez. Yeni sürümleri sürümler sayfasından elle indirin.",
+    "updateManualLink": "Sürümler sayfasını aç",
     "newVersionAvailable": "Yeni Sürüm Mevcut: v{version}",
     "downloadAndInstall": "Güncellemeyi İndir ve Kur",
     "downloadingUpdate": "Güncelleme İndiriliyor...",

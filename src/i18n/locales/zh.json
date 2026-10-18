@@ -8,6 +8,8 @@
     "alreadyLatest": "您已经在使用最新版本的 KoBar。",
     "updateError": "检查更新时发生错误。",
     "updateCenter": "更新中心",
+    "updateManualDesc": "此 KoBar 版本未经代码签名，无法自动更新。请从发布页面手动下载新版本。",
+    "updateManualLink": "打开发布页面",
     "newVersionAvailable": "有新版本可用：v{version}",
     "downloadAndInstall": "下载并安装更新",
     "downloadingUpdate": "正在下载更新...",

@@ -107,6 +107,9 @@ function createBuilderConfig({ env, readSettings, readSecrets }) {
         // Only a direct build may self-update, and only when kobar-settings.json opts in with a real boolean `true`.
         kobarAutoUpdate: flavor === 'direct' && settings.enableAutoUpdate === true && env.KOBAR_AUTO_UPDATE !== 'false',
     };
+    // MAC-016: only a signed macOS build may self-update (Squirrel.Mac verifies signatures). Written only when the env is set, so
+    // Windows / Store extraMetadata stays exactly as before.
+    if (env.KOBAR_MAC_SIGNED === 'true') extraMetadata.kobarMacSigned = true;
 
     const config = {
         appId: APP_ID,

@@ -115,4 +115,14 @@ describe('BackupPage', () => {
         expect(button(host, en.checkForUpdates)).toBeUndefined();
         expect(button(host, en.fullBackupCreate)).toBeTruthy();
     });
+
+    it('MAC-016: an unsigned macOS build shows a manual-download link instead of the update buttons', () => {
+        publish({ ...BASE, updatesEnabled: false, manualUpdate: true });
+        const { host } = render(<BackupPage t={t} />);
+        expect(host.textContent).toContain(en.updateManualDesc);
+        expect(button(host, en.checkForUpdates)).toBeUndefined();
+        const link = Array.from(host.querySelectorAll('a')).find((a) => a.textContent === en.updateManualLink);
+        expect(link?.getAttribute('href')).toBe('https://github.com/Kobar-Project/KoBar/releases');
+        expect(link?.getAttribute('target')).toBe('_blank');
+    });
 });

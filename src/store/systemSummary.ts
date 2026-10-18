@@ -45,6 +45,7 @@ export function sanitizeSystemSummary(raw: unknown): SystemSummary | null {
     return {
         version: shortText(raw.version),
         updatesEnabled: raw.updatesEnabled === true,
+        ...(raw.manualUpdate === true ? { manualUpdate: true } : {}),
         update: {
             status,
             version: shortText(raw.update.version),

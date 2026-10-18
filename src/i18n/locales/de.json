@@ -8,6 +8,8 @@
     "alreadyLatest": "Sie verwenden bereits die neueste Version von KoBar.",
     "updateError": "Beim Überprüfen auf Updates ist ein Fehler aufgetreten.",
     "updateCenter": "Update-Center",
+    "updateManualDesc": "Dieser KoBar-Build ist nicht code-signiert und kann sich nicht selbst aktualisieren. Lade neue Versionen manuell von der Releases-Seite herunter.",
+    "updateManualLink": "Releases-Seite öffnen",
     "newVersionAvailable": "Neue Version verfügbar: v{version}",
     "downloadAndInstall": "Update herunterladen & installieren",
     "downloadingUpdate": "Update wird heruntergeladen...",

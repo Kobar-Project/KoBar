@@ -56,6 +56,8 @@ export interface SystemSyncDeps {
     isHydrated: () => boolean;
     /** False in the Microsoft Store build. */
     updatesEnabled: boolean;
+    /** MAC-016: unsigned macOS build; the Settings window shows a manual-download link (absent = false). */
+    manualUpdate?: boolean;
     /** Builds the full backup and lets main save it (src/backup/exportBackup.ts). Never rejects. */
     exportBackup: (options: { includeSecrets: boolean }) => Promise<{ success: boolean; reason?: string }>;
     /** T-615a: shows the main window's restore dialog and brings the window forward (absent: `backup.restore` is unavailable). */
@@ -207,7 +209,13 @@ export function createSystemSync(deps: SystemSyncDeps): SystemSyncLike {
     }
 
     return {
-        getSummary: () => ({ version, updatesEnabled: deps.updatesEnabled, update: { ...update }, backup: { ...backup } }),
+        getSummary: () => ({
+            version,
+            updatesEnabled: deps.updatesEnabled,
+            ...(deps.manualUpdate ? { manualUpdate: true } : {}),
+            update: { ...update },
+            backup: { ...backup },
+        }),
         subscribe(listener) {
             if (listeners.size === 0) attach();
             listeners.add(listener);

@@ -8,6 +8,8 @@
     "alreadyLatest": "आप पहले से ही KoBar के नवीनतम संस्करण का उपयोग कर रहे हैं।",
     "updateError": "अपडेट की जाँच करते समय एक त्रुटि हुई।",
     "updateCenter": "अद्यतन केंद्र",
+    "updateManualDesc": "KoBar का यह बिल्ड कोड-साइन्ड नहीं है, इसलिए यह खुद को अपडेट नहीं कर सकता। नए संस्करण रिलीज़ पेज से हाथ से डाउनलोड करें।",
+    "updateManualLink": "रिलीज़ पेज खोलें",
     "newVersionAvailable": "नया संस्करण उपलब्ध है: v{version}",
     "downloadAndInstall": "अपडेट डाउनलोड और इंस्टॉल करें",
     "downloadingUpdate": "अपडेट डाउनलोड हो रहा है...",

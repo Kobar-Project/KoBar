@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { canSelfUpdateFor, resolveFlavor } from '../electron/lib/buildFlags.cjs';
-import { IS_STORE_FLAVOR, KOBAR_FLAVOR, normalizeFlavor } from '../src/buildFlags';
+import { IS_MAC_SIGNED, IS_STORE_FLAVOR, KOBAR_FLAVOR, isManualUpdateOnly, normalizeFlavor } from '../src/buildFlags';
 
 describe('resolveFlavor (main process, T-216)', () => {
     const packageFlavors: unknown[] = [undefined, 'store', 'direct', 'dev', 'bogus', 42, null];
@@ -51,6 +51,31 @@ describe('canSelfUpdateFor (T-216)', () => {
     it('respects an explicit kobarAutoUpdate: false opt-out', () => {
         expect(canSelfUpdateFor('direct', false)).toBe(false);
     });
+
+    it('MAC-016: win32 / linux results are identical to the platform-less call, whatever kobarMacSigned says', () => {
+        const flavors = ['dev', 'store', 'direct'] as const;
+        for (const platform of ['win32', 'linux', undefined]) {
+            for (const flavor of flavors) {
+                for (const auto of [undefined, false, true]) {
+                    for (const signed of [undefined, false, true]) {
+                        expect(canSelfUpdateFor(flavor, auto, platform, signed)).toBe(canSelfUpdateFor(flavor, auto));
+                    }
+                }
+            }
+        }
+        expect(canSelfUpdateFor('direct', true, 'win32')).toBe(true);
+        expect(canSelfUpdateFor('store', true, 'win32')).toBe(false);
+    });
+
+    it('MAC-016: macOS self-updates only for a signed direct build that opted in', () => {
+        expect(canSelfUpdateFor('direct', true, 'darwin')).toBe(false);
+        expect(canSelfUpdateFor('direct', true, 'darwin', false)).toBe(false);
+        expect(canSelfUpdateFor('direct', true, 'darwin', 'true')).toBe(false);
+        expect(canSelfUpdateFor('direct', true, 'darwin', true)).toBe(true);
+        expect(canSelfUpdateFor('direct', false, 'darwin', true)).toBe(false);
+        expect(canSelfUpdateFor('store', true, 'darwin', true)).toBe(false);
+        expect(canSelfUpdateFor('dev', true, 'darwin', true)).toBe(false);
+    });
 });
 
 describe('renderer flavor (src/buildFlags.ts, T-216)', () => {
@@ -65,6 +90,20 @@ describe('renderer flavor (src/buildFlags.ts, T-216)', () => {
     it('falls back to dev when the Vite define is missing (Vitest)', () => {
         expect(KOBAR_FLAVOR).toBe('dev');
         expect(IS_STORE_FLAVOR).toBe(false);
+        expect(IS_MAC_SIGNED).toBe(false);
+    });
+
+    it('MAC-016: manual-update mode is only for unsigned macOS builds', () => {
+        expect(isManualUpdateOnly('direct', 'darwin', false)).toBe(true);
+        expect(isManualUpdateOnly('dev', 'darwin', false)).toBe(true);
+        expect(isManualUpdateOnly('direct', 'darwin', true)).toBe(false);
+        expect(isManualUpdateOnly('store', 'darwin', false)).toBe(false);
+        for (const flavor of ['dev', 'store', 'direct'] as const) {
+            for (const signed of [false, true]) {
+                expect(isManualUpdateOnly(flavor, 'win32', signed)).toBe(false);
+                expect(isManualUpdateOnly(flavor, undefined, signed)).toBe(false);
+            }
+        }
     });
 });
 

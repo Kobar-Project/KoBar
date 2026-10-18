@@ -495,6 +495,8 @@ export interface IpcSystemSummary {
     version: string;
     /** False in the Microsoft Store build (the Store updates the app): the Settings window hides the update centre. */
     updatesEnabled: boolean;
+    /** MAC-016: true on an unsigned macOS build (no self-update): the Settings window shows a manual-download link. Absent = false. */
+    manualUpdate?: boolean;
     update: { status: IpcSystemUpdateStatus; version: string; percent: number };
     backup: { busy: boolean; last: 'done' | 'failed' | 'canceled' | null };
 }
