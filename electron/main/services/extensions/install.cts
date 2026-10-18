@@ -20,7 +20,7 @@ import { resolveInside } from '../../../lib/paths.cjs';
 import type { PathGrants } from '../../../lib/pathGrants.cjs';
 import { checkPluginApiGate } from '../../../lib/pluginApiGate.cjs';
 import { PLUGIN_CANCELED_REASON, buildReplaceRefusal } from '../../../lib/pluginConfirm.cjs';
-import { parseGithubRepo, validateManifestForInstall } from '../../../lib/pluginInstall.cjs';
+import { parseGithubRepo, validateManifestForInstall, withoutMacMetadata } from '../../../lib/pluginInstall.cjs';
 import { decideReplaceInstalled, sourceForRepo } from '../../../lib/pluginOrigins.cjs';
 import { findManifestDir } from '../../../lib/pluginScan.cjs';
 import { DEFAULT_ZIP_LIMITS, extractZipSafely } from '../../../lib/zipGuards.cjs';
@@ -89,7 +89,8 @@ export function registerExtensionInstallIpc(deps: ExtensionInstallDeps): void {
             // adm-zip reads and inflates synchronously (it has no async API); the size check above and the limits below bound it.
             const zip = new AdmZip(zipPath);
             // Enforces entry/size limits, rejects symlink/absolute/traversal entries (SEC-12).
-            extractZipSafely(zip, tempExtractDir);
+            // MAC-020: macOS Finder metadata (__MACOSX/, ._*, .DS_Store) is dropped before validation, never extracted.
+            extractZipSafely(withoutMacMetadata(zip), tempExtractDir);
         } catch (err: unknown) {
             // Corrupt zip or rejected entry (e.g. symlink, zip bomb): do not leave the temp folder behind
             console.error('[Extensions] Failed to extract ZIP archive:', err);

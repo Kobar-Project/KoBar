@@ -2,6 +2,7 @@
 import * as nodePath from 'path';
 import { isSafeId, resolveInsideWith } from './paths.cjs';
 import { isOfficialGithubOwner, isOfficialPluginId } from './officialPlugins.cjs';
+import type { ZipLike } from './zipGuards.cjs';
 
 /** Where a plugin package comes from. */
 export type InstallSource =
@@ -44,6 +45,25 @@ export function isSafeEntry(entry: unknown): boolean {
     const win = resolveInsideWith(nodePath.win32, 'C:\\plugin', [entry]);
     // Pointing at the plugin folder itself is not a file either.
     return posix !== null && win !== null && posix !== '/plugin' && win.toLowerCase() !== 'c:\\plugin';
+}
+
+/**
+ * MAC-020: true for the metadata macOS Finder adds to a ZIP made with "Compress": the `__MACOSX/`
+ * folder, AppleDouble `._*` files and `.DS_Store`. Separators are split on both `/` and `\`.
+ */
+export function isMacMetadataEntry(entryName: string): boolean {
+    const segments = entryName.split(/[\\/]+/);
+    if (segments.includes('__MACOSX')) return true;
+    const last = segments.filter((s) => s !== '').pop() ?? '';
+    return last === '.DS_Store' || last.startsWith('._');
+}
+
+/**
+ * MAC-020: a view of `zip` without the macOS metadata entries (order kept). Skipped entries are
+ * never written, so this is applied before extractZipSafely.
+ */
+export function withoutMacMetadata(zip: ZipLike): ZipLike {
+    return { getEntries: () => zip.getEntries().filter((e) => !isMacMetadataEntry(e.entryName)) };
 }
 
 /**

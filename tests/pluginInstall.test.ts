@@ -1,7 +1,17 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 import { OFFICIAL_GITHUB_OWNER, OFFICIAL_PLUGIN_IDS, isOfficialGithubOwner, isOfficialPluginId } from '../electron/lib/officialPlugins.cjs';
 import { isSafeId } from '../electron/lib/paths.cjs';
-import { isSafeEntry, parseGithubRepo, validateManifestForInstall } from '../electron/lib/pluginInstall.cjs';
+import {
+    isMacMetadataEntry,
+    isSafeEntry,
+    parseGithubRepo,
+    validateManifestForInstall,
+    withoutMacMetadata,
+} from '../electron/lib/pluginInstall.cjs';
+import { extractZipSafely } from '../electron/lib/zipGuards.cjs';
 
 // Manifest ids of the 13 official plugins (checked against the plugin repos' manifest.json).
 const EXPECTED_OFFICIAL_IDS = [
@@ -175,5 +185,75 @@ describe('validateManifestForInstall', () => {
         const r = validateManifestForInstall({ ...base, id: 'my-plugin', entry: '../other/index.js' }, LOCAL);
         expect(r.ok).toBe(false);
         expect(validateManifestForInstall({ ...base, id: 'my-plugin', entry: 'dist/index.js' }, LOCAL).ok).toBe(true);
+    });
+});
+
+// MAC-020: macOS "Compress" adds Finder metadata to ZIPs; it must never be installed.
+describe('isMacMetadataEntry', () => {
+    it.each([
+        '__MACOSX/',
+        '__MACOSX/plugin/._index.js',
+        'plugin/._index.js',
+        '._manifest.json',
+        'plugin/.DS_Store',
+        '.DS_Store',
+        'plugin\\.DS_Store',
+    ])('true for %s', (name) => {
+        expect(isMacMetadataEntry(name)).toBe(true);
+    });
+    it.each([
+        'plugin/index.js',
+        'manifest.json',
+        'plugin/.hidden',
+        'plugin/_x.js',
+        'plugin/x._y',
+        '__MACOSX_not/x.js',
+        'plugin/.DS_Store_backup',
+    ])('false for %s', (name) => {
+        expect(isMacMetadataEntry(name)).toBe(false);
+    });
+});
+
+function fakeZip(names: string[]) {
+    return {
+        getEntries: () =>
+            names.map((entryName) => ({
+                entryName,
+                isDirectory: entryName.endsWith('/'),
+                header: { size: 1 },
+                getData: () => Buffer.from('x'),
+            })),
+    };
+}
+
+describe('withoutMacMetadata', () => {
+    it('keeps only the real entries, in the same order', () => {
+        const zip = fakeZip(['__MACOSX/', '__MACOSX/plugin/._index.js', 'plugin/', 'plugin/index.js', 'plugin/.DS_Store', 'manifest.json']);
+        expect(
+            withoutMacMetadata(zip)
+                .getEntries()
+                .map((e) => e.entryName)
+        ).toEqual(['plugin/', 'plugin/index.js', 'manifest.json']);
+    });
+    it('extracts without the macOS metadata files', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kobar-mac020-'));
+        try {
+            const zip = fakeZip([
+                '__MACOSX/',
+                '__MACOSX/._index.js',
+                'plugin/._index.js',
+                'plugin/.DS_Store',
+                'plugin/index.js',
+                'manifest.json',
+            ]);
+            extractZipSafely(withoutMacMetadata(zip), tmpDir);
+            expect(fs.existsSync(path.join(tmpDir, '__MACOSX'))).toBe(false);
+            expect(fs.existsSync(path.join(tmpDir, 'plugin', '._index.js'))).toBe(false);
+            expect(fs.existsSync(path.join(tmpDir, 'plugin', '.DS_Store'))).toBe(false);
+            expect(fs.existsSync(path.join(tmpDir, 'plugin', 'index.js'))).toBe(true);
+            expect(fs.existsSync(path.join(tmpDir, 'manifest.json'))).toBe(true);
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
     });
 });
