@@ -296,6 +296,20 @@ describe('PDF worker packaging (T-141)', () => {
         expect(read('package.json')).toContain('dist-electron/pdf-worker.cjs');
         expect(fs.existsSync(path.join(root, 'electron', 'pdf-worker.cts'))).toBe(true);
     });
+
+    it('excludes every @napi-rs/canvas package from the asar while keeping the allow-list (MAC-012)', () => {
+        const allowList = ['dist/**/*', 'dist-electron/**/*', 'Assets/**/*', 'build/**/*', 'package.json'];
+        const negations = ['!**/node_modules/@napi-rs/canvas/**', '!**/node_modules/@napi-rs/canvas-*/**'];
+        for (const env of [{ KOBAR_FLAVOR: 'direct' }, { KOBAR_FLAVOR: 'store', ...IDENTITY_ENV }]) {
+            const config = createBuilderConfig({ env, readSettings: () => null, readSecrets: noSecrets });
+            for (const pattern of negations) expect(config.files).toContain(pattern);
+            for (const pattern of allowList) expect(config.files).toContain(pattern);
+        }
+    });
+
+    it('the PDF worker still stubs @napi-rs/canvas, so the packaging exclusion stays valid (MAC-012)', () => {
+        expect(read('electron/pdf-worker.cts')).toContain("request.startsWith('@napi-rs/canvas')");
+    });
 });
 
 describe('macOS packaging (MAC-011)', () => {

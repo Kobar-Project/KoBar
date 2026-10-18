@@ -124,7 +124,17 @@ function createBuilderConfig({ env, readSettings, readSecrets }) {
             output: 'release',
             buildResources: 'build',
         },
-        files: ['dist/**/*', 'dist-electron/**/*', 'Assets/**/*', 'build/**/*', 'package.json'],
+        files: [
+            'dist/**/*',
+            'dist-electron/**/*',
+            'Assets/**/*',
+            'build/**/*',
+            'package.json',
+            // MAC-012: the @napi-rs/canvas packages (main + platform binaries, pulled in by pdf-parse) are never loaded at runtime,
+            // because electron/pdf-worker.cts stubs the module; if that stub is ever removed, these exclusions must go too.
+            '!**/node_modules/@napi-rs/canvas/**',
+            '!**/node_modules/@napi-rs/canvas-*/**',
+        ],
         // T-141: asarUnpack is deliberately absent: unpacked files escape EmbeddedAsarIntegrity validation, and the PDF worker
         // (electron/pdf-worker.cts) refuses to load the native @napi-rs/canvas addon, so nothing native is needed. If the packaged
         // PDF test fails (e.g. dynamic import of pdf.worker.mjs from the asar), add `**/node_modules/pdf-parse/**` ONLY.
