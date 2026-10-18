@@ -5,6 +5,8 @@ import { app, dialog, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import { type ExternalDecision, classifyExternalUrl, describeUrlForDialog, truncateForDialog } from '../../lib/external.cjs';
 import { type MainLang, normalizeLanguage, parseLanguage, t } from '../../lib/mainStrings.cjs';
+// MAC-019: the query is shown in the confirm dialog on macOS only (Windows text unchanged).
+import { isMac } from '../platform.cjs';
 import { resolvePhysicalPath } from '../lib/physicalPath.cjs';
 import { appState } from '../state.cjs';
 
@@ -89,7 +91,7 @@ export async function openExternalChecked(raw: unknown, decision: ExternalDecisi
         }
         if (decision.kind === 'confirm') {
             const lang = await getUiLanguage();
-            const message = t(lang, 'openAddress', { target: describeUrlForDialog(decision.url) });
+            const message = t(lang, 'openAddress', { target: describeUrlForDialog(decision.url, isMac ? 240 : 120, isMac) });
             const detail = truncateForDialog(decision.url.href, 200) + '\n\n' + t(lang, 'onlyContinueIfTrust');
             if (!(await confirmWithUser(message, detail))) return;
         }

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { classifyExternalUrl, classifyLaunchTarget, describeUrlForDialog, truncateForDialog } from '../electron/lib/external.cjs';
+import {
+    ALLOWED_SCHEMES,
+    CONFIRM_SCHEMES,
+    DANGEROUS_SCHEMES,
+    classifyExternalUrl,
+    classifyLaunchTarget,
+    describeUrlForDialog,
+    truncateForDialog,
+} from '../electron/lib/external.cjs';
 
 const kind = (raw: unknown) => classifyExternalUrl(raw).kind;
 
@@ -72,6 +80,51 @@ describe('classifyExternalUrl', () => {
         const long = new URL('https://example.com/' + 'a'.repeat(500));
         const text = describeUrlForDialog(long);
         expect(text.length).toBeLessThanOrEqual(123);
+        expect(text.endsWith('...')).toBe(true);
+    });
+
+    // MAC-019
+    it.each([
+        'shortcuts://run-shortcut?name=X',
+        'Shortcuts://run-shortcut?name=X',
+        'SHORTCUTS:run',
+        'applescript://com.apple.scripteditor?action=new',
+        'AppleScript:x',
+    ])('denies mac automation scheme %s', (u) => expect(kind(u)).toBe('deny'));
+
+    it.each([
+        'ssh://host',
+        'vnc://host',
+        'smb://host/share',
+        'afp://host/vol',
+        'nfs://host/x',
+        'telnet://host',
+        'facetime://user.example',
+        'x-apple.systempreferences:com.apple.preference.security?Privacy_Camera',
+        'x-man-page://ls',
+    ])('confirms mac scheme %s with a specific reason', (u) => {
+        const d = classifyExternalUrl(u);
+        expect(d.kind).toBe('confirm');
+        expect(d.reason).toContain('remote-session, file-share or system handler');
+    });
+
+    it('keeps CONFIRM_SCHEMES out of the allow list and the deny list', () => {
+        for (const s of CONFIRM_SCHEMES) {
+            expect(ALLOWED_SCHEMES.has(s), s).toBe(false);
+            expect(DANGEROUS_SCHEMES.has(s), s).toBe(false);
+        }
+    });
+
+    it('shows the query in the dialog text only when asked, sanitized and bounded', () => {
+        const u = new URL('x-apple.systempreferences:com.apple.preference.security?Privacy_Camera#frag');
+        expect(describeUrlForDialog(u)).toBe('x-apple.systempreferences:com.apple.preference.security');
+        expect(describeUrlForDialog(u, 120, true)).toBe('x-apple.systempreferences:com.apple.preference.security?Privacy_Camera#frag');
+        const bidi = new URL('ssh://host/p?a=b');
+        bidi.search = '?a=‮b';
+        expect(describeUrlForDialog(bidi, 120, true)).not.toMatch(/[‮]/);
+        const long = new URL('ssh://host/p?' + 'q'.repeat(500));
+        const text = describeUrlForDialog(long, 240, true);
+        expect(text.length).toBe(243);
         expect(text.endsWith('...')).toBe(true);
     });
 

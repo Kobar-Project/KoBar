@@ -71,6 +71,28 @@ export const DANGEROUS_SCHEMES: ReadonlySet<string> = new Set([
     // Java Web Start
     'jnlp:',
     'jnlps:',
+    // MAC-019: macOS handlers that run automation. `shortcuts://run-shortcut?name=X` runs an Apple Shortcut and
+    // `applescript:` opens a script in Script Editor. Refused on every OS, like the Windows-only handlers above.
+    'shortcuts:',
+    'applescript:',
+]);
+
+/**
+ * MAC-019: schemes that are deliberately NEVER allow-listed: remote-session, file-share and system handlers.
+ * They always need an explicit user confirmation (the dialog shows the query on macOS). Kept as an explicit set so
+ * a later edit cannot move them to ALLOWED_SCHEMES silently; a test asserts the two sets never overlap.
+ */
+export const CONFIRM_SCHEMES: ReadonlySet<string> = new Set([
+    'ssh:',
+    'vnc:',
+    'smb:',
+    'afp:',
+    'nfs:',
+    'telnet:',
+    'facetime:',
+    'x-apple.systempreferences:',
+    // Opens Terminal with a man page.
+    'x-man-page:',
 ]);
 
 /** Generous enough for the app's own mailto export with a long note body; dialogs truncate separately. */
@@ -97,13 +119,20 @@ export function classifyExternalUrl(raw: unknown): ExternalDecision {
     if (DANGEROUS_SCHEMES.has(url.protocol)) return { kind: 'deny', reason: `dangerous scheme ${url.protocol}` };
     if (url.username || url.password) return { kind: 'deny', reason: 'embedded credentials' };
     if (ALLOWED_SCHEMES.has(url.protocol)) return { kind: 'allow', url, reason: 'allow-listed scheme' };
+    if (CONFIRM_SCHEMES.has(url.protocol)) {
+        return { kind: 'confirm', url, reason: `scheme ${url.protocol} is a remote-session, file-share or system handler` };
+    }
     return { kind: 'confirm', url, reason: `scheme ${url.protocol} is not allow-listed` };
 }
 
-/** Short, single-line text for confirmation dialogs: scheme + host + start of the path, no query. */
-export function describeUrlForDialog(url: URL, maxLength = 120): string {
+/**
+ * Short, single-line text for confirmation dialogs: scheme + host + start of the path. The query and fragment
+ * are omitted unless `includeQuery` is set (MAC-019: on macOS the query is what carries the payload, e.g.
+ * `x-apple.systempreferences:...?Privacy_Camera`). The whole text, query included, is bounded by `maxLength`.
+ */
+export function describeUrlForDialog(url: URL, maxLength = 120, includeQuery = false): string {
     const base = url.host ? `${url.protocol}//${url.host}${url.pathname}` : `${url.protocol}${url.pathname}`;
-    return truncateForDialog(base, maxLength);
+    return truncateForDialog(includeQuery ? `${base}${url.search}${url.hash}` : base, maxLength);
 }
 
 export function truncateForDialog(text: string, maxLength = 120): string {
