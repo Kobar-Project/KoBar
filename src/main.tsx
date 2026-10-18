@@ -20,6 +20,10 @@ import './components/extensions/extensionRegistry'
 import { setupLocalStorageIsolation } from './utils/localStorageIsolation'
 import { migrateLocalStorageSnapshot, scheduleLocalStorageSnapshot } from './storage/migrateFromLocalStorage'
 import { releasePersistFileWrites } from './store/persistStorage'
+import { normalizePlatform, setDocumentPlatform } from './platform'
+
+// MAC-022: <html data-platform> before the first render (the preload API may be missing in tests).
+setDocumentPlatform(normalizePlatform(window.api?.getPlatform?.()));
 
 window.React = React;
 window.ReactDOM = ReactDOM;

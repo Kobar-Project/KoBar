@@ -48,6 +48,8 @@ export interface SettingsPageEnv {
     useDevServer: boolean;
     /** Vite dev server origin, e.g. http://localhost:5173. */
     devOrigin: string;
+    /** MAC-022: process.platform, passed as `platform` so the page can set <html data-platform> before its first paint. Absent = not passed. */
+    platform?: string;
 }
 
 export type SettingsPageLocation = { kind: 'url'; url: string } | { kind: 'file'; query: Record<string, string> };
@@ -72,9 +74,10 @@ export function settingsPageLocation(env: SettingsPageEnv, lang: string, page?: 
         const url = new URL(`/${SETTINGS_PAGE_FILE}`, env.devOrigin);
         url.searchParams.set('lang', lang);
         if (page) url.searchParams.set('page', page);
+        if (env.platform) url.searchParams.set('platform', env.platform);
         return { kind: 'url', url: url.href };
     }
-    return { kind: 'file', query: page ? { lang, page } : { lang } };
+    return { kind: 'file', query: { lang, ...(page ? { page } : {}), ...(env.platform ? { platform: env.platform } : {}) } };
 }
 
 /** The part of a BrowserWindow the lifetime check uses. */

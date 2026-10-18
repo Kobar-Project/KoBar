@@ -2,6 +2,7 @@
 // full-backup export state) and the payload types of the `backup.*` / `update.*` actions the Settings window may send back. Plain TS
 // only (no zod, no store): the Settings window bundles this file for the mirror. The action validation lives in ./systemSync.
 import type { IpcSystemSummary, IpcSystemUpdateStatus } from '../../shared/ipc-contract';
+import { normalizePlatform } from '../platform';
 
 export type SystemSummary = IpcSystemSummary;
 export type SystemUpdateStatus = IpcSystemUpdateStatus;
@@ -42,10 +43,12 @@ export function sanitizeSystemSummary(raw: unknown): SystemSummary | null {
     const status = UPDATE_STATUSES.find((s) => s === (raw.update as Record<string, unknown>).status) ?? 'idle';
     const percent = (raw.update as Record<string, unknown>).percent;
     const last = BACKUP_RESULTS.find((r) => r === (raw.backup as Record<string, unknown>).last) ?? null;
+    const platform = normalizePlatform(raw.platform);
     return {
         version: shortText(raw.version),
         updatesEnabled: raw.updatesEnabled === true,
         ...(raw.manualUpdate === true ? { manualUpdate: true } : {}),
+        ...(platform ? { platform } : {}), // MAC-022
         update: {
             status,
             version: shortText(raw.update.version),

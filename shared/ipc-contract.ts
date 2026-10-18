@@ -497,6 +497,8 @@ export interface IpcSystemSummary {
     updatesEnabled: boolean;
     /** MAC-016: true on an unsigned macOS build (no self-update): the Settings window shows a manual-download link. Absent = false. */
     manualUpdate?: boolean;
+    /** MAC-022: the host OS, so the Settings window (no window.api) can set <html data-platform>. Absent = unknown. */
+    platform?: 'darwin' | 'win32' | 'linux';
     update: { status: IpcSystemUpdateStatus; version: string; percent: number };
     backup: { busy: boolean; last: 'done' | 'failed' | 'canceled' | null };
 }

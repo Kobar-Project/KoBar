@@ -131,7 +131,11 @@ async function createSettingsWindow(deps: SettingsWindowDeps, page?: SettingsPag
         });
     }
 
-    const location = settingsPageLocation({ useDevServer: isDev && !deps.loadsFromDist, devOrigin: DEV_ORIGIN }, lang, page);
+    const location = settingsPageLocation(
+        { useDevServer: isDev && !deps.loadsFromDist, devOrigin: DEV_ORIGIN, platform: process.platform },
+        lang,
+        page
+    );
     const loading =
         location.kind === 'url' ? win.loadURL(location.url) : win.loadFile(deps.appPaths.settingsHtml, { query: location.query });
     loading.catch((err) => console.error('[KoBar] Settings page failed to load:', err));

@@ -79,10 +79,11 @@ export function createPipWindow(deps: PipWindowDeps, videoUrl: string, title: st
 
     // ARC-22: PiP has its own lightweight entry (pip.html) without the app store/persist.
     if (isDev && !loadsFromDist) {
-        win.loadURL(`http://localhost:5173/pip.html?url=${encodedUrl}&title=${encodedTitle}`);
+        win.loadURL(`http://localhost:5173/pip.html?url=${encodedUrl}&title=${encodedTitle}&platform=${process.platform}`);
     } else {
         win.loadFile(appPaths.pipHtml, {
-            query: { url: videoUrl, title },
+            // MAC-022: the renderer sets <html data-platform> from this.
+            query: { url: videoUrl, title, platform: process.platform },
         });
     }
 

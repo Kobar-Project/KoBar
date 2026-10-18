@@ -1,6 +1,7 @@
 // T-605: query of the Settings window page. Main passes the main window's UI language as `lang`
 // (electron/lib/settingsWindow.cts); anything that is not a supported language falls back to English.
 import { translations, type LanguageCode } from '../i18n';
+import { normalizePlatform, type UiPlatform } from '../platform';
 import { SETTINGS_PAGES, type SettingsPageId } from './pages';
 
 export const SETTINGS_FALLBACK_LANGUAGE: LanguageCode = 'en';
@@ -24,4 +25,9 @@ export function parseSettingsParams(search: string): SettingsParams {
     const lang = params.get('lang');
     const page = params.get('page');
     return { lang: isLanguageCode(lang) ? lang : SETTINGS_FALLBACK_LANGUAGE, ...(isSettingsPageId(page) ? { page } : {}) };
+}
+
+/** MAC-022: the host platform main puts into the query (`platform`); null when absent or unknown. */
+export function parseSettingsPlatform(search: string): UiPlatform | null {
+    return normalizePlatform(new URLSearchParams(search).get('platform'));
 }

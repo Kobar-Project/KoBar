@@ -58,6 +58,8 @@ export interface SystemSyncDeps {
     updatesEnabled: boolean;
     /** MAC-016: unsigned macOS build; the Settings window shows a manual-download link (absent = false). */
     manualUpdate?: boolean;
+    /** MAC-022: host OS for the Settings window's <html data-platform> (absent = not published). */
+    platform?: 'darwin' | 'win32' | 'linux';
     /** Builds the full backup and lets main save it (src/backup/exportBackup.ts). Never rejects. */
     exportBackup: (options: { includeSecrets: boolean }) => Promise<{ success: boolean; reason?: string }>;
     /** T-615a: shows the main window's restore dialog and brings the window forward (absent: `backup.restore` is unavailable). */
@@ -213,6 +215,7 @@ export function createSystemSync(deps: SystemSyncDeps): SystemSyncLike {
             version,
             updatesEnabled: deps.updatesEnabled,
             ...(deps.manualUpdate ? { manualUpdate: true } : {}),
+            ...(deps.platform ? { platform: deps.platform } : {}),
             update: { ...update },
             backup: { ...backup },
         }),

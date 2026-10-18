@@ -4,6 +4,7 @@ import { getDataTransferMode, openDataTransferDialog } from '../backup/dataTrans
 import { isRestoreDialogOpen, openRestoreDialog } from '../backup/restoreDialog';
 import { exportFullBackup } from '../backup/exportBackup';
 import { IS_MAC_SIGNED, IS_STORE_FLAVOR, KOBAR_FLAVOR, isManualUpdateOnly } from '../buildFlags';
+import { normalizePlatform } from '../platform';
 import { createSystemSync, type SystemSyncApi } from './systemSync';
 import { useAppStore } from './useAppStore';
 
@@ -29,6 +30,7 @@ export const systemSync = createSystemSync({
     isHydrated: () => useAppStore.getState().isHydrated,
     updatesEnabled: !IS_STORE_FLAVOR && !manualUpdate,
     manualUpdate,
+    platform: normalizePlatform((globalThis as { api?: { getPlatform?: () => string } }).api?.getPlatform?.()) ?? undefined, // MAC-022
     exportBackup: (options) => exportFullBackup(options),
     openRestore: () => {
         // T-615b: the restore and the data transfer dialogs are never open together.

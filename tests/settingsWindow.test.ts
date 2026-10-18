@@ -75,6 +75,15 @@ describe('settingsWindowFrameOptions', () => {
 });
 
 describe('settingsPageLocation', () => {
+    it('MAC-022: passes the platform in the query when given (dev URL and file)', () => {
+        const dev = settingsPageLocation({ useDevServer: true, devOrigin: DEV_ORIGIN, platform: 'darwin' }, 'en');
+        expect(dev.kind === 'url' && new URL(dev.url).searchParams.get('platform')).toBe('darwin');
+        expect(settingsPageLocation({ useDevServer: false, devOrigin: DEV_ORIGIN, platform: 'win32' }, 'en', 'about')).toEqual({
+            kind: 'file',
+            query: { lang: 'en', page: 'about', platform: 'win32' },
+        });
+    });
+
     it('dev server: settings.html on the dev origin with the language in the query', () => {
         const location = settingsPageLocation({ useDevServer: true, devOrigin: DEV_ORIGIN }, 'tr');
         expect(location).toEqual({ kind: 'url', url: 'http://localhost:5173/settings.html?lang=tr' });
