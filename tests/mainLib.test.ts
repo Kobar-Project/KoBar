@@ -16,6 +16,7 @@ describe('createAppPaths', () => {
         expect(paths).toEqual({
             iconPng: nodePath.join(base, '../build/icon.png'),
             iconIco256: nodePath.join(base, '../build/icon-256x256.ico'),
+            trayTemplate: nodePath.join(base, '../build/trayTemplate.png'),
             preload: nodePath.join(base, 'preload.cjs'),
             pipPreload: nodePath.join(base, 'pip-preload.cjs'),
             settingsPreload: nodePath.join(base, 'settings-preload.cjs'),

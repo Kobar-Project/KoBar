@@ -9,6 +9,8 @@ export interface AppPaths {
     readonly iconPng: string;
     /** Tray icon on Windows (256x256 ICO). */
     readonly iconIco256: string;
+    /** macOS menu bar template icon (18x18 black + alpha, `@2x` sibling picked up by Electron). */
+    readonly trayTemplate: string;
     /** Preload of the main window. */
     readonly preload: string;
     /** Preload of the PiP window. */
@@ -34,6 +36,7 @@ export function createAppPaths(dirname: string): AppPaths {
     return {
         iconPng: path.join(dirname, '../build/icon.png'),
         iconIco256: path.join(dirname, '../build/icon-256x256.ico'),
+        trayTemplate: path.join(dirname, '../build/trayTemplate.png'),
         preload: path.join(dirname, 'preload.cjs'),
         pipPreload: path.join(dirname, 'pip-preload.cjs'),
         settingsPreload: path.join(dirname, 'settings-preload.cjs'),

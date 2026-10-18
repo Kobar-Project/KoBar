@@ -4,6 +4,7 @@ import { app, Menu, nativeImage, Tray } from 'electron';
 import * as path from 'path';
 import { type MainLang, t } from '../lib/mainStrings.cjs';
 import type { AppPaths } from './lib/appPaths.cjs';
+import { isMac } from './platform.cjs';
 import { appState } from './state.cjs';
 import { teleportToPrimaryCenter } from './windows/mainWindow.cjs';
 import { openSettingsWindow } from './windows/settingsWindow.cjs';
@@ -11,11 +12,21 @@ import { openSettingsWindow } from './windows/settingsWindow.cjs';
 let tray: Tray | null = null;
 
 export function createTray(appPaths: AppPaths, getUiLanguage: () => Promise<MainLang>) {
+    // MAC-013: on macOS the menu bar needs a black + alpha template image (the system recolours it for light/dark bars); .ico is not decodable there.
+    let macTemplate: Electron.NativeImage | null = null;
+    if (isMac) {
+        const template = nativeImage.createFromPath(appPaths.trayTemplate);
+        if (!template.isEmpty()) {
+            template.setTemplateImage(true);
+            macTemplate = template;
+        }
+    }
+
     // Resolve the icon path dynamically for both development and packaged environments
     // Dev path relative to dist-electron: ../build/icon-256x256.ico
     const iconPath = appPaths.iconIco256;
 
-    let trayIcon = nativeImage.createFromPath(iconPath);
+    let trayIcon = macTemplate ?? nativeImage.createFromPath(iconPath);
 
     // Fallback resolution using the app root if current path fails
     if (trayIcon.isEmpty()) {
