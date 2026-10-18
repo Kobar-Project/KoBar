@@ -617,9 +617,9 @@ const Sidebar: React.FC = () => {
                 onMouseDown={orientation === 'horizontal' ? (e) => { if (e.button === 0 && isEmptyBarSpace(e)) handleSidebarDragStart(e); } : undefined}
                 onContextMenu={orientation === 'horizontal' ? (e) => { if (isEmptyBarSpace(e)) { e.preventDefault(); setBarMenuOpen(true); } } : undefined}
                 className={`flex ${orientation === 'horizontal' ? 'flex-row pr-2 h-full w-fit' : 'flex-col pb-2 w-full h-fit'} items-center overflow-hidden ${isMiniMode ? 'pointer-events-none' : 'pointer-events-auto'} transition-all duration-500
-                    ${orientation === 'horizontal' ? '' : (isMac && edgePosition === 'left' ? 'pt-8' : '')}
+                    ${/* MAC-025: kept from v1; presumably clears the macOS menu bar (main window spans full display bounds) for the left-docked vertical bar. Verify on a Mac (MAC-041/042). */ orientation === 'horizontal' ? '' : (isMac && edgePosition === 'left' ? 'pt-8' : '')}
                     ${design === 'style2' 
-                        ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' rounded-[2.5rem] shadow-e3 border border-stroke') 
+                        ? ('backdrop-blur-(--kb-blur-bar)' + ' rounded-[2.5rem] shadow-e3 border border-stroke') 
                         : 'bg-[var(--theme-bg-dark)] rounded-3xl shadow-2xl border border-[var(--theme-border)]'}`}
                 style={{ 
                     maxHeight: orientation === 'horizontal' ? undefined : `${calculatedMaxHeight}px`,
@@ -775,7 +775,7 @@ const Sidebar: React.FC = () => {
                                 : { left: `-${toggleWidth}px`, borderRight: 'none', borderTopLeftRadius: design === 'style2' ? '15px' : '10px', borderBottomLeftRadius: design === 'style2' ? '15px' : '10px' })
                         }
                     ),
-                    ...(design === 'style2' && !isMac ? { backdropFilter: 'blur(16px)' } : {}),
+                    ...(design === 'style2' ? { backdropFilter: 'var(--kb-blur-toggle)' } : {}), // MAC-025
                 }}
                 onClick={toggleNotePanel}
             >

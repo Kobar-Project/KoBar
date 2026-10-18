@@ -81,6 +81,22 @@
   /* Reserved for headings; first consumer lands with the T-508+ primitives. */
   --kb-font-display: "Segoe UI Variable Display", "Segoe UI", -apple-system, "SF Pro Display", system-ui, sans-serif;
   --kb-font-mono: "Cascadia Mono", "SF Mono", ui-monospace, monospace;
+  /* MAC-025 blur tokens (used as backdrop-blur-(--kb-blur-*)); darwin overrides below. */
+  --kb-blur-bar: 40px; /* style2 sidebar bar (was blur-2xl) */
+  --kb-blur-eye: 24px; /* style2 floating eye (was blur-xl) */
+  --kb-blur-notification: 40px; /* style2 eye notification (was blur-2xl) */
+  --kb-blur-toggle: blur(16px); /* style2 note-panel toggle: whole backdrop-filter value */
+}
+
+/* MAC-025: macOS system font order and lighter blur (set via <html data-platform>, src/platform.ts). */
+:root[data-platform="darwin"] {
+  --kb-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --kb-font-display: -apple-system, "SF Pro Display", system-ui, sans-serif;
+  --kb-font-mono: "SF Mono", ui-monospace, monospace;
+  --kb-blur-bar: 12px; /* was blur-md */
+  --kb-blur-eye: 12px;
+  --kb-blur-notification: 12px;
+  --kb-blur-toggle: none;
 }
 
 /* Layers (T-507): six layers only. Mirrored in src/ui/tokens.ts. */
@@ -411,35 +427,41 @@
     font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 20;
   }
 
-  ::-webkit-scrollbar {
+  /* MAC-025: custom scrollbars on non-macOS only; macOS keeps native overlay scrollbars. The first selector of each pair is the
+     root element itself (its viewport scrollbar), the second every element below it, as the bare ::-webkit-scrollbar did. */
+  :where(:root:not([data-platform="darwin"]))::-webkit-scrollbar,
+  :where(:root:not([data-platform="darwin"])) ::-webkit-scrollbar {
     height: 8px;
     width: 8px;
   }
 
-  ::-webkit-scrollbar-track {
+  :where(:root:not([data-platform="darwin"]))::-webkit-scrollbar-track,
+  :where(:root:not([data-platform="darwin"])) ::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  ::-webkit-scrollbar-thumb {
+  :where(:root:not([data-platform="darwin"]))::-webkit-scrollbar-thumb,
+  :where(:root:not([data-platform="darwin"])) ::-webkit-scrollbar-thumb {
     background-color: var(--theme-scrollbar);
     border-radius: 4px;
     transition: background-color 0.2s;
   }
 
-  ::-webkit-scrollbar-corner {
+  :where(:root:not([data-platform="darwin"]))::-webkit-scrollbar-corner,
+  :where(:root:not([data-platform="darwin"])) ::-webkit-scrollbar-corner {
     background: transparent;
   }
 
-  .custom-scrollbar::-webkit-scrollbar {
+  :where(:root:not([data-platform="darwin"])) .custom-scrollbar::-webkit-scrollbar {
     height: 4px;
     width: 4px;
   }
 
-  .custom-scrollbar::-webkit-scrollbar-track {
+  :where(:root:not([data-platform="darwin"])) .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .custom-scrollbar::-webkit-scrollbar-thumb {
+  :where(:root:not([data-platform="darwin"])) .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: var(--theme-scrollbar);
     border-radius: 4px;
   }

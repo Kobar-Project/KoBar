@@ -265,7 +265,7 @@ const FloatingEye: React.FC = () => {
                 onMouseDown={handleMouseDown}
                 onClick={handleClick}
                 className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing group relative
-                    shadow-e2 ${design === 'style2' ? (isMac ? 'backdrop-blur-md' : 'backdrop-blur-xl') : ''}`}
+                    shadow-e2 ${design === 'style2' ? 'backdrop-blur-(--kb-blur-eye)' : ''}`}
                 style={{
                     backgroundColor:
                         design === 'style2'

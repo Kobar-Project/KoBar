@@ -8,7 +8,6 @@ const EyeNotification: React.FC = () => {
     const edgePosition = useAppStore(state => state.edgePosition);
     const design = useAppStore(state => state.design);
     const glassOpacity = useAppStore(state => state.glassOpacity);
-    const isMac = useAppStore(state => state.isMac);
 
     if (!notification || !notification.isVisible) return null;
 
@@ -24,7 +23,7 @@ const EyeNotification: React.FC = () => {
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             className={`absolute ${positionClasses} z-[100] w-64 p-4 rounded-2xl shadow-2xl animate-pop-in pointer-events-auto
-                ${design === 'style2' ? ((isMac ? 'backdrop-blur-md' : 'backdrop-blur-2xl') + ' border border-stroke') : 'bg-[var(--theme-bg-dark)] border border-[var(--theme-border)]'}`}
+                ${design === 'style2' ? ('backdrop-blur-(--kb-blur-notification)' + ' border border-stroke') : 'bg-[var(--theme-bg-dark)] border border-[var(--theme-border)]'}`}
             style={{
                 backgroundColor: design === 'style2' 
                     ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)` 

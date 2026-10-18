@@ -28,4 +28,7 @@ export const pluginSafelist = [
   
   // Flex
   'flex-1', 'flex-auto', 'flex-none',
+
+  // MAC-025: the host's blur moved to --kb-blur-* tokens; keep the classes it used to ship for plugins.
+  'backdrop-blur-md', 'backdrop-blur-xl', 'backdrop-blur-2xl',
 ];
