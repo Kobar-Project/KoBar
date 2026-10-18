@@ -43,7 +43,9 @@ export function createPathGrants(options: PathGrantOptions = {}): PathGrants {
     const p = platform === 'win32' ? nodePath.win32 : nodePath.posix;
     const isWin = platform === 'win32';
     // Fold ASCII only, like resolveInside: NTFS does not treat e.g. the Kelvin sign as equal to 'k'.
-    const fold = (s: string) => (isWin ? s.replace(/[A-Z]/g, (c) => c.toLowerCase()) : s);
+    // MAC-017: macOS (APFS, case-insensitive by default) folds too; the path module stays posix there.
+    const foldCase = isWin || platform === 'darwin';
+    const fold = (s: string) => (foldCase ? s.replace(/[A-Z]/g, (c) => c.toLowerCase()) : s);
     // Insertion order of the Map is the age order (a refresh re-inserts), so the first key is the oldest.
     const entries = new Map<string, Entry>();
 

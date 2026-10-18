@@ -26,7 +26,11 @@ export interface KoBoxInventory {
     items: Record<string, InventoryItem>;
 }
 
-const keyOf = (name: string): string => (process.platform === 'win32' ? name.replace(/[A-Z]/g, (c) => c.toLowerCase()) : name);
+// MAC-017: fold ASCII on Windows and macOS (case-insensitive volumes). The key only looks up inventory records; a folded key
+// that does not exist on a case-sensitive volume just gets pruned, and the mtime rule (refreshed on move) applies instead.
+export const inventoryKeyFor = (name: string, platform: string = process.platform): string =>
+    platform === 'win32' || platform === 'darwin' ? name.replace(/[A-Z]/g, (c) => c.toLowerCase()) : name;
+const keyOf = (name: string): string => inventoryKeyFor(name);
 
 export function readInventory(file: string): KoBoxInventory {
     const empty: KoBoxInventory = { version: KOBOX_INVENTORY_VERSION, items: {} };

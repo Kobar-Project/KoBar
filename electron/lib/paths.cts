@@ -21,13 +21,26 @@ export function isSafeId(id: unknown): id is string {
  * NOTE: the check is purely lexical. It does NOT resolve symlinks, junctions or 8.3 short names,
  * so callers that delete or write (T-106 / T-117) must additionally verify with fs.realpath /
  * fs.lstat before touching the file system.
+ *
+ * MAC-017: ASCII case folding applies on Windows and macOS (APFS is case-insensitive by default). Residual
+ * risk, accepted: on a rare, opt-in case-sensitive APFS volume a sibling folder that differs only by case
+ * (e.g. `KoBox` vs `kobox`) passes this check, and isFsPathInside's lstat walk does not catch it either
+ * (it only rejects links). Creating such a sibling already needs local file-system access.
  */
 export function resolveInside(base: string, ...child: string[]): string | null {
-    return resolveInsideWith(nodePath, base, child);
+    return resolveInsideWith(nodePath, base, child, { foldCase: process.platform === 'darwin' });
 }
 
-/** Same as `resolveInside` but takes a path module, so tests can exercise win32 semantics on any OS. */
-export function resolveInsideWith(p: typeof nodePath.posix, base: string, child: string[]): string | null {
+/**
+ * Same as `resolveInside` but takes a path module, so tests can exercise win32 semantics on any OS.
+ * `options.foldCase` forces ASCII folding for a posix module (macOS); the win32 module always folds.
+ */
+export function resolveInsideWith(
+    p: typeof nodePath.posix,
+    base: string,
+    child: string[],
+    options: { foldCase?: boolean } = {}
+): string | null {
     if (typeof base !== 'string' || base === '' || base.includes('\0')) return null;
     if (!p.isAbsolute(base)) return null;
     for (const seg of child) {
@@ -47,7 +60,7 @@ export function resolveInsideWith(p: typeof nodePath.posix, base: string, child:
     const target = p.resolve(resolvedBase, ...child);
     // Fold ASCII only: toLowerCase() would also fold Unicode (e.g. Kelvin sign U+212A -> 'k'),
     // which NTFS does not treat as equal and would let a path appear inside the base.
-    const fold = (s: string) => (isWin ? s.replace(/[A-Z]/g, (c) => c.toLowerCase()) : s);
+    const fold = (s: string) => (isWin || options.foldCase === true ? s.replace(/[A-Z]/g, (c) => c.toLowerCase()) : s);
     const b = fold(resolvedBase);
     const t = fold(target);
     if (t === b) return target;

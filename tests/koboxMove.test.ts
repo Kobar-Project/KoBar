@@ -5,7 +5,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { moveIntoKoBox } from '../electron/lib/koboxMove.cjs';
 import { copyIntoKoBox } from '../electron/lib/fileArgs.cjs';
-import { cleanKoBoxItems, readInventory, recordMovedItem } from '../electron/lib/koboxCleanup.cjs';
+import { cleanKoBoxItems, inventoryKeyFor, readInventory, recordMovedItem } from '../electron/lib/koboxCleanup.cjs';
 
 let root: string;
 let userData: string;
@@ -292,5 +292,14 @@ describe('cleanKoBoxItems (Recycle Bin, inventory)', () => {
         fs.writeFileSync(inventory, JSON.stringify(inv));
         const out = await cleanKoBoxItems({ koBoxPath: koBox, inventoryFile: inventory, mode: '24h', trash });
         expect(out.trashed).toEqual([]); // fresh mtime wins over the stale record
+    });
+});
+
+describe('inventoryKeyFor (MAC-017)', () => {
+    it('folds ASCII on win32 and darwin only', () => {
+        expect(inventoryKeyFor('Foo.TXT', 'win32')).toBe('foo.txt');
+        expect(inventoryKeyFor('Foo.TXT', 'darwin')).toBe('foo.txt');
+        expect(inventoryKeyFor('Foo.TXT', 'linux')).toBe('Foo.TXT');
+        expect(inventoryKeyFor('\u212A', 'darwin')).toBe('\u212A');
     });
 });

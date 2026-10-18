@@ -41,6 +41,14 @@ describe('pathGrants (T-042)', () => {
         expect(posix.isGranted('/home/me/file.txt')).toBe(false);
     });
 
+    it('folds ASCII case on darwin only for ASCII (MAC-017)', () => {
+        const mac = createPathGrants({ platform: 'darwin' });
+        mac.grant('/Users/me/a.txt', 'user-file');
+        expect(mac.isGranted('/users/ME/A.txt')).toBe(true);
+        mac.grant('/Users/me/k.txt', 'user-file');
+        expect(mac.isGranted('/Users/me/\u212A.txt')).toBe(false);
+    });
+
     it('expires grants after the TTL', () => {
         const c = clock();
         const g = createPathGrants({ platform: 'win32', now: c.now });

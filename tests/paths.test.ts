@@ -136,3 +136,21 @@ describe('resolveInsideWith (win32 semantics)', () => {
         expect(r('a\0')).toBeNull();
     });
 });
+
+describe('resolveInsideWith (MAC-017 darwin folding)', () => {
+    const p = path.posix;
+    it('folds ASCII case on darwin', () => {
+        expect(resolveInsideWith(p, '/Users/Me/KoBox', ['..', '..', '..', 'users', 'me', 'kobox', 'x'], { foldCase: true })).toBe(
+            '/users/me/kobox/x'
+        );
+        expect(resolveInsideWith(p, '/Users/Me/KoBox', ['..', 'KoBox2'], { foldCase: true })).toBeNull();
+    });
+    it('does not fold Unicode on darwin (Kelvin sign)', () => {
+        expect(resolveInsideWith(p, '/Users/me/KoBar', ['..', '\u212Aobar', 'x'], { foldCase: true })).toBeNull();
+    });
+    it('keeps linux case-sensitive and win32 unchanged', () => {
+        expect(resolveInsideWith(p, '/Users/Me/KoBox', ['..', '..', '..', 'users', 'me', 'kobox', 'x'])).toBeNull();
+        expect(resolveInsideWith(p, '/Users/Me/KoBox', ['..', 'kobox', 'x'], { foldCase: false })).toBeNull();
+        expect(resolveInsideWith(path.win32, 'C:\\Users\\Me', ['..', 'ME', 'x'], { foldCase: false })).toBe('C:\\Users\\ME\\x');
+    });
+});
