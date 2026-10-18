@@ -17,7 +17,7 @@ const WIN_RESERVED_STEM_RE = /^(con|prn|aux|nul|conin\$|conout\$|com[0-9¹²³]|
 /** True on Windows when the last path component is a device name such as CON, NUL or COM1.png. */
 export function hasReservedDeviceName(filePath: string, platform: string = process.platform): boolean {
     if (platform !== 'win32') return false;
-    const base = nodePath.basename(filePath);
+    const base = nodePath.win32.basename(filePath);
     // Windows ignores trailing dots/spaces and everything after the first dot when matching device names.
     const stem = base
         .replace(/[. ]+$/, '')
@@ -44,7 +44,8 @@ export function isPlainAbsolutePath(filePath: unknown, platform: string = proces
         typeof filePath === 'string' &&
         filePath !== '' &&
         !filePath.includes('\0') &&
-        nodePath.isAbsolute(filePath) &&
+        // Use the given platform's rules, not the host's (a Linux CI run checks Windows paths too).
+        (platform === 'win32' ? nodePath.win32 : nodePath.posix).isAbsolute(filePath) &&
         !isDeviceNamespacePath(filePath) &&
         !hasReservedDeviceName(filePath, platform) &&
         !hasAlternateDataStream(filePath, platform)
