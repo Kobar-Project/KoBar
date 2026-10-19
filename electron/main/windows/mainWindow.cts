@@ -139,6 +139,7 @@ export function createWindow(deps: MainWindowDeps) {
         // already UIElement (LSUIElement, MAC-011), so it is a no-op there. Plain-Electron dev runs are not, and there the transform
         // hides the Dock icon and is what lets the window float over full-screen apps, so skipping it would break dev behaviour.
         appState.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+        appState.mainWindow.setHiddenInMissionControl(true); // MAC-034: keep the full-screen transparent bar out of Mission Control / App Exposé
         appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1); // re-enforce after workspace registration
     }
     appState.mainWindow.setIgnoreMouseEvents(true, { forward: true });
@@ -199,6 +200,7 @@ export function createWindow(deps: MainWindowDeps) {
             if (isMac) {
                 // Re-enforce workspace visibility after window is fully loaded
                 appState.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+                appState.mainWindow.setHiddenInMissionControl(true); // MAC-034: changing workspace behaviour can reset it
                 appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
             }
             handleWindowMove(true);
