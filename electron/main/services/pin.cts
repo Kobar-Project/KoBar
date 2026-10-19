@@ -2,7 +2,7 @@
 // the pinned-window tracker and its click-through border overlay (T-142 / T-146 / T-147), the pin IPC handlers and the persisted
 // border style. All PowerShell work goes through the bridge API in ./native.cts; the pure helpers stay in electron/lib
 // (pinBorder.cts, pinPosition.cts). `appState.isAwaitingPinTarget` is shared with the window modules (electron/main/state.cts).
-import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, Notification, screen } from 'electron';
 import * as path from 'path';
 import { secureWebPreferences } from '../../lib/webPrefs.cjs';
 import { parsePinPositionReply } from '../../lib/pinPosition.cjs';
@@ -26,10 +26,33 @@ import {
 } from '../../lib/pinBorder.cjs';
 import { appState } from '../state.cjs';
 import { topmostLevel } from '../platform.cjs';
+import { getUiLanguage } from '../app/helpers.cjs';
+import { t } from '../../lib/mainStrings.cjs';
 import { isPsAvailable, psRequest, psWrite, restartPsBridgeIfDown } from './native.cjs';
 
+// MAC-055 (owner decision K-7): Pin Window is UNSUPPORTED on macOS (there is no public API to keep another app's window on top).
+// enter-pin-targeting answers immediately with pinned-window-changed(null) + pin-targeting-complete so neither the plugin nor the
+// host stays in targeting mode, shows one notice per session, and never touches KoBar's own window level or workspace behaviour.
+// The unpin handlers are no-ops that only report "nothing pinned". Windows behaviour is unchanged.
 const isMac = process.platform === 'darwin';
 const isWin = process.platform === 'win32';
+
+let pinUnsupportedNoticeShown = false;
+
+/** One native notice per app session explaining that pinning other windows is not available on macOS. */
+function notifyPinUnsupportedOnce() {
+    if (pinUnsupportedNoticeShown) return;
+    pinUnsupportedNoticeShown = true;
+    void (async () => {
+        try {
+            if (!Notification.isSupported()) return;
+            const lang = await getUiLanguage();
+            new Notification({ title: 'KoBar', body: t(lang, 'pinUnsupportedMac') }).show();
+        } catch (e) {
+            console.error('Pin notice failed:', e);
+        }
+    })();
+}
 
 // T-146: pin border colour/width, loaded once at startup by initPinBorderStyle() (missing/corrupt file -> default) and changed via set-pin-border-style.
 let pinStylePath = '';
@@ -97,13 +120,6 @@ export function registerPinTargetingHandler() {
                             }
                         });
                     }
-                } else if (isMac) {
-                    if (appState.mainWindow) {
-                        appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
-                        appState.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-                        pinnedHwnd = 1; // Fake truthy value for macOS to signify pinned status
-                        appState.mainWindow.webContents.send('pin-targeting-complete');
-                    }
                 }
                 if (isWin) appState.mainWindow?.webContents.send('pin-targeting-complete');
             }, 200);
@@ -115,15 +131,13 @@ export function registerPinTargetingHandler() {
 export function registerPinIpc() {
     ipcMain.on('enter-pin-targeting', () => {
         if (isMac) {
-            // macOS: Panel windows don't fire blur events reliably.
-            // Implement pseudo-pin: immediately elevate KoBar to screen-saver level.
-            if (appState.mainWindow) {
-                appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
-                appState.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-                pinnedHwnd = 1;
-                appState.mainWindow.webContents.send('pinned-window-changed', 1);
-                appState.mainWindow.webContents.send('pin-targeting-complete');
+            // MAC-055 / K-7: unsupported on macOS; report "nothing pinned", leave targeting mode, tell the user once.
+            const win = appState.mainWindow;
+            if (win && !win.isDestroyed()) {
+                win.webContents.send('pinned-window-changed', null);
+                win.webContents.send('pin-targeting-complete');
             }
+            notifyPinUnsupportedOnce();
             return;
         }
         // T-317: a user action; if the PowerShell bridge gave up after crashes, give it one more (rate-limited) chance.
@@ -144,9 +158,7 @@ export function registerPinIpc() {
             }
             allPinnedHwnds.delete(hwndToUnpin);
             stopWindowTracking();
-        } else if (isMac && appState.mainWindow) {
-            appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
-            pinnedHwnd = null;
+        } else if (isMac && appState.mainWindow && !appState.mainWindow.isDestroyed()) {
             appState.mainWindow.webContents.send('pinned-window-changed', null);
         }
     });
@@ -164,6 +176,8 @@ export function registerPinIpc() {
             stopWindowTracking();
             // Reset frontend targeting state
             appState.mainWindow?.webContents.send('pin-targeting-complete');
+        } else if (isMac && appState.mainWindow && !appState.mainWindow.isDestroyed()) {
+            appState.mainWindow.webContents.send('pinned-window-changed', null);
         }
     });
 

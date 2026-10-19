@@ -134,8 +134,7 @@ export function createWindow(deps: MainWindowDeps) {
     appState.mainWindow.setAlwaysOnTop(true, topmostLevel(), 1);
     if (isMac) {
         // Ensure KoBar stays above Dock, Mission Control overlays, and full-screen apps on macOS
-        // MAC-015: skipTransformProcessType is deliberately NOT set (here, at ready-to-show, and in services/pin.cts, which calls it
-        // again on every pin). By default Electron transforms the process to UIElement (DockHide) on each call. Packaged builds are
+        // MAC-015: skipTransformProcessType is deliberately NOT set (here and at ready-to-show). By default Electron transforms the process to UIElement (DockHide) on each call. Packaged builds are
         // already UIElement (LSUIElement, MAC-011), so it is a no-op there. Plain-Electron dev runs are not, and there the transform
         // hides the Dock icon and is what lets the window float over full-screen apps, so skipping it would break dev behaviour.
         appState.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
