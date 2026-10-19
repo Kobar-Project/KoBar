@@ -27,6 +27,7 @@ import { DEFAULT_ZIP_LIMITS, extractZipSafely } from '../../../lib/zipGuards.cjs
 import type { IpcRegistry } from '../../ipc/registry.cjs';
 import { INSTALL_EXTENSION_FROM_GITHUB_OPTIONS, INSTALL_EXTENSION_FROM_PATH_OPTIONS } from '../../ipc/schemas.cjs';
 import { appState } from '../../state.cjs';
+import { currentDialogParent } from '../../app/helpers.cjs';
 import { notifyBlockedFileAccess } from '../notifications.cjs';
 import type { ExtensionsConfigStore } from './config.cjs';
 import { type PluginConfirm, declinedReason } from './confirm.cjs';
@@ -279,7 +280,7 @@ export function registerExtensionInstallIpc(deps: ExtensionInstallDeps): void {
     registry.handle('install-extension-from-file', async () => {
         try {
             // Pass mainWindow as parent so the dialog opens above the always-on-top window
-            const parentWin = appState.mainWindow || BrowserWindow.getAllWindows()[0];
+            const parentWin = currentDialogParent() || appState.mainWindow || BrowserWindow.getAllWindows()[0];
             const dialogOptions = {
                 title: 'Select Extension ZIP Archive',
                 // T-037: reopen in the folder used last time.

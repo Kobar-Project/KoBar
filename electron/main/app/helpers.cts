@@ -4,6 +4,7 @@
 import { app, dialog, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import { type ExternalDecision, classifyExternalUrl, describeUrlForDialog, truncateForDialog } from '../../lib/external.cjs';
+import { pickDialogParent } from '../../lib/dialogParent.cjs';
 import { type MainLang, normalizeLanguage, parseLanguage, t } from '../../lib/mainStrings.cjs';
 // MAC-019: the query is shown in the confirm dialog on macOS only (Windows text unchanged).
 import { isMac } from '../platform.cjs';
@@ -42,6 +43,11 @@ export async function getUiLanguage(): Promise<MainLang> {
     return normalizeLanguage(app.getLocale());
 }
 
+// MAC-033: parent for native dialogs. macOS: the focused Settings window (so the sheet is not hidden behind it), else the main window.
+export function currentDialogParent(): Electron.BrowserWindow | null {
+    return pickDialogParent({ isMac, mainWindow: appState.mainWindow, settingsWindow: appState.settingsWindow });
+}
+
 // True while a confirmation dialog is open, so a misbehaving plugin cannot pile dialogs up.
 let confirmInFlight = false;
 
@@ -71,10 +77,8 @@ export async function confirmWithUser(message: string, detail?: string, confirmL
             cancelId: 1,
             noLink: true,
         };
-        const result =
-            appState.mainWindow && !appState.mainWindow.isDestroyed()
-                ? await dialog.showMessageBox(appState.mainWindow, options)
-                : await dialog.showMessageBox(options);
+        const parent = currentDialogParent();
+        const result = parent ? await dialog.showMessageBox(parent, options) : await dialog.showMessageBox(options);
         return result.response === 0;
     } finally {
         confirmInFlight = false;

@@ -19,6 +19,7 @@ import { BACKUP_DIR_NAME, type StorageBackupResult, createBackupIfChanged, isAcc
 import { isMainWindowTopFrame } from '../app/helpers.cjs';
 import { readManifestSafe } from '../lib/pluginManifest.cjs';
 import { appState } from '../state.cjs';
+import { currentDialogParent } from '../app/helpers.cjs';
 
 // Pre-migration backup of `kobar-storage` (PROD-02, T-201). The preload sends the raw localStorage string with sendSync
 // at page load, before the renderer's persist store hydrates or migrates it. Internal channel, not part of window.api.
@@ -95,7 +96,7 @@ export function registerFullBackupIpc(deps: FullBackupDeps): void {
             // T-037 pattern: reopen in the folder used last time, otherwise in Documents.
             const remembered = await dialogDefaultPath(readDialogPathsFile(dialogPathsFile), 'save-full-backup', fileName);
             if (!appState.mainWindow || appState.mainWindow.isDestroyed()) return { success: false, reason: 'rejected' };
-            const { canceled, filePath } = await dialog.showSaveDialog(appState.mainWindow, {
+            const { canceled, filePath } = await dialog.showSaveDialog(currentDialogParent() ?? appState.mainWindow, {
                 title: t(lang, 'saveFullBackup'),
                 defaultPath: remembered && remembered !== fileName ? remembered : path.join(app.getPath('documents'), fileName),
                 filters: [{ name: 'KoBar Backup', extensions: ['json'] }],

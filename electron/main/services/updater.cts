@@ -9,6 +9,7 @@ import { type MainLang, t } from '../../lib/mainStrings.cjs';
 import { type KobarFlavor, canSelfUpdateFor, resolveFlavor } from '../../lib/buildFlags.cjs';
 import { UPDATE_FEED } from '../../lib/links.cjs';
 import { appState } from '../state.cjs';
+import { currentDialogParent } from '../app/helpers.cjs';
 
 export interface UpdaterIpcDeps {
     getUiLanguage(): Promise<MainLang>;
@@ -99,7 +100,7 @@ export function registerUpdaterIpc(deps: UpdaterIpcDeps) {
         const version = sanitizeVersion(lastUpdateVersion);
         const lang = await getUiLanguage();
         if (!appState.mainWindow || appState.mainWindow.isDestroyed()) return false;
-        const result = await dialog.showMessageBox(appState.mainWindow, {
+        const result = await dialog.showMessageBox(currentDialogParent() ?? appState.mainWindow, {
             type: 'info',
             title: 'KoBar',
             message: version ? t(lang, 'updateAvailableVersion', { version }) : t(lang, 'updateAvailable'),
