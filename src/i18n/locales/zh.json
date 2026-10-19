@@ -75,6 +75,8 @@
     "settingsPluginsInstalling": "正在安装…",
     "settingsPluginsInstalledBadge": "已安装",
     "settingsPluginsBeta": "测试版",
+    "pluginUnsupportedOnPlatform": "{platform} 上不受支持",
+    "pluginUnsupportedWarning": "此插件无法在 {platform} 上运行。",
     "settingsPluginsDetails": "详情",
     "settingsPluginsDetailsHide": "隐藏详情",
     "settingsPluginsGithubLink": "在 GitHub 上打开 {name}",

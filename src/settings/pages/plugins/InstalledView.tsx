@@ -8,6 +8,8 @@ import type { PluginSummaryItem } from '../../../store/pluginSummary';
 import { Button, ConfirmDialog, EmptyState, IconButton, ListItem, Surface, Toggle } from '../../../ui';
 import { dispatchPluginAction, useSettingsState, usePluginSummary } from '../../mirror';
 import type { SettingsPageProps } from '../../pages';
+import { getDocumentPlatform } from '../../../platform';
+import { isPluginSupportedOn, platformDisplayName } from '../../../../shared/pluginPlatforms';
 import { PluginRepoLink } from './PluginRepoLink';
 
 const HINT = 'text-[0.6875rem] leading-4 text-fg-2';
@@ -35,6 +37,7 @@ export function InstalledView({ t }: SettingsPageProps) {
               .replace('{canceled}', String(last.canceled))
         : '';
 
+    const platform = getDocumentPlatform();
     const renderRow = (item: PluginSummaryItem) => (
         <ListItem
             key={item.id}
@@ -48,6 +51,11 @@ export function InstalledView({ t }: SettingsPageProps) {
                     {item.updateAvailable && item.latestVersion
                         ? ` · ${t('settingsPluginsUpdateAvailable').replace('{version}', item.latestVersion)}`
                         : ''}
+                    {platform !== null && !isPluginSupportedOn(item.id, platform) && (
+                        <span className="mt-0.5 block text-danger">
+                            {t('pluginUnsupportedWarning').replace('{platform}', platformDisplayName(platform))}
+                        </span>
+                    )}
                     {item.repo && (
                         <span className="mt-0.5 block min-w-0">
                             <PluginRepoLink repo={item.repo} label={t('settingsPluginsGithubLink').replace('{name}', item.name)} />

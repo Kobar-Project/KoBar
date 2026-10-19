@@ -75,6 +75,8 @@
     "settingsPluginsInstalling": "Установка…",
     "settingsPluginsInstalledBadge": "Установлен",
     "settingsPluginsBeta": "Бета",
+    "pluginUnsupportedOnPlatform": "Не поддерживается в {platform}",
+    "pluginUnsupportedWarning": "Этот плагин не работает в {platform}.",
     "settingsPluginsDetails": "Подробности",
     "settingsPluginsDetailsHide": "Скрыть подробности",
     "settingsPluginsGithubLink": "Открыть {name} на GitHub",

@@ -76,6 +76,8 @@
     "settingsPluginsInstalling": "Yükleniyor…",
     "settingsPluginsInstalledBadge": "Yüklü",
     "settingsPluginsBeta": "Beta",
+    "pluginUnsupportedOnPlatform": "{platform} üzerinde desteklenmiyor",
+    "pluginUnsupportedWarning": "Bu eklenti {platform} üzerinde çalışmaz.",
     "settingsPluginsDetails": "Ayrıntılar",
     "settingsPluginsDetailsHide": "Ayrıntıları gizle",
     "settingsPluginsGithubLink": "{name} GitHub sayfasını aç",

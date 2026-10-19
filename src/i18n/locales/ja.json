@@ -75,6 +75,8 @@
     "settingsPluginsInstalling": "インストール中…",
     "settingsPluginsInstalledBadge": "インストール済み",
     "settingsPluginsBeta": "ベータ",
+    "pluginUnsupportedOnPlatform": "{platform} では未対応",
+    "pluginUnsupportedWarning": "このプラグインは {platform} では動作しません。",
     "settingsPluginsDetails": "詳細",
     "settingsPluginsDetailsHide": "詳細を隠す",
     "settingsPluginsGithubLink": "GitHub で {name} を開く",

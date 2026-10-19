@@ -75,6 +75,8 @@
     "settingsPluginsInstalling": "Wird installiert…",
     "settingsPluginsInstalledBadge": "Installiert",
     "settingsPluginsBeta": "Beta",
+    "pluginUnsupportedOnPlatform": "Unter {platform} nicht unterstützt",
+    "pluginUnsupportedWarning": "Dieses Plugin funktioniert unter {platform} nicht.",
     "settingsPluginsDetails": "Details",
     "settingsPluginsDetailsHide": "Details ausblenden",
     "settingsPluginsGithubLink": "{name} auf GitHub öffnen",

@@ -7,6 +7,8 @@ import { EMPTY_PLUGIN_CATALOG, type PluginCatalogItem } from '../../../store/plu
 import { Button, EmptyState, IconButton, ListItem, Segmented, Skeleton, Surface, TextField } from '../../../ui';
 import { dispatchPluginAction, useSettingsState, usePluginSummary } from '../../mirror';
 import type { SettingsPageProps } from '../../pages';
+import { getDocumentPlatform } from '../../../platform';
+import { isPluginSupportedOn, platformDisplayName } from '../../../../shared/pluginPlatforms';
 import { PluginRepoLink } from './PluginRepoLink';
 
 type CatalogFilter = 'all' | 'installed' | 'notInstalled';
@@ -71,6 +73,9 @@ export function DiscoverView({ t }: SettingsPageProps) {
     const renderRow = (item: PluginCatalogItem) => {
         const open = openId === item.id;
         const detailId = `${listId}-${item.id}`;
+        const platform = getDocumentPlatform();
+        const unsupported = platform !== null && !isPluginSupportedOn(item.id, platform);
+        const unsupportedText = platform ? t('pluginUnsupportedOnPlatform').replace('{platform}', platformDisplayName(platform)) : '';
         const meta = [item.author, item.category].filter((part) => part !== '').join(' · ');
         return (
             <li key={item.id} className="flex flex-col">
@@ -80,6 +85,7 @@ export function DiscoverView({ t }: SettingsPageProps) {
                         <>
                             {item.name}
                             {item.beta && <span className="ms-2 text-[0.6875rem] font-normal text-fg-2">{t('settingsPluginsBeta')}</span>}
+                            {unsupported && <span className="ms-2 text-[0.6875rem] font-normal text-danger">{unsupportedText}</span>}
                         </>
                     }
                     description={meta || item.description}
@@ -100,7 +106,8 @@ export function DiscoverView({ t }: SettingsPageProps) {
                                     size="sm"
                                     variant="secondary"
                                     loading={catalog.installingId === item.id}
-                                    disabled={!ready || installing}
+                                    disabled={!ready || installing || unsupported}
+                                    title={unsupported ? unsupportedText : undefined}
                                     aria-label={`${t('settingsPluginsInstall')}: ${item.name}`}
                                     onClick={() => dispatchPluginAction('plugin.install', { id: item.id })}
                                 >

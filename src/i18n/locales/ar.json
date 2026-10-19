@@ -75,6 +75,8 @@
     "settingsPluginsInstalling": "جارٍ التثبيت…",
     "settingsPluginsInstalledBadge": "مثبّتة",
     "settingsPluginsBeta": "تجريبية",
+    "pluginUnsupportedOnPlatform": "غير مدعوم على {platform}",
+    "pluginUnsupportedWarning": "هذه الإضافة لا تعمل على {platform}.",
     "settingsPluginsDetails": "التفاصيل",
     "settingsPluginsDetailsHide": "إخفاء التفاصيل",
     "settingsPluginsGithubLink": "فتح {name} على GitHub",

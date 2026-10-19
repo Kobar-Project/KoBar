@@ -286,3 +286,35 @@ describe('Discover: GitHub link (R-16)', () => {
         expect(links[0].textContent).toContain('Kobar-Project/alpha');
     });
 });
+
+describe('MAC-060 platform map', () => {
+    const setPlatform = (p: string | null) => {
+        if (p) document.documentElement.dataset.platform = p;
+        else delete document.documentElement.dataset.platform;
+    };
+    afterEach(() => setPlatform(null));
+    const installBtn = (name: string) => byLabel(`${tEn('settingsPluginsInstall')}: ${name}`) as HTMLButtonElement;
+
+    it('darwin: badge and disabled Install for pin-window-to-top only', () => {
+        setPlatform('darwin');
+        const { host } = render(<PluginsPage t={t} />);
+        publish(summary(catalog({ items: [entry('pin-window-to-top'), entry('other')] })));
+        openDiscover(host);
+        expect(host.textContent).toContain('Not supported on macOS');
+        expect(host.textContent?.match(/Not supported on macOS/g)).toHaveLength(1);
+        expect(installBtn('PIN-WINDOW-TO-TOP').disabled).toBe(true);
+        expect(installBtn('OTHER').disabled).toBe(false);
+    });
+
+    it('win32 and unknown platform: no badge, Install enabled', () => {
+        for (const p of ['win32', null]) {
+            setPlatform(p);
+            const { host } = render(<PluginsPage t={t} />);
+            publish(summary(catalog({ items: [entry('pin-window-to-top')] })));
+            openDiscover(host);
+            expect(host.textContent).not.toContain('Not supported on');
+            expect(installBtn('PIN-WINDOW-TO-TOP').disabled).toBe(false);
+            cleanup();
+        }
+    });
+});

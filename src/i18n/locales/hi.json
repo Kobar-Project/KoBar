@@ -75,6 +75,8 @@
     "settingsPluginsInstalling": "इंस्टॉल हो रहा है…",
     "settingsPluginsInstalledBadge": "इंस्टॉल किया गया",
     "settingsPluginsBeta": "बीटा",
+    "pluginUnsupportedOnPlatform": "{platform} पर समर्थित नहीं",
+    "pluginUnsupportedWarning": "यह प्लगइन {platform} पर काम नहीं करता।",
     "settingsPluginsDetails": "विवरण",
     "settingsPluginsDetailsHide": "विवरण छिपाएँ",
     "settingsPluginsGithubLink": "GitHub पर {name} खोलें",
