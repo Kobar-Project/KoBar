@@ -91,12 +91,12 @@ export const PLUGIN_API_METHODS = Object.keys(PLUGIN_API_USAGE) as PluginApiMeth
 /**
  * Preload methods kept only for compatibility: they must stay callable, but the main process has no
  * IPC handler for them today (calling them is a no-op). `stopClipboardListener` got a real handler in T-114.
- * T-133 turned the eyedropper pair, `getAvailableExtensions` and `installExtension` into no-ops.
+ * T-133 turned the eyedropper pair, `getAvailableExtensions` and `installExtension` into no-ops; MAC-032 gave
+ * `stopEyeDropper` a real job (restores click-through via `set-ignore-mouse-events`), so it is no longer a stub.
  */
 export const NO_OP_API_STUBS = [
     'registerTeleportShortcut',
     'startEyeDropper',
-    'stopEyeDropper',
     'getAvailableExtensions',
     'installExtension',
 ] as const satisfies readonly WindowApiKey[];

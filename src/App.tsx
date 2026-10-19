@@ -24,6 +24,10 @@ import { useOpenWithFiles } from './notes/useOpenWithFiles';
 import { pluginSync } from './store/pluginSyncHost';
 import { applyRootAppearance, effectiveThemePrefs } from './theme/root';
 
+// MAC-032: fired by window.api.stopEyeDropper() in electron/preload.cts (the name is mirrored there; the preload is sandboxed and
+// cannot import it).
+const CLICK_THROUGH_RESET_EVENT = 'kobar:click-through-reset';
+
 // T-409: one loader for the window (it remembers which plugin scripts are injected).
 const appPluginLoader = createPluginLoader({
   getInstalledExtensions: () => window.api.getInstalledExtensions(),
@@ -236,8 +240,18 @@ const App: React.FC = () => {
       }
     };
     
+    // MAC-032: window.api.stopEyeDropper() (electron/preload.cts) puts the window back to click-through and fires this event;
+    // the cache must follow, so the next mousemove over a solid element sends `false` again.
+    const handleClickThroughReset = () => {
+      lastIgnoreState.current = true;
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener(CLICK_THROUGH_RESET_EVENT, handleClickThroughReset);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener(CLICK_THROUGH_RESET_EVENT, handleClickThroughReset);
+    };
   }, []);
 
   const sidebarPosition = useAppStore(state => state.sidebarPosition);

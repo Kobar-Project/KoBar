@@ -325,7 +325,7 @@ const API_CHANNELS = {
     writeToClipboard: ['send:write-to-clipboard'],
     setIgnoreMouseEvents: ['send:set-ignore-mouse-events'],
     startEyeDropper: [],
-    stopEyeDropper: [],
+    stopEyeDropper: ['send:set-ignore-mouse-events'],
     onOpenSettings: ['on:open-settings'],
     onOpenTextFilesAvailable: ['on:open-text-files-available'],
     setGlobalPasteMode: ['send:set-global-paste-mode'],

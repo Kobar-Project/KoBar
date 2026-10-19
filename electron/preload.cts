@@ -110,9 +110,17 @@ contextBridge.exposeInMainWorld('api', {
     },
     // Mouse click-through for transparent window
     setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('set-ignore-mouse-events', ignore),
-    // Legacy v1 plugin contract no-ops (the host has no eyedropper service); removed in 2.0
+    // v1 plugin contract (colorPicker): the host has no eyedropper service. startEyeDropper stays a no-op offset. The system
+    // eyedropper takes over the mouse, so no mousemove reaches the window afterwards and the click-through state set before
+    // it would stay stuck at "solid" (MAC-032). stopEyeDropper therefore hands the window back to click-through (main applies
+    // { forward: true }) and tells the host renderer to drop its cached state; the next mousemove recomputes it.
+    // The event name is mirrored in src/App.tsx (CLICK_THROUGH_RESET_EVENT).
     startEyeDropper: () => Promise.resolve({ x: 0, y: 0 }),
-    stopEyeDropper: () => Promise.resolve(),
+    stopEyeDropper: () => {
+        ipcRenderer.send('set-ignore-mouse-events', true);
+        (globalThis as unknown as EventTarget).dispatchEvent(new Event('kobar:click-through-reset'));
+        return Promise.resolve();
+    },
     onOpenSettings: (callback: () => void) => subscribe('open-settings', () => callback()),
     // Global Paste Support
     setGlobalPasteMode: (isActive: boolean) => ipcRenderer.send('set-global-paste-mode', isActive),

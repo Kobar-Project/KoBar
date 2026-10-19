@@ -96,7 +96,6 @@ describe('plugin contract v1: window.api surface', () => {
 
     it.each([
         ['startEyeDropper', /Promise\.resolve\(\{ x: 0, y: 0 \}\)/],
-        ['stopEyeDropper', /Promise\.resolve\(\)/],
         ['getAvailableExtensions', /Promise\.resolve\(\[/],
         ['installExtension', /Promise\.resolve\(false\)/],
     ])('no-op stub %s keeps its legacy return shape and has no IPC call', (name, shape) => {

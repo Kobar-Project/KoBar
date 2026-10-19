@@ -110,6 +110,31 @@ describe('preload subscribe helper', () => {
     });
 });
 
+describe('preload eyedropper bridge (MAC-032)', () => {
+    it('startEyeDropper still resolves the zero offset and sends nothing', async () => {
+        ipcRenderer.send.mockClear();
+        await expect(exposed.api!.startEyeDropper()).resolves.toEqual({ x: 0, y: 0 });
+        expect(ipcRenderer.send).not.toHaveBeenCalled();
+    });
+
+    it('stopEyeDropper restores click-through, notifies the host renderer and resolves undefined', async () => {
+        ipcRenderer.send.mockClear();
+        // The node environment has no window: stand in for the page window with a plain EventTarget.
+        const pageWindow = new EventTarget();
+        vi.stubGlobal('dispatchEvent', pageWindow.dispatchEvent.bind(pageWindow));
+        const seen = vi.fn();
+        pageWindow.addEventListener('kobar:click-through-reset', seen);
+        try {
+            await expect(exposed.api!.stopEyeDropper()).resolves.toBeUndefined();
+        } finally {
+            vi.unstubAllGlobals();
+        }
+        expect(ipcRenderer.send).toHaveBeenCalledTimes(1);
+        expect(ipcRenderer.send).toHaveBeenCalledWith('set-ignore-mouse-events', true);
+        expect(seen).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('preload media resync (T-128)', () => {
     it('onMediaUpdate and onVideoUrlsUpdate ask main to resend after subscribing, via an internal channel', () => {
         ipcRenderer.send.mockClear();
