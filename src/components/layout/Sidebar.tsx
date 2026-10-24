@@ -594,6 +594,12 @@ const Sidebar: React.FC = () => {
     const dynamicButtons = extensionsRegistry.getButtons();
     const dynamicInlineWidgets = extensionsRegistry.getInlineWidgets();
     const allExts = [...dynamicButtons, ...dynamicInlineWidgets];
+    // The open panel marks its plugin's button active even when the two ids differ (most plugins use `-btn` / `-panel`).
+    // A registry instance kept by dev HMR may predate buttonIdForPanel: then only the same-id rule applies.
+    const activeButtonId: string | null =
+        typeof extensionsRegistry.buttonIdForPanel === 'function'
+            ? extensionsRegistry.buttonIdForPanel(activeExtensionPanelId)
+            : activeExtensionPanelId;
 
     // Plugins missing from featureOrder are appended to it (so they show at the end) from an effect, not from render.
     const missingIds = allExts.map((e) => e.id).filter((id) => !featureOrder.includes(id));
@@ -694,7 +700,7 @@ const Sidebar: React.FC = () => {
                                         ) : (
                                             <BarItem
                                                 label={reorderMode ? (t('dragToReorder' as any) || 'Drag to reorder') : feat.label}
-                                                active={activeExtensionPanelId === id}
+                                                active={activeButtonId === id}
                                                 orientation={orientation === 'horizontal' ? 'horizontal' : 'vertical'}
                                                 edge={edgePosition}
                                                 tooltipDisabled={!showTooltips || isDraggingGlobal || isMiniMode}

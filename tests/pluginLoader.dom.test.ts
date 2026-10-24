@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import registry from '../src/components/extensions/extensionRegistry';
 import {
     createPluginLoader,
+    injectExtensionScript,
     planPluginLoad,
     removeExtensionScripts,
     type LoadableExtension,
@@ -114,6 +115,74 @@ describe('extensionRegistry: owners (T-409)', () => {
         asPlugin('p2', () => registry.registerPanel('shared', { id: 'from-p2', render }));
         expect(registry.unregisterExtension('p1')).toBe(true);
         expect(registry.getPanel('shared')?.id).toBe('from-p2');
+    });
+});
+
+describe('extensionRegistry: buttonIdForPanel (active bar marker)', () => {
+    const button = (id: string) => registry.registerSidebarButton({ id, icon: 'x', label: id, onClick: () => {} });
+
+    it('no open panel: no active button', () => {
+        asPlugin('p1', () => registerAll('p1'));
+        expect(registry.buttonIdForPanel(null)).toBeNull();
+    });
+
+    it('a button with the panel id wins (v1 rule), also without a known owner', () => {
+        asPlugin(null, () => {
+            button('same');
+            registry.registerPanel('same', { id: 'same', render });
+        });
+        expect(registry.buttonIdForPanel('same')).toBe('same');
+    });
+
+    it('different ids: the only button of the plugin that registered the panel', () => {
+        asPlugin('p1', () => registerAll('p1'));
+        asPlugin('p2', () => registerAll('p2'));
+        expect(registry.buttonIdForPanel('p1-panel')).toBe('p1-btn');
+        expect(registry.buttonIdForPanel('p2-panel')).toBe('p2-btn');
+    });
+
+    it('null when the owner is unknown, has no button, or has several', () => {
+        asPlugin(null, () => {
+            button('late-btn');
+            registry.registerPanel('late-panel', { id: 'late-panel', render });
+        });
+        asPlugin('nobutton', () => registry.registerPanel('nobutton-panel', { id: 'nobutton-panel', render }));
+        asPlugin('two', () => {
+            button('two-a');
+            button('two-b');
+            registry.registerPanel('two-panel', { id: 'two-panel', render });
+        });
+        expect(registry.buttonIdForPanel('late-panel')).toBeNull();
+        expect(registry.buttonIdForPanel('nobutton-panel')).toBeNull();
+        expect(registry.buttonIdForPanel('two-panel')).toBeNull();
+        expect(registry.buttonIdForPanel('missing-panel')).toBeNull();
+    });
+
+    it('follows a button list replaced from outside (Clipboard Manager reassigns `buttons`)', () => {
+        asPlugin('p1', () => registerAll('p1'));
+        (registry as unknown as { buttons: Array<{ id: string }> }).buttons = [];
+        expect(registry.buttonIdForPanel('p1-panel')).toBeNull();
+    });
+});
+
+describe('injectExtensionScript', () => {
+    it('tags the script with data-extension-id (plugins read their own id from document.currentScript)', () => {
+        // jsdom has no URL.createObjectURL: add the two statics for this test only, leave the URL constructor alone.
+        const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:kobar-test');
+        const statics = URL as unknown as Record<string, unknown>;
+        const before = { create: statics.createObjectURL, revoke: statics.revokeObjectURL };
+        statics.createObjectURL = createObjectURL;
+        statics.revokeObjectURL = vi.fn();
+        try {
+            void injectExtensionScript({ id: 'dev-com.example.demo', enabled: true, code: 'return;' });
+            expect(scriptIds()).toEqual(['dev-com.example.demo']);
+            expect(createObjectURL).toHaveBeenCalledTimes(1);
+            expect(createObjectURL.mock.calls[0][0].type).toBe('application/javascript');
+        } finally {
+            statics.createObjectURL = before.create;
+            statics.revokeObjectURL = before.revoke;
+            removeExtensionScripts();
+        }
     });
 });
 

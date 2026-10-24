@@ -135,6 +135,20 @@ class ExtensionRegistry {
         return Array.from(this.inlineWidgets.values());
     }
 
+    /**
+     * Host addition (not used by plugins): the sidebar button the bar marks active while panel `panelId` is open. The
+     * button with the panel's own id when there is one (the v1 rule), otherwise the only button registered by the plugin
+     * that registered the panel. null when the panel's owner is unknown or that plugin has no button or several.
+     */
+    buttonIdForPanel(panelId: string | null): string | null {
+        if (!panelId) return null;
+        if (this.buttons.some((b) => b.id === panelId)) return panelId;
+        const owner = this.owners.panel.get(panelId);
+        if (!owner) return null;
+        const own = this.buttons.filter((b) => this.owners.button.get(b.id) === owner);
+        return own.length === 1 ? own[0].id : null;
+    }
+
     subscribe(listener: () => void) {
         this.listeners.add(listener);
         return () => {
