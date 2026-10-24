@@ -124,7 +124,7 @@ Plugins are plain JavaScript that run in the app's renderer. The current (v1) AP
 - `window.api`: the preload bridge to the main process
 - `window.KoBarExtensions`: registers buttons, panels and settings
 
-The full contract is in [for-agents/kobar-plugin-developer/SKILL.md](for-agents/kobar-plugin-developer/SKILL.md).
+Start with [for-agents/kobar-plugin-developer/SKILL.md](for-agents/kobar-plugin-developer/SKILL.md): the rules the host enforces and a complete working plugin. Its [`references/`](for-agents/kobar-plugin-developer/references/) folder has the full `window.api` reference, host behaviour (panels, theme, storage, permissions), manifest and publishing rules, and platform notes.
 
 Plugins have full access to the app window. Installed plugins are not sandboxed, so install only plugins you trust.
 
@@ -136,7 +136,7 @@ To list a plugin in the store: add a `manifest.json` (or `kobar.json`) to the re
 
 ### Developing with AI agents
 
-`for-agents/` holds guides for coding agents: the plugin API (`kobar-plugin-developer`) and the current design rules (`kobar-ui-ux-designer`). To test a plugin from source, create a git-ignored `pluginsPlayground/` folder at the repository root; an unpackaged build (`npm run dev`) loads plugins from it. See section 6 of the plugin guide.
+`for-agents/` holds guides for coding agents: the plugin API (`kobar-plugin-developer`) and the current design rules (`kobar-ui-ux-designer`). To test a plugin from source, create a git-ignored `pluginsPlayground/` folder at the repository root; an unpackaged build (`npm run dev`) loads plugins from it. See section 6 of [manifest-and-publishing.md](for-agents/kobar-plugin-developer/references/manifest-and-publishing.md).
 
 ## Sponsors
 
