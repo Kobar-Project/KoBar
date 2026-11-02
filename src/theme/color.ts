@@ -104,20 +104,43 @@ function oklabToHex([L, a, b]: Lab): string {
     ]);
 }
 
+/** Same result as CSS `color-mix(in oklab, <a> <pct>%, <b>)` for two `#rrggbb` colours. */
+export function mixOklab(a: string, b: string, pct: number): string {
+    if (pct <= 0) return b;
+    const t = Math.min(100, pct) / 100;
+    const A = hexToOklab(a);
+    const B = hexToOklab(b);
+    return oklabToHex([A[0] * t + B[0] * (1 - t), A[1] * t + B[1] * (1 - t), A[2] * t + B[2] * (1 - t)]);
+}
+
 /**
  * Moves OKLCH lightness (chroma and hue kept: a/b are fixed in OKLab) up ('lighter') or down ('darker')
- * until the colour reaches MIN_ACCENT_CONTRAST against `background`. Returns the input unchanged when it
- * already passes; falls back to white/black if clipping ever prevents reaching the target.
+ * until `passes(candidate)` holds. Returns the input unchanged when it already passes; falls back to
+ * white/black if clipping ever prevents reaching the target.
  */
-function tuneLightness(hex: string, background: string, direction: 'lighter' | 'darker'): string {
-    if (contrastRatio(hex, background) >= MIN_ACCENT_CONTRAST) return hex;
+function tuneLightnessUntil(hex: string, direction: 'lighter' | 'darker', passes: (candidate: string) => boolean): string {
+    if (passes(hex)) return hex;
     const [L0, a, b] = hexToOklab(hex);
     const step = direction === 'lighter' ? L_STEP : -L_STEP;
     for (let L = L0 + step; L <= 1 && L >= 0; L += step) {
         const candidate = oklabToHex([L, a, b]);
-        if (contrastRatio(candidate, background) >= MIN_ACCENT_CONTRAST) return candidate;
+        if (passes(candidate)) return candidate;
     }
     return direction === 'lighter' ? WHITE : BLACK;
+}
+
+/**
+ * Canlı (01-color §6): the custom accent is tuned against the Canlı tile of that accent, the hardest surface of the
+ * contrast contract. The tile depends on the accent, so it is recomputed for every candidate.
+ * Shares mirror src/theme/canli.ts (TINT.dark.tile / TINT.light.tile) and src/theme/canli.css.
+ */
+const CANLI_TILE_DARK = { neutral: '#1d2029', share: 11 };
+const CANLI_TILE_LIGHT = { neutral: '#f0f1f5', share: 9 };
+const CANLI_ACCENT_TEXT_DARKEN = 15;
+
+function canliTile(accent: string, scheme: 'dark' | 'light'): string {
+    const tile = scheme === 'dark' ? CANLI_TILE_DARK : CANLI_TILE_LIGHT;
+    return mixOklab(accent, tile.neutral, tile.share);
 }
 
 /** Preset whose dark value equals `hex` exactly (`#f4a125` -> amber). */
@@ -131,14 +154,26 @@ export function matchPresetAccent(hex: string): PresetAccent | null {
 }
 
 /**
- * "Custom…" accent: the dark value is lightened until it reaches 4.5:1 on the dark
- * shell, the light value darkened until 4.5:1 on the light shell; each on-accent is pure white or black.
- * Returns null for an invalid hex.
+ * "Custom…" accent (Canlı, 01-color §6): the dark value is lightened until it reaches 4.5:1 on the dark shell and
+ * on its own dark Canlı tile; the light value is darkened until its accent text (15 % black) reaches 4.5:1 on its
+ * light Canlı tile, the accent reaches 4.5:1 on the light shell and white text reaches 4.5:1 on it. Each on-accent
+ * is pure white or black. Returns null for an invalid hex.
  */
 export function deriveCustomAccent(input: string | null | undefined): AccentValues | null {
     const hex = normalizeHex(input);
     if (!hex) return null;
-    const dark = tuneLightness(hex, SHELL_DARK, 'lighter');
-    const light = tuneLightness(hex, SHELL_LIGHT, 'darker');
+    const dark = tuneLightnessUntil(
+        hex,
+        'lighter',
+        (c) => contrastRatio(c, SHELL_DARK) >= MIN_ACCENT_CONTRAST && contrastRatio(c, canliTile(c, 'dark')) >= MIN_ACCENT_CONTRAST
+    );
+    const light = tuneLightnessUntil(
+        hex,
+        'darker',
+        (c) =>
+            contrastRatio(c, SHELL_LIGHT) >= MIN_ACCENT_CONTRAST &&
+            contrastRatio(mixOklab(BLACK, c, CANLI_ACCENT_TEXT_DARKEN), canliTile(c, 'light')) >= MIN_ACCENT_CONTRAST &&
+            contrastRatio(WHITE, c) >= MIN_ACCENT_CONTRAST
+    );
     return { dark, onDark: onAccentFor(dark), light, onLight: onAccentFor(light) };
 }

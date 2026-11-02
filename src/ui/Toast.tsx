@@ -1,9 +1,7 @@
 import { useEffect, useRef, type FocusEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { Button } from './Button';
-import { cx } from './cx';
+import { cx, INTERACTIVE } from './cx';
 import { Icon } from './Icon';
-import { IconButton } from './IconButton';
 import { toast, useToasts, type ToastRecord, type ToastTone } from './toastStore';
 
 export interface ToastRegionProps {
@@ -20,14 +18,7 @@ const TONE_ICON: Record<ToastTone, string> = {
     error: 'error',
 };
 
-const TONE_CLASS: Record<ToastTone, string> = {
-    info: 'text-[var(--kb-info)]',
-    success: 'text-[var(--kb-success)]',
-    warning: 'text-[var(--kb-warning)]',
-    error: 'text-[var(--kb-danger)]',
-};
-
-const STACK = 'flex w-full max-w-80 flex-col gap-2 empty:hidden';
+const STACK = 'flex w-full max-w-[400px] flex-col gap-2 empty:hidden';
 
 /**
  * Renders the `toast` queue: portal on the toast layer (--kb-z-toast). Two live regions exist
@@ -113,34 +104,48 @@ function ToastItem({ record, dismissLabel }: { record: ToastRecord; dismissLabel
     };
 
     const { id, tone, title, message, action } = record;
+    // Inverse pill: --kb-fg-1 fill with shell-coloured text; the action is a text button in container colour. The tone
+    // shows in the icon glyph (not colour), so it reads on both schemes.
     return (
         <div
             data-tone={tone}
-            className="kb-pop no-drag-region pointer-events-auto flex w-full items-start gap-2 rounded-md border border-stroke bg-surface py-2 ps-3 pe-2 text-fg-1 shadow-e2"
+            className="kb-pop no-drag-region pointer-events-auto flex min-h-11 w-full items-center gap-2.5 rounded-[18px] bg-[var(--kb-fg-1)] py-2 ps-4 pe-2 text-[var(--kb-bg-shell)] shadow-e2"
             onMouseEnter={() => hold('hover', true)}
             onMouseLeave={() => hold('hover', false)}
             onFocus={() => hold('focus', true)}
             onBlur={onBlur}
         >
-            <Icon name={TONE_ICON[tone]} size={20} className={cx('mt-1', TONE_CLASS[tone])} />
-            <div className="min-w-0 flex-1 py-1 text-[0.8125rem] leading-5">
-                {title && <p className="font-semibold text-fg-1">{title}</p>}
-                <p className={title ? 'text-fg-2' : 'text-fg-1'}>{message}</p>
+            <Icon name={TONE_ICON[tone]} size={20} />
+            <div className="min-w-0 flex-1 [font:var(--kb-type-body)]">
+                {title && <p className="font-semibold">{title}</p>}
+                <p>{message}</p>
             </div>
             {action && (
-                <Button
-                    size="sm"
-                    variant="subtle"
-                    className="mt-0.5"
+                <button
+                    type="button"
+                    className={cx(
+                        INTERACTIVE,
+                        'inline-flex h-8 shrink-0 items-center rounded-full px-3 [font:var(--kb-type-label)] text-[var(--kb-bg-container)] transition-colors duration-[var(--kb-dur-fast)] hover:bg-[color-mix(in_oklab,var(--kb-bg-shell)_14%,transparent)]'
+                    )}
                     onClick={() => {
                         action.onClick();
                         toast.dismiss(id);
                     }}
                 >
                     {action.label}
-                </Button>
+                </button>
             )}
-            <IconButton icon="close" label={dismissLabel} size={28} tooltip={false} className="mt-0.5" onClick={() => toast.dismiss(id)} />
+            <button
+                type="button"
+                aria-label={dismissLabel}
+                className={cx(
+                    INTERACTIVE,
+                    'inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors duration-[var(--kb-dur-fast)] hover:bg-[color-mix(in_oklab,var(--kb-bg-shell)_14%,transparent)]'
+                )}
+                onClick={() => toast.dismiss(id)}
+            >
+                <Icon name="close" size={18} />
+            </button>
         </div>
     );
 }

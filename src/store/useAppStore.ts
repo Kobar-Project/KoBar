@@ -15,7 +15,10 @@ import { REPO_URL } from '../config/links';
 import { openSettingsPage } from './settingsOpener';
 import { getWindowGeometry } from '../utils/windowGeometry';
 import { computeVisibleArea } from '../utils/visibleArea';
+import { barThickness, miniButtonCenterToEnd } from '../sidebar/barLayout';
+import { getBarMode } from '../sidebar/barModeStore';
 import { DEFAULT_FEATURE_ORDER } from '../config/defaults';
+import { defaultBarItemSizes, sanitizeBarHiddenItems, sanitizeBarItemSizes, type BarItemSize } from './barPresentation';
 import { applyCustomThemeCSS, clearLegacyThemeCSS } from '../utils/color';
 import type { Accent, Scheme } from '../theme';
 import {
@@ -123,6 +126,14 @@ export interface WorkspaceConfig {
     /** v27 (T-602): per-workspace density; missing on records written before v27 (derive with `profileDensity`). */
     density?: Density;
     featureOrder: string[];
+    /** v33 (Canlı): bar item id -> size (missing id = icon); missing on records written before v33. */
+    barItemSizes?: Record<string, BarItemSize>;
+    /** v33 (Canlı): bar items hidden from the bar (the plugin stays enabled). */
+    barHiddenItems?: string[];
+    /** v33 (Canlı): coloured surfaces. */
+    tonalSurfaces?: boolean;
+    /** v33 (Canlı): the Notes tab on the bar. */
+    notesTabVisible?: boolean;
     edgePosition: 'left' | 'right' | 'top' | 'bottom';
     isPopupSmartPositioning: boolean;
     enableEyeAnimation: boolean;
@@ -275,6 +286,24 @@ export interface AppState {
 
     featureOrder: string[];
     setFeatureOrder: (order: string[]) => void;
+    /** v33 (Canlı): per bar item id, 'icon' (default when missing) or 'tile'. Per workspace, like `featureOrder`. */
+    barItemSizes: Record<string, BarItemSize>;
+    /** Whole-value setter (Settings sync, import); validated. */
+    setBarItemSizes: (sizes: Record<string, BarItemSize>) => void;
+    setBarItemSize: (id: string, size: BarItemSize) => void;
+    /** v33: ids of bar items hidden from the bar (plugin stays enabled). Per workspace. */
+    barHiddenItems: string[];
+    setBarHiddenItems: (ids: string[]) => void;
+    setBarItemHidden: (id: string, hidden: boolean) => void;
+    /** v33: "Renkli yüzeyler" (root `data-tonal`). Per workspace. */
+    tonalSurfaces: boolean;
+    setTonalSurfaces: (value: boolean) => void;
+    /** v33: the Notes tab on the bar. Per workspace. */
+    notesTabVisible: boolean;
+    setNotesTabVisible: (value: boolean) => void;
+    /** v33: privacy mode (root `data-privacy`). Global, not per workspace. */
+    privacyMode: boolean;
+    setPrivacyMode: (value: boolean) => void;
 
     settingsFeatureViewMode: 'list' | 'cards';
     setSettingsFeatureViewMode: (mode: 'list' | 'cards') => void;
@@ -861,6 +890,45 @@ export const useAppStore = create<AppState>()(
                 workspaces: patchActiveWorkspace(state, { featureOrder: [...order] })
             })),
 
+            // v33 (Canlı): a fresh install starts with the starter tiles; a migrated store has none (see migrations/v33.ts).
+            barItemSizes: defaultBarItemSizes(),
+            setBarItemSizes: (sizes) =>
+                set((state) => {
+                    const next = sanitizeBarItemSizes(sizes);
+                    return { barItemSizes: next, workspaces: patchActiveWorkspace(state, { barItemSizes: { ...next } }) };
+                }),
+            setBarItemSize: (id, size) =>
+                set((state) => {
+                    const next = sanitizeBarItemSizes({ ...state.barItemSizes, [id]: size });
+                    return { barItemSizes: next, workspaces: patchActiveWorkspace(state, { barItemSizes: { ...next } }) };
+                }),
+            barHiddenItems: [],
+            setBarHiddenItems: (ids) =>
+                set((state) => {
+                    const next = sanitizeBarHiddenItems(ids);
+                    return { barHiddenItems: next, workspaces: patchActiveWorkspace(state, { barHiddenItems: [...next] }) };
+                }),
+            setBarItemHidden: (id, hidden) =>
+                set((state) => {
+                    const rest = state.barHiddenItems.filter((item) => item !== id);
+                    const next = sanitizeBarHiddenItems(hidden ? [...rest, id] : rest);
+                    return { barHiddenItems: next, workspaces: patchActiveWorkspace(state, { barHiddenItems: [...next] }) };
+                }),
+            tonalSurfaces: true,
+            setTonalSurfaces: (value) =>
+                set((state) => ({
+                    tonalSurfaces: value,
+                    workspaces: patchActiveWorkspace(state, { tonalSurfaces: value }),
+                })),
+            notesTabVisible: true,
+            setNotesTabVisible: (value) =>
+                set((state) => ({
+                    notesTabVisible: value,
+                    workspaces: patchActiveWorkspace(state, { notesTabVisible: value }),
+                })),
+            privacyMode: false,
+            setPrivacyMode: (value) => set({ privacyMode: value }),
+
             settingsFeatureViewMode: 'cards',
             setSettingsFeatureViewMode: (mode) => set({ settingsFeatureViewMode: mode }),
 
@@ -902,12 +970,12 @@ export const useAppStore = create<AppState>()(
                     updates.miniModePosition = pos;
                     if (!isMini) {
                         if (state.orientation === 'horizontal') {
-                            // In horizontal mode, the static utilities (like the Eye button) are on the far right.
-                            // The eye button itself has a width of 48px, so its half-width is 24 * iconScale.
-                            // The horizontal container has a right padding of pr-2 (8px).
-                            // Thus, the distance from the center of the eye to the rightmost edge of the sidebar is:
-                            const centerToRight = (24 * state.iconScale) + 8;
-                            const sidebarY = pos.y - (state.sidebarWidth / 2);
+                            // Canlı: the mini button is the bar's last block; put its centre where the orb was. Thickness and
+                            // the centre-to-end distance come from the density and the published bar mode (thin / wide).
+                            const barMode = getBarMode();
+                            const thickness = barThickness(state.density, barMode);
+                            const centerToRight = miniButtonCenterToEnd(state.density, barMode);
+                            const sidebarY = pos.y - (thickness / 2);
                             updates.sidebarPosition = {
                                 x: pos.x - state.lastSidebarWidth + centerToRight,
                                 y: sidebarY
@@ -917,15 +985,14 @@ export const useAppStore = create<AppState>()(
                             const screenH = state.screenBounds?.height ?? getWindowGeometry().fallbackScreenHeight;
                             // T-322: off macOS, the vertical centre of the usable screen area in window coordinates (taskbar at top).
                             const screenCenterY = state.isMac ? (screenH / 2) : computeVisibleArea(getWindowGeometry(), state.screenBounds).centerY;
-                            const sidebarCenterY = sidebarY + (state.sidebarWidth / 2);
+                            const sidebarCenterY = sidebarY + (thickness / 2);
                             updates.edgePosition = sidebarCenterY < screenCenterY ? 'top' : 'bottom';
                         } else {
-                            // Position the sidebar's bottom handle precisely where the eye was located
-                            // We subtract lastSidebarHeight so the bottom of the sidebar rests at the eye's Y pos
-                            // The eye button itself has a height of 48px, so its half-height is 24 * iconScale.
-                            // We add the bottom padding (8px from pb-2) to get the exact distance from the center of the button to the bottom of the sidebar.
-                            const centerToBottom = (24 * state.iconScale) + 8;
-                            const sidebarX = pos.x - (state.sidebarWidth / 2);
+                            // Canlı: as above, the mini button's centre lands where the orb was (bottom of a vertical bar).
+                            const barMode = getBarMode();
+                            const thickness = barThickness(state.density, barMode);
+                            const centerToBottom = miniButtonCenterToEnd(state.density, barMode);
+                            const sidebarX = pos.x - (thickness / 2);
                             updates.sidebarPosition = {
                                 x: sidebarX,
                                 y: pos.y - state.lastSidebarHeight + centerToBottom
@@ -936,7 +1003,7 @@ export const useAppStore = create<AppState>()(
                             const isMacPlatform = state.isMac;
                             // T-322: off macOS, the horizontal centre of the usable screen area in window coordinates.
                             const screenCenter = isMacPlatform ? (screenW / 2) : computeVisibleArea(getWindowGeometry(), state.screenBounds).centerX;
-                            const sidebarCenterX = sidebarX + (state.sidebarWidth / 2);
+                            const sidebarCenterX = sidebarX + (thickness / 2);
                             updates.edgePosition = sidebarCenterX < screenCenter ? 'left' : 'right';
                         }
                     }
@@ -1177,6 +1244,10 @@ export const useAppStore = create<AppState>()(
                     material: state.material,
                     density: state.density,
                     featureOrder: [...state.featureOrder],
+                    barItemSizes: { ...state.barItemSizes },
+                    barHiddenItems: [...state.barHiddenItems],
+                    tonalSurfaces: state.tonalSurfaces,
+                    notesTabVisible: state.notesTabVisible,
                     edgePosition: state.edgePosition,
                     isPopupSmartPositioning: state.isPopupSmartPositioning,
                     enableEyeAnimation: state.enableEyeAnimation,
@@ -1257,6 +1328,10 @@ export const useAppStore = create<AppState>()(
                                 material: state.material,
                                 density: state.density,
                                 featureOrder: [...state.featureOrder],
+                                barItemSizes: { ...state.barItemSizes },
+                                barHiddenItems: [...state.barHiddenItems],
+                                tonalSurfaces: state.tonalSurfaces,
+                                notesTabVisible: state.notesTabVisible,
                                 edgePosition: state.edgePosition,
                                 isPopupSmartPositioning: state.isPopupSmartPositioning,
                                 enableEyeAnimation: state.enableEyeAnimation,
@@ -1361,6 +1436,10 @@ export const useAppStore = create<AppState>()(
                     design: targetMaterialFields.design,
                     glassOpacity: targetMaterialFields.glassOpacity,
                     featureOrder: safeFeatureOrder,
+                    barItemSizes: sanitizeBarItemSizes(freshTargetWs.barItemSizes),
+                    barHiddenItems: sanitizeBarHiddenItems(freshTargetWs.barHiddenItems),
+                    tonalSurfaces: freshTargetWs.tonalSurfaces ?? true,
+                    notesTabVisible: freshTargetWs.notesTabVisible ?? true,
                     edgePosition: freshTargetWs.edgePosition || 'right',
                     isPopupSmartPositioning: freshTargetWs.isPopupSmartPositioning ?? true,
                     enableEyeAnimation: freshTargetWs.enableEyeAnimation !== undefined ? freshTargetWs.enableEyeAnimation : true,
@@ -1486,6 +1565,10 @@ export const useAppStore = create<AppState>()(
                     material: state.material,
                     density: state.density,
                     featureOrder: [...state.featureOrder],
+                    barItemSizes: { ...state.barItemSizes },
+                    barHiddenItems: [...state.barHiddenItems],
+                    tonalSurfaces: state.tonalSurfaces,
+                    notesTabVisible: state.notesTabVisible,
                     edgePosition: state.edgePosition,
                     enableEyeAnimation: state.enableEyeAnimation,
                     orientation: state.orientation,
@@ -1560,6 +1643,12 @@ export const useAppStore = create<AppState>()(
 
 
                 featureOrder: state.featureOrder,
+                // v33 (Canlı): bar presentation, tonal surfaces, notes tab, privacy mode.
+                barItemSizes: state.barItemSizes,
+                barHiddenItems: state.barHiddenItems,
+                tonalSurfaces: state.tonalSurfaces,
+                notesTabVisible: state.notesTabVisible,
+                privacyMode: state.privacyMode,
                 design: state.design,
                 glassOpacity: state.glassOpacity,
 

@@ -1,0 +1,12 @@
+{
+    "state": {
+        "language": "en",
+        "featureOrder": ["calculator", "todolist-plugin-btn"],
+        "activeWorkspaceId": "w1",
+        "workspaces": [
+            { "id": "w1", "name": "One", "isIsolated": false, "featureOrder": ["calculator"] },
+            { "id": "w2", "name": "Two", "isIsolated": false, "featureOrder": ["todolist-plugin-btn"] }
+        ]
+    },
+    "version": 32
+}

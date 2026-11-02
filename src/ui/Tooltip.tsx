@@ -157,7 +157,7 @@ export function Tooltip({ content, children, side = 'auto', delay = 500, disable
                         ref={tipRef}
                         id={id}
                         role="tooltip"
-                        className="kb-fade pointer-events-none fixed top-0 left-0 z-[var(--kb-z-tooltip)] max-w-60 rounded-md border border-stroke bg-surface px-2 py-1 text-[0.6875rem] leading-4 text-fg-1 shadow-e2"
+                        className="kb-fade pointer-events-none fixed top-0 left-0 z-[var(--kb-z-tooltip)] max-w-60 rounded-sm border border-stroke bg-inset px-2.5 py-1.5 text-[0.78125rem] leading-4 font-medium text-fg-1 shadow-e2"
                         style={{ visibility: 'hidden' }}
                     >
                         {content}

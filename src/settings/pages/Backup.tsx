@@ -5,16 +5,20 @@
 // T-615b: the settings / notes JSON export and import send `data.*` actions with empty payloads; the main window's dialog does the file
 // work (export has its own download button there, import picks and validates the file there). No file content passes through here.
 // T-615a: Restore sends `backup.restore {}`; the main window opens its restore dialog (a file picked here could not be handed over).
+// CNL-08 (Canlı): a backup card (filled create, tonal restore) and an updates card (version in the tile-value role, status, actions).
+// The summary carries no last-backup date, so the `backupLast` line is not shown (it would need a new summary field).
 import { useId, useState } from 'react';
-import { Button, Surface, Toggle } from '../../ui';
+import { Button, Card, IconTile, Toggle } from '../../ui';
+import { cx, INTERACTIVE } from '../../ui/cx';
 import { dispatchSystemAction, useSettingsState, useSystemSummary } from '../mirror';
 import type { SettingsPageProps } from '../pages';
 import type { SystemActionType } from '../../store/systemSummary';
 import { RELEASES_URL } from '../../config/links';
+import { PAGE_STACK, WaitingNote } from './shared';
 
-const HINT = 'text-[0.6875rem] leading-4 text-fg-2';
-const SECTION_LABEL = 'text-[0.8125rem] leading-5 font-semibold text-fg-1';
-const BODY = 'text-[0.8125rem] leading-5 text-fg-2';
+const HINT = '[font:var(--kb-type-caption)] text-fg-2';
+const BODY = '[font:var(--kb-type-body)] text-fg-2';
+const SUB = '[font:var(--kb-type-body-strong)] text-fg-1';
 
 export function BackupPage({ t }: SettingsPageProps) {
     const ready = useSettingsState((s) => s.status === 'ready' && s.state !== null);
@@ -45,18 +49,20 @@ export function BackupPage({ t }: SettingsPageProps) {
     else if (backup?.last === 'done') backupText = t('fullBackupDone');
     else if (backup?.last === 'failed') backupText = t('fullBackupFailed');
 
+    const versionLine = (
+        <div className="flex items-center gap-3.5">
+            <IconTile icon="system_update_alt" />
+            <span className="[font:var(--kb-type-tile-value)] text-fg-1 tabular-nums">
+                {t('updatesVersion').replace('{version}', () => summary?.version || '…')}
+            </span>
+        </div>
+    );
+
     return (
-        <div className="flex max-w-xl flex-col gap-4">
-            {!ready && (
-                <p role="status" className={BODY}>
-                    {t('settingsWaiting')}
-                </p>
-            )}
-            <Surface as="section" level="surface" elevation="e1" radius="lg" aria-labelledby={backupId} className="flex flex-col gap-3 p-4">
-                <span id={backupId} className={SECTION_LABEL}>
-                    {t('fullBackup')}
-                </span>
-                <p className={BODY}>{t('fullBackupDesc')}</p>
+        <div className={PAGE_STACK}>
+            {!ready && <WaitingNote>{t('settingsWaiting')}</WaitingNote>}
+            <Card as="section" variant="list" aria-labelledby={backupId} title={<span id={backupId}>{t('fullBackup')}</span>}>
+                <p className={BODY}>{t('backupCardDesc')}</p>
                 <Toggle
                     label={t('fullBackupIncludeSecrets')}
                     checked={includeSecrets}
@@ -65,16 +71,13 @@ export function BackupPage({ t }: SettingsPageProps) {
                     fullWidth
                 />
                 {includeSecrets && (
-                    <p
-                        role="alert"
-                        className="rounded-sm border border-stroke bg-[var(--kb-fill-hover)] px-2 py-1.5 text-[0.8125rem] leading-5 text-fg-1"
-                    >
+                    <p role="alert" className="rounded-md bg-inset px-3 py-2 [font:var(--kb-type-body)] text-warning">
                         {t('fullBackupSecretsWarning')}
                     </p>
                 )}
-                <div>
+                <div className="flex flex-wrap gap-2">
                     <Button
-                        variant="primary"
+                        variant="filled"
                         icon="backup"
                         disabled={!canAct}
                         loading={backup?.busy === true}
@@ -86,12 +89,12 @@ export function BackupPage({ t }: SettingsPageProps) {
                 <p role="status" className={HINT}>
                     {backupText}
                 </p>
-                <div className="flex flex-col gap-2 border-t border-stroke pt-3">
-                    <span className={SECTION_LABEL}>{t('backupRestore')}</span>
+                <div className="flex flex-col gap-2 border-t border-fg-3/20 pt-3">
+                    <span className={SUB}>{t('backupRestore')}</span>
                     <p className={BODY}>{t('backupRestoreDesc')}</p>
                     <div>
                         <Button
-                            variant="secondary"
+                            variant="tonal"
                             icon="restore"
                             disabled={!canAct || backup?.busy === true}
                             onClick={() => dispatchSystemAction('backup.restore', {})}
@@ -100,11 +103,8 @@ export function BackupPage({ t }: SettingsPageProps) {
                         </Button>
                     </div>
                 </div>
-            </Surface>
-            <Surface as="section" level="surface" elevation="e1" radius="lg" aria-labelledby={dataId} className="flex flex-col gap-3 p-4">
-                <span id={dataId} className={SECTION_LABEL}>
-                    {t('backupSection')}
-                </span>
+            </Card>
+            <Card as="section" variant="list" aria-labelledby={dataId} title={<span id={dataId}>{t('backupSection')}</span>}>
                 {(
                     [
                         [settingsDataId, 'exportSettings', 'exportSettingsDesc', 'data.exportSettings', 'data.importSettings'],
@@ -115,15 +115,15 @@ export function BackupPage({ t }: SettingsPageProps) {
                         key={id}
                         role="group"
                         aria-labelledby={id}
-                        className={`flex flex-col gap-2 ${index === 0 ? '' : 'border-t border-stroke pt-3'}`}
+                        className={cx('flex flex-col gap-2', index !== 0 && 'border-t border-fg-3/20 pt-3')}
                     >
-                        <span id={id} className={SECTION_LABEL}>
+                        <span id={id} className={SUB}>
                             {t(label)}
                         </span>
                         <p className={BODY}>{t(desc)}</p>
                         <div className="flex flex-wrap gap-2">
                             <Button
-                                variant="secondary"
+                                variant="tonal"
                                 icon="download"
                                 disabled={!canAct}
                                 onClick={() => dispatchSystemAction(exportAction as SystemActionType, {})}
@@ -131,7 +131,7 @@ export function BackupPage({ t }: SettingsPageProps) {
                                 {t('downloadJson')}
                             </Button>
                             <Button
-                                variant="secondary"
+                                variant="tonal"
                                 icon="upload"
                                 disabled={!canAct || backup?.busy === true}
                                 onClick={() => dispatchSystemAction(importAction as SystemActionType, {})}
@@ -141,49 +141,25 @@ export function BackupPage({ t }: SettingsPageProps) {
                         </div>
                     </div>
                 ))}
-            </Surface>
+            </Card>
             {summary?.manualUpdate && (
                 // MAC-016: unsigned macOS build: no self-update. A plain anchor like the About page (main's navigation guard opens it).
-                <Surface
-                    as="section"
-                    level="surface"
-                    elevation="e1"
-                    radius="lg"
-                    aria-labelledby={updateId}
-                    className="flex flex-col gap-3 p-4"
-                >
-                    <span id={updateId} className={SECTION_LABEL}>
-                        {t('updateCenter')}
-                    </span>
-                    <p className={BODY}>
-                        {t('version')}: <span className="font-mono text-fg-1">{summary.version || '…'}</span>
-                    </p>
+                <Card as="section" variant="list" aria-labelledby={updateId} title={<span id={updateId}>{t('updateCenter')}</span>}>
+                    {versionLine}
                     <p className={BODY}>{t('updateManualDesc')}</p>
                     <a
                         href={RELEASES_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-semibold text-[var(--kb-accent)] hover:underline"
+                        className={cx(INTERACTIVE, 'w-fit rounded-xs [font:var(--kb-type-body-strong)] text-accent hover:underline')}
                     >
                         {t('updateManualLink')}
                     </a>
-                </Surface>
+                </Card>
             )}
             {summary?.updatesEnabled && (
-                <Surface
-                    as="section"
-                    level="surface"
-                    elevation="e1"
-                    radius="lg"
-                    aria-labelledby={updateId}
-                    className="flex flex-col gap-3 p-4"
-                >
-                    <span id={updateId} className={SECTION_LABEL}>
-                        {t('updateCenter')}
-                    </span>
-                    <p className={BODY}>
-                        {t('version')}: <span className="font-mono text-fg-1">{summary.version || '…'}</span>
-                    </p>
+                <Card as="section" variant="list" aria-labelledby={updateId} title={<span id={updateId}>{t('updateCenter')}</span>}>
+                    {versionLine}
                     <p role="status" className={BODY}>
                         {updateText}
                     </p>
@@ -194,15 +170,15 @@ export function BackupPage({ t }: SettingsPageProps) {
                             aria-valuemin={0}
                             aria-valuemax={100}
                             aria-valuenow={update?.percent ?? 0}
-                            className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--kb-fill-selected)]"
+                            className="h-1.5 w-full overflow-hidden rounded-full bg-inset"
                         >
-                            <div className="h-full bg-[var(--kb-accent)]" style={{ width: `${update?.percent ?? 0}%` }} />
+                            <div className="h-full bg-accent" style={{ width: `${update?.percent ?? 0}%` }} />
                         </div>
                     )}
                     <div className="flex flex-wrap gap-2">
                         {status === 'available' ? (
                             <Button
-                                variant="primary"
+                                variant="filled"
                                 icon="download"
                                 disabled={!canAct}
                                 onClick={() => dispatchSystemAction('update.download', {})}
@@ -211,7 +187,7 @@ export function BackupPage({ t }: SettingsPageProps) {
                             </Button>
                         ) : status === 'downloaded' ? (
                             <Button
-                                variant="primary"
+                                variant="filled"
                                 icon="restart_alt"
                                 disabled={!canAct}
                                 onClick={() => dispatchSystemAction('update.install', {})}
@@ -220,7 +196,7 @@ export function BackupPage({ t }: SettingsPageProps) {
                             </Button>
                         ) : (
                             <Button
-                                variant="secondary"
+                                variant="tonal"
                                 icon="update"
                                 disabled={!canAct || status === 'downloading'}
                                 loading={status === 'checking'}
@@ -230,7 +206,16 @@ export function BackupPage({ t }: SettingsPageProps) {
                             </Button>
                         )}
                     </div>
-                </Surface>
+                </Card>
+            )}
+            {summary && !summary.updatesEnabled && !summary.manualUpdate && (
+                // The Microsoft Store build: the Store installs updates, so there is nothing to check here (just the version).
+                <Card
+                    as="section"
+                    variant="list"
+                    title={t('updatesVersion').replace('{version}', () => summary.version || '…')}
+                    description={t('updatesStoreNote')}
+                />
             )}
         </div>
     );

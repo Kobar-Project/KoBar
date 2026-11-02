@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { useT } from '../../i18n/useT';
 import type { TranslationKeys } from '../../i18n';
 import { useAppStore } from '../../store/useAppStore';
+import { Button, IconButton, IconTile, Surface, TextField } from '../../ui';
 import { PLUGIN_CANCELED_REASON, needsAppUpdateMessage } from './pluginResults';
 
 const GITHUB_URL_PATTERN = /^https?:\/\/github\.com\/([^/]+)\/([^/]+)/i;
@@ -76,52 +77,54 @@ const GithubInstall: React.FC = () => {
 
     return (
         <div className="flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-fg-1 uppercase tracking-wider">GitHub</h3>
-            <div className="relative w-full no-drag-region">
-                <input
-                    type="text"
+            <div className="flex items-center gap-3">
+                <IconTile icon="extension" size="md" />
+                <h3 className="font-heading [font:var(--kb-type-title)] text-fg-1">GitHub</h3>
+            </div>
+            <div className="no-drag-region relative w-full">
+                <TextField
+                    label={t('pluginHostGithubLink')}
+                    hideLabel
+                    icon="link"
                     value={link}
                     onChange={(e) => onLinkChange(e.target.value)}
                     placeholder="https://github.com/owner/repo"
-                    aria-label={t('pluginHostGithubLink')}
-                    className="w-full bg-inset border border-stroke rounded-xl py-2.5 pl-3 pr-28 text-sm text-fg-1 focus:outline-none focus:border-primary transition-colors placeholder:text-fg-3"
+                    className={repo ? 'pe-32' : undefined}
                 />
                 {repo && (
-                    <button
+                    <Button
+                        variant="tonal"
+                        size="sm"
                         onClick={checkRepo}
                         disabled={isChecking}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-[var(--kb-on-accent)] px-3 py-1 rounded-lg text-xs font-semibold hover:bg-primary/90 disabled:opacity-50"
+                        className="absolute end-2 top-1/2 -translate-y-1/2"
                     >
                         {isChecking ? t('pluginHostChecking') : t('pluginHostLoadLink')}
-                    </button>
+                    </Button>
                 )}
             </div>
             {prompt && (
-                <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 flex flex-col gap-3">
-                    <p className="text-xs text-fg-2">
+                <Surface level="inset" radius="md" className="flex flex-col gap-3 p-4">
+                    <p className="[font:var(--kb-type-caption)] text-fg-2">
                         {t('pluginHostInstallPrompt')
                             .split('{name}')
                             .flatMap((part, i) => (i === 0 ? [part] : [<strong key={i}>{prompt.repoName}</strong>, part]))}
                     </p>
                     <div className="flex justify-end gap-2">
-                        <button
-                            onClick={() => setPrompt(null)}
-                            className="px-4 py-1.5 rounded-lg text-xs font-medium bg-inset text-fg-1 hover:bg-fill-selected"
-                        >
+                        <Button variant="text" size="sm" onClick={() => setPrompt(null)}>
                             {t('pluginHostNo')}
-                        </button>
-                        <button
-                            onClick={confirmInstall}
-                            disabled={installing}
-                            className="px-4 py-1.5 rounded-lg text-xs font-medium bg-primary text-black hover:bg-primary/90"
-                        >
+                        </Button>
+                        <Button variant="filled" size="sm" onClick={confirmInstall} disabled={installing}>
                             {installing ? t('pluginHostInstalling') : t('pluginHostYesInstall')}
-                        </button>
+                        </Button>
                     </div>
-                </div>
+                </Surface>
             )}
             {error && (
-                <div role="alert" className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+                <div
+                    role="alert"
+                    className="rounded-md bg-[color-mix(in_oklab,var(--kb-danger)_14%,transparent)] p-4 [font:var(--kb-type-caption)] text-danger"
+                >
                     {'key' in error ? t(error.key) : error.text}
                 </div>
             )}
@@ -133,7 +136,6 @@ const PluginSettingsHost: React.FC = () => {
     const t = useT();
     const selectedPluginId = useAppStore((state) => state.selectedPluginId);
     const setSelectedPluginId = useAppStore((state) => state.setSelectedPluginId);
-    const design = useAppStore((state) => state.design);
     // A plugin's panel registers once its script ran, so re-render when the registry changes.
     const [, setTick] = useState(0);
     useEffect(() => {
@@ -144,24 +146,26 @@ const PluginSettingsHost: React.FC = () => {
     const panel = selectedPluginId ? window.KoBarExtensions?.getSettingsPanel(selectedPluginId) : undefined;
 
     return (
-        <div
-            className="flex-1 overflow-y-auto p-8 pl-10 pb-4 custom-scrollbar relative flex flex-col gap-6"
-            style={{ backgroundColor: design === 'style2' ? 'transparent' : 'var(--theme-bg-base)' }}
-        >
+        <div className="custom-scrollbar relative flex flex-1 flex-col gap-6 overflow-y-auto p-8 pb-4">
             {selectedPluginId ? (
                 <div className="flex flex-col gap-4">
-                    <button
+                    <IconButton
+                        icon="arrow_back"
+                        variant="tonal"
+                        size={36}
+                        label={t('pluginHostBack')}
+                        tooltip={false}
+                        className="self-start"
                         onClick={() => setSelectedPluginId(null)}
-                        aria-label={t('pluginHostBack')}
-                        className="self-start flex items-center gap-1 text-sm text-fg-2 hover:text-fg-1 no-drag-region"
-                    >
-                        <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                    </button>
+                    />
                     {panel && (
                         <>
-                            <h3 className="text-sm font-semibold text-fg-1 uppercase tracking-wider">{t('pluginHostSettings')}</h3>
+                            <div className="flex items-center gap-3">
+                                <IconTile icon="settings" size="md" />
+                                <h3 className="font-heading [font:var(--kb-type-title)] text-fg-1">{t('pluginHostSettings')}</h3>
+                            </div>
                             {/* T-503: v1 settings panels always resolve the dark scheme tokens */}
-                            <div data-scheme="dark" className="p-4 rounded-xl bg-black/20 border border-stroke">
+                            <div data-scheme="dark" className="rounded-xl border border-stroke bg-surface p-4">
                                 {panel.render()}
                             </div>
                         </>

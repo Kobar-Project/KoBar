@@ -30,15 +30,15 @@ describe('ListItem', () => {
         expect(onClick).toHaveBeenCalledTimes(1);
     });
 
-    it('selected: aria-current on the button, accent-subtle fill and accent bar, filled icon', () => {
+    it('selected: aria-current on the button, container fill and accent bar, filled icon', () => {
         const { host } = render(<ListItem title="General" leading="settings" selected current="page" onClick={() => {}} />);
         const btn = getByRole('button');
         expect(btn.getAttribute('aria-current')).toBe('page');
         const root = host.firstElementChild as HTMLElement;
-        expect(root.className).toContain('bg-[var(--kb-accent-subtle)]');
+        expect(root.className).toContain('bg-container');
         expect(root.className).toContain('before:bg-[var(--kb-accent)]');
         expect(root.hasAttribute('aria-current')).toBe(false);
-        const icon = btn.querySelector('.material-symbols-outlined')!;
+        const icon = btn.querySelector('.kb-icon')!;
         expect(icon.textContent).toBe('settings');
         expect(icon.getAttribute('aria-hidden')).toBe('true');
         expect(icon.hasAttribute('data-filled')).toBe(true);
@@ -98,11 +98,11 @@ describe('ListItem', () => {
     it.each([false, '', null])('empty description %j renders no description span', (description) => {
         const { host } = render(<ListItem title="x" description={description} />);
         expect(host.textContent).toBe('x');
-        expect(host.querySelectorAll('span.leading-4')).toHaveLength(0);
+        expect(host.querySelectorAll('span[class*="type-caption"]')).toHaveLength(0);
     });
 
     it('description 0 is rendered inside the description span', () => {
         const { host } = render(<ListItem title="x" description={0} />);
-        expect(host.querySelector('span.leading-4')?.textContent).toBe('0');
+        expect(host.querySelector('span[class*="type-caption"]')?.textContent).toBe('0');
     });
 });

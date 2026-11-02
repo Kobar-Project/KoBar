@@ -19,6 +19,7 @@ import { registerCopyScreenshotIpc } from './clipboard.cjs';
 import { isPsAvailable, psWrite, restartPsBridgeIfDown } from './native.cjs';
 import { notifyBlockedFileAccess } from './notifications.cjs';
 import { resumeMainWindowModel, suspendMainWindowModel } from '../windows/mainWindow.cjs';
+import { cancelPinTargeting } from './pin.cjs';
 
 const isMac = process.platform === 'darwin';
 const isWin = process.platform === 'win32';
@@ -108,6 +109,7 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
     // Legacy take-screenshot kept for backward compatibility
     ipcMain.on('take-screenshot', (_event, hideApp) => {
         if (hideApp && appState.mainWindow) {
+            cancelPinTargeting(); // CNL: see take-screenshot-session
             appState.mainWindow.hide();
         }
         setTimeout(() => {
@@ -170,7 +172,13 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
             if (d.bounds.y + d.bounds.height > maxY) maxY = d.bounds.y + d.bounds.height;
         });
 
-        let captureData: { displayId: string; bounds: Electron.Rectangle; scaleFactor: number; imageDataUrl: string }[];
+        let captureData: {
+            displayId: string;
+            bounds: Electron.Rectangle;
+            workArea: Electron.Rectangle;
+            scaleFactor: number;
+            imageDataUrl: string;
+        }[];
         let windowPos: number[];
         let stretched = false;
         try {
@@ -178,6 +186,8 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
             //    the active display) is suspended until cancel-screenshot / screenshot-session-complete, so no display or move re-fit
             //    shrinks the window while the overlay needs all displays.
             if (appState.mainWindow) {
+                // CNL: hiding the window blurs it; an armed pin request would then pin the desktop (cyan frame around the screen).
+                cancelPinTargeting();
                 suspendMainWindowModel();
                 stretched = true;
                 preScreenshotBounds = appState.mainWindow.getBounds();
@@ -224,6 +234,8 @@ export function registerScreenshotIpc(deps: ScreenshotDeps) {
                 return {
                     displayId: display.id.toString(),
                     bounds: display.bounds,
+                    // CNL: additive; Screenshot Studio keeps its toolbar out of the taskbar band with it.
+                    workArea: display.workArea,
                     scaleFactor: display.scaleFactor,
                     imageDataUrl: thumbnail.toDataURL(),
                 };

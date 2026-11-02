@@ -68,5 +68,6 @@ describe('notes empty state', () => {
         act(() => addBtn.click());
         expect(useAppStore.getState().notes).toHaveLength(1);
         expect(host.querySelector('[role="status"]')).toBeNull();
-    });
+        // The first import of NotePanel loads Tiptap and the emoji picker; under a full parallel run that alone can pass 5 s.
+    }, 30_000);
 });

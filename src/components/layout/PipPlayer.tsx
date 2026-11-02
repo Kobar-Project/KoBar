@@ -226,7 +226,7 @@ const PipPlayer: React.FC = () => {
                     background: 'rgba(0,0,0,0.9)', gap: 12,
                     padding: 24, textAlign: 'center', zIndex: 10,
                 }}>
-                    <span className="material-symbols-outlined" style={{ color: '#f87171', fontSize: 40 }}>
+                    <span className="kb-icon" style={{ color: '#f87171', fontSize: 40 }}>
                         videocam_off
                     </span>
                     <p style={{ color: '#cbd5e1', fontSize: 13, margin: 0, lineHeight: 1.5 }}>{error}</p>
@@ -281,7 +281,7 @@ const PipPlayer: React.FC = () => {
                                 draggable={false}
                             />
                         ) : (
-                            <span className="material-symbols-outlined"
+                            <span className="kb-icon"
                                 style={{ color: '#ffffff', fontSize: 15, flexShrink: 0, WebkitAppRegion: 'drag' } as React.CSSProperties}>
                                 pip
                             </span>
@@ -305,7 +305,7 @@ const PipPlayer: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.6)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.25)')}
                     >
-                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>close</span>
+                        <span className="kb-icon" style={{ fontSize: 14 }}>close</span>
                     </button>
                 </div>
 

@@ -1,9 +1,34 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useSyncExternalStore } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useT } from '../../i18n/useT';
 import { setIsResizingGlobal } from '../../App';
 import EyeNotification from './EyeNotification';
 import KoBarHead from './KoBarHead';
+import { BarBadge } from '../../sidebar/BarItem';
+import { useExtensionRegistry } from '../extensions/extensionRegistry';
+import { getBarItemSnapshot, subscribeBarItem } from '../extensions/barPresentation';
+import { cx, INTERACTIVE } from '../../ui/cx';
+
+/** Sum of every plugin's numeric badge (dots count nothing); the mini orb shows one badge for the whole bar. */
+function useBadgeTotal(ids: readonly string[]): number {
+    const key = JSON.stringify(ids);
+    const subscribe = React.useCallback(
+        (notify: () => void) => {
+            const unsubs = (JSON.parse(key) as string[]).map((id) => subscribeBarItem(id, notify));
+            return () => unsubs.forEach((u) => u());
+        },
+        [key]
+    );
+    const getSnapshot = React.useCallback(() => {
+        let total = 0;
+        for (const id of JSON.parse(key) as string[]) {
+            const badge = getBarItemSnapshot(id).state?.badge;
+            if (typeof badge === 'number' && badge > 0) total += badge;
+        }
+        return total;
+    }, [key]);
+    return useSyncExternalStore(subscribe, getSnapshot, () => 0);
+}
 import { getWindowGeometry, subscribeWindowGeometry, useWindowGeometry } from '../../utils/windowGeometry';
 import { exceedsDragThreshold } from '../../utils/dragThreshold';
 import { computeVisibleArea, defaultEyePosition, windowOriginForDisplay } from '../../utils/visibleArea';
@@ -11,9 +36,9 @@ import { computeVisibleArea, defaultEyePosition, windowOriginForDisplay } from '
 const FloatingEye: React.FC = () => {
     const edgePosition = useAppStore((state) => state.edgePosition);
     const miniModePosition = useAppStore((state) => state.miniModePosition);
-    const design = useAppStore((state) => state.design);
-    const glassOpacity = useAppStore((state) => state.glassOpacity);
-    const iconScale = useAppStore((state) => state.iconScale);
+    const privacyMode = useAppStore((state) => state.privacyMode);
+    const registry = useExtensionRegistry();
+    const badgeTotal = useBadgeTotal(registry.getButtons().map((b: { id: string }) => b.id));
     const screenBounds = useAppStore((state) => state.screenBounds);
     const enableEyeAnimation = useAppStore((state) => state.enableEyeAnimation);
     const notificationVisible = useAppStore((state) => state.eyeNotification?.isVisible === true);
@@ -255,35 +280,43 @@ const FloatingEye: React.FC = () => {
         <div
             ref={containerRef}
             className="fixed z-[999] pointer-events-auto"
-            style={{ left: pos.x, top: pos.y, transform: `translate(-50%, -50%) scale(${iconScale})`, transformOrigin: 'center center' }}
+            style={{ left: pos.x, top: pos.y, transform: 'translate(-50%, -50%)' }}
         >
             <button
                 ref={eyeButtonRef}
                 type="button"
                 title={t('eyeExpand')}
                 aria-label={t('eyeExpand')}
+                data-mini-orb=""
                 onMouseDown={handleMouseDown}
                 onClick={handleClick}
-                className={`w-12 h-12 rounded-full border-2 border-primary text-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing group relative
-                    shadow-e2 ${design === 'style2' ? 'backdrop-blur-(--kb-blur-eye)' : ''}`}
-                style={{
-                    backgroundColor:
-                        design === 'style2'
-                            ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)`
-                            : 'var(--theme-bg-dark)',
-                }}
+                className={cx(
+                    INTERACTIVE,
+                    'relative flex size-11 cursor-grab items-center justify-center rounded-full bg-[var(--kb-accent)] text-[var(--kb-on-accent)] shadow-e2 transition-colors duration-[var(--kb-dur-fast)] hover:bg-[var(--kb-accent-hover)] active:cursor-grabbing'
+                )}
             >
-                <span className="flex items-center justify-center pointer-events-none transition-transform group-hover:scale-110">
+                <span className="pointer-events-none flex items-center justify-center text-[color-mix(in_srgb,var(--kb-on-accent)_60%,transparent)]">
                     <KoBarHead
                         size={30}
-                        color="var(--kb-mini-head)"
+                        color="currentColor"
                         follow={enableEyeAnimation}
                         attention={notificationVisible}
                         anchorRef={eyeButtonRef}
                     />
                 </span>
+                {!privacyMode && badgeTotal > 0 && (
+                    <span className="pointer-events-none absolute -end-1 -top-1">
+                        <BarBadge
+                            value={badgeTotal}
+                            className="!static block border-2 border-[var(--kb-bg-shell)] bg-[var(--kb-bg-container)] text-[var(--kb-on-container)]"
+                        />
+                    </span>
+                )}
                 {isDev && (
-                    <span className="absolute -top-1 -right-1 z-[1000] bg-orange-500 text-black text-[9px] font-extrabold px-1 py-0.5 rounded-sm border border-orange-600 select-none pointer-events-none tracking-wide scale-90 origin-top-right uppercase leading-none font-sans">
+                    <span
+                        title={t('devBuildTooltip')}
+                        className="pointer-events-none absolute -bottom-1 -end-1 z-10 rounded-sm border border-stroke bg-[var(--kb-bg-container)] px-1 font-sans text-[9px] leading-3 font-bold text-[var(--kb-on-container)] select-none"
+                    >
                         dev
                     </span>
                 )}

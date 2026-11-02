@@ -56,6 +56,10 @@ describe('v24 through the store', () => {
             material: 'solid',
             density: 'normal',
             isPopupSmartPositioning: true,
+            barItemSizes: {},
+            barHiddenItems: [],
+            tonalSurfaces: true,
+            notesTabVisible: true,
         });
         expect(state.legacyBackup?.densityV27).toEqual({
             workspaces: [{ index: 1, id: 'ws-shared', values: { isPopupSmartPositioning: false } }],
@@ -71,7 +75,7 @@ describe('v24 through the store', () => {
 
         persist.flushAppPersist();
         const disk = JSON.parse(localStorage.getItem('kobar-storage') as string);
-        expect(disk.version).toBe(32);
+        expect(disk.version).toBe(33);
         expect(disk.state.workspaces[0].theme).toBe('ember');
         expect(disk.state.legacyBackup.workspaceModelV24.workspaces[0].values.theme).toBe('midnight');
     });

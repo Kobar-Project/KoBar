@@ -1,15 +1,17 @@
 // R2-15: Settings > Integrations > Google Calendar (Experimental, read-only, default OFF). Talks to the main process through the
 // Settings window's narrow bridge (window.settingsBridge.gcal*): the answers are plain status codes, never a token, an e-mail
 // address or an event title. The enabled flag lives in the main process (not in kobar-storage).
+// CNL-08 (Canlı): one setting card (Experimental + Read-only chips, switch, status, connect / refresh / disconnect) and an empty state.
 import { useCallback, useEffect, useId, useState } from 'react';
 import type { IpcGcalConnectFailure, IpcGcalStatus, IpcSettingsWindowBridge } from '../../../shared/ipc-contract';
 import type { TranslationKeys } from '../../i18n';
-import { Button, Surface, Toggle } from '../../ui';
+import { Button, Card, EmptyState, Toggle } from '../../ui';
+import { cx } from '../../ui/cx';
 import type { SettingsPageProps } from '../pages';
+import { PAGE_STACK, StaticChip } from './shared';
 
-const BODY = 'text-[0.8125rem] leading-5 text-fg-2';
-const HINT = 'text-[0.6875rem] leading-4 text-fg-2';
-const SECTION_LABEL = 'text-[0.8125rem] leading-5 font-semibold text-fg-1';
+const BODY = '[font:var(--kb-type-body)] text-fg-2';
+const HINT = '[font:var(--kb-type-caption)] text-fg-2';
 
 type GcalBridge = Pick<IpcSettingsWindowBridge, 'gcalStatus' | 'gcalConnect' | 'gcalDisconnect' | 'gcalSetEnabled' | 'gcalRefresh'>;
 
@@ -83,32 +85,33 @@ export function IntegrationsPage({ t }: SettingsPageProps) {
     const hasAccount = state === 'connected' || state === 'reconnect-needed';
 
     return (
-        <div className="flex max-w-xl flex-col gap-4">
-            <Surface
+        <div className={PAGE_STACK}>
+            <Card
                 as="section"
-                level="surface"
-                elevation="e1"
-                radius="lg"
+                icon="calendar_month"
                 aria-labelledby={headingId}
-                className="flex flex-col gap-3 p-4"
+                title={<span id={headingId}>{t('gcalTitle')}</span>}
+                description={t('gcalDesc')}
+                control={
+                    <Toggle
+                        hideLabel
+                        label={t('gcalEnable')}
+                        checked={enabled}
+                        disabled={busy || status === null}
+                        onChange={(next) => void run(() => bridge?.gcalSetEnabled?.(next))}
+                    />
+                }
             >
-                <span id={headingId} className={SECTION_LABEL}>
-                    {t('gcalTitle')}
-                </span>
-                <p className={BODY}>{t('gcalDesc')}</p>
-                <Toggle
-                    label={t('gcalEnable')}
-                    checked={enabled}
-                    disabled={busy || status === null}
-                    onChange={(next) => void run(() => bridge?.gcalSetEnabled?.(next))}
-                    fullWidth
-                />
+                <div className="flex flex-wrap gap-1.5">
+                    <StaticChip tone="inset">{t('integrationExperimental')}</StaticChip>
+                    <StaticChip tone="inset">{t('integrationReadOnly')}</StaticChip>
+                </div>
                 <p role="status" className={BODY} data-testid="gcal-state">
                     {t(STATE_KEYS[state])}
                 </p>
                 {state === 'reconnect-needed' && <p className={HINT}>{t('gcalReconnectNote')}</p>}
                 {failure && (
-                    <p role="alert" className={HINT}>
+                    <p role="alert" className={cx(HINT, 'text-danger')}>
                         {t(failure)}
                     </p>
                 )}
@@ -121,7 +124,7 @@ export function IntegrationsPage({ t }: SettingsPageProps) {
                 <div className="flex flex-wrap gap-2">
                     {state !== 'connected' && (
                         <Button
-                            variant="primary"
+                            variant="filled"
                             icon="login"
                             disabled={!canConnect || busy}
                             loading={busy}
@@ -132,7 +135,7 @@ export function IntegrationsPage({ t }: SettingsPageProps) {
                     )}
                     {state === 'connected' && (
                         <Button
-                            variant="secondary"
+                            variant="tonal"
                             icon="refresh"
                             disabled={!enabled || busy}
                             onClick={() => void run(() => bridge?.gcalRefresh?.())}
@@ -141,17 +144,13 @@ export function IntegrationsPage({ t }: SettingsPageProps) {
                         </Button>
                     )}
                     {hasAccount && (
-                        <Button
-                            variant="secondary"
-                            icon="logout"
-                            disabled={busy}
-                            onClick={() => void run(() => bridge?.gcalDisconnect?.())}
-                        >
+                        <Button variant="tonal" icon="logout" disabled={busy} onClick={() => void run(() => bridge?.gcalDisconnect?.())}>
                             {t('gcalDisconnect')}
                         </Button>
                     )}
                 </div>
-            </Surface>
+            </Card>
+            <EmptyState icon="extension" title={t('integrationsMoreSoon')} />
         </div>
     );
 }

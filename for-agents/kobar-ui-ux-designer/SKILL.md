@@ -5,6 +5,11 @@ description: Guide for writing UI for the KoBar host app (remastered design syst
 
 # KoBar UI Guide (remastered design system)
 
+> **Visual rules:** KoBar now uses the Canlı visual language. Colours, shapes, type, icons, the bar's tiles and the
+> card/panel patterns are defined in [the Canlı design guide](../kobar-canli-designer/SKILL.md); where this guide and
+> that one disagree on a visual rule, Canlı wins. The structural rules below (windows, state, hit-testing, i18n,
+> layers, primitives) still apply.
+
 This file documents the KoBar design system for agents writing host UI in `src/`. The source of truth is the design tokens
 in `src/index.css` and the primitives in `src/ui/`.
 It documents the current system; it is **not binding on plugin authors**. Plugin authors follow
@@ -170,6 +175,14 @@ toast.success(t('noteSaved'), { action: { label: t('undo'), onClick: undo } });
 (The keys above are illustrative; use or add real keys in `en.json`.)
 
 Item shapes: action items take `type?`, `shortcut`, `danger`, `onSelect`; checkbox items take `type: 'checkbox'`, `checked`, `onCheckedChange`, `closeOnSelect`; radio items take `type: 'radio'`, `checked`, `onSelect` (one radio set per Menu). Every item except a separator needs an `id`.
+
+**Canlı additions** (all token-only, each with an accessible name where interactive):
+`IconTile` (`icon`, `size` sm/md/xl, `muted`; decorative), `Card` (`variant` setting/stat/list, `icon`, `title`, `description`, `control`),
+`Chip` (`selected` sets `aria-pressed`), `OptionTile` (`label`, `icon`, `art`, `selected`; `role="radio"`, put in a radiogroup),
+`Swatch` / `SwatchGroup` (`options`, `value`, `onChange`; `label` required per colour), `Badge` (`count`, `dot`),
+`ProgressRing` (`value` 0-1, `size` tile/orb/panel, `label`), `SlotMeter` (`total` up to `SLOT_METER_MAX` 12, `filled`, `showNext`, `label`).
+`Button` variants: `filled`, `tonal` (default), `outline`, `text`, `danger`; `primary`, `secondary` and `subtle` stay as aliases.
+`IconButton` takes `variant` standard/tonal/filled; `ListItem` takes `variant="nav"`; `Menu` takes `header`; `PanelShell` takes `subtitle` and size `xl`.
 
 **Hand-written controls** (the exception): compose classes with `cx()` and start from the shared `INTERACTIVE` string
 (`src/ui/cx.ts`: `no-drag-region pointer-events-auto select-none` + keyboard focus ring). Keep every class literal visible

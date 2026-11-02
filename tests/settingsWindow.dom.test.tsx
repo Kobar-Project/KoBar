@@ -56,9 +56,9 @@ describe('SettingsApp', () => {
         const { host } = render(<SettingsApp lang="tr" />);
         const nav = host.querySelector('nav')!;
         expect(nav.getAttribute('aria-label')).toBe(translations.tr.settings);
-        const buttons = [...nav.querySelectorAll('button')];
+        const buttons = [...nav.querySelectorAll('ul button')];
         // The leading icon is a Material Symbols ligature (its name is text), so compare the title span.
-        expect(buttons.map((b) => b.querySelector('.truncate')?.textContent)).toEqual(
+        expect(buttons.map((b) => b.querySelectorAll(':scope > span')[1]?.textContent)).toEqual(
             SETTINGS_PAGES.map((p) => translations.tr[p.labelKey])
         );
         expect(buttons[0].getAttribute('aria-current')).toBe('page');
@@ -70,7 +70,7 @@ describe('SettingsApp', () => {
 
     it('switches the page from the menu', () => {
         const { host } = render(<SettingsApp lang="en" />);
-        const buttons = [...host.querySelectorAll('nav button')];
+        const buttons = [...host.querySelectorAll('nav ul button')];
         click(buttons[7]);
         expect(host.querySelector('h1')!.textContent).toBe('About');
         expect(buttons[7].getAttribute('aria-current')).toBe('page');
@@ -78,10 +78,42 @@ describe('SettingsApp', () => {
         expect(host.querySelector('main')!.textContent).toContain('KoBar was made by Ekrem EDALI.');
     });
 
+    it('collapses the navigation to icons below 1000 px and keeps the labels as accessible names', () => {
+        const original = window.innerWidth;
+        const setWidth = (width: number) => {
+            Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: width });
+            fire(window, new Event('resize'));
+        };
+        try {
+            setWidth(1200);
+            const { host } = render(<SettingsApp lang="en" />);
+            expect(host.querySelector('nav ul .sr-only')).toBeNull();
+            expect(host.querySelector('[data-testid="nav-workspace-card"]')!.textContent).toContain('Default');
+            setWidth(900);
+            const labels = [...host.querySelectorAll('nav ul button .sr-only')].map((el) => el.textContent);
+            expect(labels).toEqual(SETTINGS_PAGES.map((p) => translations.en[p.labelKey]));
+            // Still navigable and the current page keeps aria-current.
+            const buttons = [...host.querySelectorAll('nav ul button')];
+            click(buttons[3]);
+            expect(host.querySelector('h1')!.textContent).toBe('Plugins');
+            expect(buttons[3].getAttribute('aria-current')).toBe('page');
+            setWidth(1100);
+            expect(host.querySelector('nav ul .sr-only')).toBeNull();
+        } finally {
+            Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: original });
+        }
+    });
+
+    it('opens the Workspaces page from the nav workspace card', () => {
+        const { host } = render(<SettingsApp lang="en" />);
+        click(host.querySelector('[data-testid="nav-workspace-card"]')!);
+        expect(host.querySelector('h1')!.textContent).toBe('Workspaces');
+    });
+
     it('writes nothing to storage and sets no plugin globals', () => {
         const setItem = vi.spyOn(Storage.prototype, 'setItem');
         const { host } = render(<SettingsApp lang="en" />);
-        click(host.querySelectorAll('nav button')[2]);
+        click(host.querySelectorAll('nav ul button')[2]);
         expect(setItem).not.toHaveBeenCalled();
         const w = window as unknown as Record<string, unknown>;
         expect(w.useAppStore).toBeUndefined();

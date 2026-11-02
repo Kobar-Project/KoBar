@@ -84,7 +84,7 @@ export function buildRequest({ provider, model, messages, apiKeys, apiKey, syste
         }
         url = 'https://api.openai.com/v1/chat/completions';
         body = {
-            model: model || 'gpt-4o',
+            model: model || 'gpt-6.1-sol',
             messages: finalMessages,
             stream: true,
         };
@@ -117,7 +117,7 @@ export function buildRequest({ provider, model, messages, apiKeys, apiKey, syste
         });
 
         body = {
-            model: model || 'claude-sonnet-4-6',
+            model: model || 'claude-sonnet-5-5',
             max_tokens: 4096,
             messages: anthropicMessages,
             stream: true,
@@ -136,7 +136,7 @@ export function buildRequest({ provider, model, messages, apiKeys, apiKey, syste
         }
 
         body = {
-            model: geminiModel || 'gemini-3.1-flash',
+            model: geminiModel || 'gemini-3.8-flash',
             messages: finalMessages,
             stream: true,
         };

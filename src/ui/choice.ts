@@ -77,14 +77,14 @@ export function moveRovingFocus(event: KeyboardEvent<HTMLElement>, items: readon
     return null;
 }
 
-/** Shared visuals of the segmented control (Tabs variant="segmented" and Segmented). */
-export const SEGMENTED_LIST = 'no-drag-region pointer-events-auto gap-0.5 rounded-sm border border-stroke bg-[var(--kb-fill-hover)] p-0.5';
+/** Shared visuals of the segmented control (Tabs variant="segmented" and Segmented): inset track, 36 px items. */
+export const SEGMENTED_LIST = 'no-drag-region pointer-events-auto gap-1 rounded-[16px] bg-inset p-1';
 
 export const SEGMENTED_ITEM =
-    'inline-flex min-h-7 items-center justify-center gap-2 rounded-xs px-3 text-[0.8125rem] leading-5 whitespace-nowrap transition-colors duration-[var(--kb-dur-fast)] disabled:cursor-not-allowed disabled:text-fg-3';
+    'inline-flex min-h-9 items-center justify-center gap-2 rounded-[12px] px-3.5 [font:var(--kb-type-label)] whitespace-nowrap transition-colors duration-[var(--kb-dur-fast)] disabled:cursor-not-allowed disabled:text-fg-3';
 
-// Selected = raised neutral surface + shadow (not colour alone).
-export const SEGMENTED_ITEM_SELECTED = 'bg-surface text-fg-1 shadow-e1';
+// Selected = container + on-container text (the leading check / ARIA state carry it too, not colour alone).
+export const SEGMENTED_ITEM_SELECTED = 'bg-container text-on-container';
 
 export const SEGMENTED_ITEM_IDLE =
     'bg-transparent text-fg-2 enabled:hover:bg-[var(--kb-fill-hover)] enabled:hover:text-fg-1 enabled:active:bg-[var(--kb-fill-pressed)]';

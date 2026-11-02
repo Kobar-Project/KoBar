@@ -12,13 +12,13 @@ interface ResizerHandleProps {
 }
 
 const ResizerHandle: React.FC<ResizerHandleProps> = ({ direction, onResizeTemp, onResizeEnd, target = 'note' }) => {
-    const edgePosition = useAppStore(state => state.edgePosition);
+    const edgePosition = useAppStore((state) => state.edgePosition);
 
     const { isResizing, handleMouseDown, handleDoubleClick } = useUnifiedResize({
         target,
         direction,
         onResizeTemp,
-        onResizeEnd
+        onResizeEnd,
     });
 
     // Direction-specific classes
@@ -37,7 +37,7 @@ const ResizerHandle: React.FC<ResizerHandleProps> = ({ direction, onResizeTemp, 
         <div
             onMouseDown={handleMouseDown}
             onDoubleClick={handleDoubleClick}
-            className={`${directionClasses} resizer-handle hover:bg-primary/30 transition-colors z-50 [-webkit-app-region:no-drag] ${isResizing ? 'bg-primary/30' : 'bg-black/1'}`}
+            className={`${directionClasses} resizer-handle z-50 transition-colors [-webkit-app-region:no-drag] hover:bg-[color-mix(in_oklab,var(--kb-accent)_30%,transparent)] ${isResizing ? 'bg-[color-mix(in_oklab,var(--kb-accent)_30%,transparent)]' : 'bg-transparent'}`}
         />
     );
 };

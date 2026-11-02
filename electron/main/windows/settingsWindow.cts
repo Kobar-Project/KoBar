@@ -14,7 +14,7 @@
 // is the claim-once host bridge `__kobarSettingsSync.claim().openSettings(page)` (nothing in window.api, nothing plugin-visible).
 // A page of an already open window is pushed with `settings:show-page` (Settings window only). The T-606 state-sync channels are
 // registered from here too (windows/settingsSync.cts).
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import { shouldOpenDevTools } from '../../lib/devTools.cjs';
 import type { MainLang } from '../../lib/mainStrings.cjs';
 import {
@@ -96,7 +96,11 @@ async function createSettingsWindow(deps: SettingsWindowDeps, page?: SettingsPag
     }
 
     const win = new BrowserWindow({
-        ...settingsWindowFrameOptions({ iconPath: deps.appPaths.iconPng, title: 'KoBar' }),
+        ...settingsWindowFrameOptions({
+            iconPath: deps.appPaths.iconPng,
+            title: 'KoBar',
+            workArea: screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea,
+        }),
         // T-606: the narrow Settings preload only (window.settingsBridge), never the main window preload (see the header).
         webPreferences: secureWebPreferences({ preload: deps.appPaths.settingsPreload }),
     });

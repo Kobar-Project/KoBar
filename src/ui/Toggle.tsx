@@ -1,6 +1,7 @@
 import { useId, type ComponentPropsWithRef, type MouseEvent, type ReactNode } from 'react';
 import { cx, INTERACTIVE } from './cx';
 import { hasContent } from './fieldProps';
+import { Icon } from './Icon';
 
 export interface ToggleProps extends Omit<
     ComponentPropsWithRef<'button'>,
@@ -19,11 +20,16 @@ export interface ToggleProps extends Omit<
 }
 
 const TRACK =
-    'relative inline-flex h-5 w-10 shrink-0 items-center rounded-full border px-0.5 transition-colors duration-[var(--kb-dur-fast)] before:absolute before:-inset-1 disabled:cursor-not-allowed disabled:opacity-[var(--kb-opacity-disabled)]';
+    'relative inline-flex h-8 w-13 shrink-0 items-center rounded-full border-2 transition-colors duration-[var(--kb-dur-fast)] before:absolute before:-inset-1 disabled:cursor-not-allowed disabled:opacity-[var(--kb-opacity-disabled)]';
+
+// Thumb travel: the 48 px inner track minus the 24 px on-thumb minus its 2 px gap = 22 px; the 16 px off-thumb sits 6 px in.
+const THUMB =
+    'absolute start-0 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full transition-[translate,width,height,background-color] duration-[var(--kb-dur-fast)]';
 
 /**
  * Switch: native <button role="switch" aria-checked>, so Space/Enter and focus come from the
- * browser. 40x20 track (the hit area is enlarged to 48x28), on = --kb-accent. `className` styles the wrapper; `ref`,
+ * browser. 52x32 track (the hit area is enlarged by 4 px), off = inset fill + 2 px control ring + small fg-2 thumb,
+ * on = --kb-accent track + 24 px on-accent thumb carrying an accent check. RTL mirrors. `className` styles the wrapper; `ref`,
  * `id` and other button props go to the switch.
  */
 export function Toggle({
@@ -54,14 +60,14 @@ export function Toggle({
                 <label
                     htmlFor={switchId}
                     className={cx(
-                        'text-[0.8125rem] leading-5 select-none',
+                        '[font:var(--kb-type-body)] select-none',
                         disabled ? 'cursor-not-allowed text-fg-3' : 'cursor-pointer text-fg-1'
                     )}
                 >
                     {label}
                 </label>
                 {descriptionId && (
-                    <span id={descriptionId} className="text-[0.6875rem] leading-4 text-fg-2">
+                    <span id={descriptionId} className="[font:var(--kb-type-caption)] text-fg-2">
                         {description}
                     </span>
                 )}
@@ -79,17 +85,21 @@ export function Toggle({
                     INTERACTIVE,
                     TRACK,
                     checked
-                        ? 'border-transparent bg-[var(--kb-accent)] enabled:hover:bg-[var(--kb-accent-hover)]'
-                        : 'border-[var(--kb-stroke-control)] bg-transparent enabled:hover:bg-[var(--kb-fill-hover)]'
+                        ? 'border-transparent bg-[var(--kb-accent)] enabled:hover:bg-[color-mix(in_oklab,var(--kb-fg-1)_6%,var(--kb-accent))]'
+                        : 'border-[var(--kb-stroke-control)] bg-inset enabled:hover:bg-[color-mix(in_oklab,var(--kb-fg-1)_6%,var(--kb-bg-inset))]'
                 )}
             >
                 <span
                     aria-hidden="true"
                     className={cx(
-                        'size-3 rounded-full transition-transform duration-[var(--kb-dur-fast)]',
-                        checked ? 'translate-x-5.5 bg-[var(--kb-on-accent)] rtl:-translate-x-5.5' : 'translate-x-0 bg-fg-2'
+                        THUMB,
+                        checked
+                            ? 'size-6 translate-x-[22px] bg-[var(--kb-on-accent)] rtl:-translate-x-[22px]'
+                            : 'size-4 translate-x-1.5 bg-fg-2 rtl:-translate-x-1.5'
                     )}
-                />
+                >
+                    {checked && <Icon name="check" size={16} className="text-accent" />}
+                </span>
             </button>
         </div>
     );

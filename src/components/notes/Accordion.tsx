@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { Icon, IconButton, Toggle } from '../../ui';
+import { cx, INTERACTIVE } from '../../ui/cx';
 
 const Accordion: React.FC<{
     title: string;
@@ -16,47 +17,36 @@ const Accordion: React.FC<{
         setSeenSignal(openSignal);
         if (openSignal) setIsOpen(true);
     }
-    const design = useAppStore(state => state.design);
 
     return (
-        <div className="rounded-xl shadow-inner border overflow-hidden" 
-            style={{ 
-                backgroundColor: design === 'style2' ? 'rgba(255,255,255,0.03)' : 'var(--theme-bg-dark)', 
-                borderColor: design === 'style2' ? 'rgba(255,255,255,0.05)' : 'var(--theme-border)' 
-            }}
-        >
-            <div className="w-full flex items-center justify-between p-6">
+        <div className="overflow-hidden rounded-xl bg-surface">
+            <div className="flex w-full items-center justify-between p-6">
                 <button
-                    className="flex-1 flex items-center gap-2 cursor-pointer hover:bg-fill-hover transition-colors text-left"
+                    type="button"
+                    aria-expanded={isOpen}
+                    className={cx(
+                        INTERACTIVE,
+                        'flex flex-1 cursor-pointer items-center gap-2 rounded-md text-start transition-colors hover:bg-[var(--kb-fill-hover)]'
+                    )}
                     onClick={() => setIsOpen(!isOpen)}
                 >
-                    <span className="material-symbols-outlined text-primary">{icon}</span>
-                    <h3 className="text-lg font-medium text-fg-1">{title}</h3>
+                    <Icon name={icon} size={24} className="text-accent" />
+                    <h3 className="[font:var(--kb-type-subtitle)] text-fg-1">{title}</h3>
                 </button>
-                
+
                 <div className="flex items-center gap-4">
-                    {masterToggle && (
-                        <button
-                            onClick={masterToggle.onToggle}
-                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 no-drag-region shrink-0 ${masterToggle.isOn ? 'bg-primary' : 'bg-fill-selected'}`}
-                        >
-                            <span
-                                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${masterToggle.isOn ? 'translate-x-5' : 'translate-x-0'}`}
-                            />
-                        </button>
-                    )}
-                    <button onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
-                        <span className={`material-symbols-outlined text-fg-2 text-[20px] transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-                            expand_more
-                        </span>
-                    </button>
+                    {masterToggle && <Toggle checked={masterToggle.isOn} onChange={masterToggle.onToggle} label={title} hideLabel />}
+                    <IconButton
+                        icon="expand_more"
+                        label={title}
+                        size={32}
+                        tooltip={false}
+                        onClick={() => setIsOpen(!isOpen)}
+                        className={isOpen ? 'rotate-180' : ''}
+                    />
                 </div>
             </div>
-            {isOpen && (
-                <div className="p-0 px-6 pb-6 mt-2 border-t pt-4" style={{ borderColor: 'var(--theme-border)' }}>
-                    {children}
-                </div>
-            )}
+            {isOpen && <div className="mt-2 border-t border-stroke px-6 pt-4 pb-6">{children}</div>}
         </div>
     );
 };

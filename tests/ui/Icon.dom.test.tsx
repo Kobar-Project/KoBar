@@ -11,7 +11,7 @@ describe('Icon', () => {
         const { host } = render(<Icon name="settings" />);
         const el = span(host);
         expect(el.textContent).toBe('settings');
-        expect(el.classList.contains('material-symbols-outlined')).toBe(true);
+        expect(el.classList.contains('kb-icon')).toBe(true);
         expect(el.getAttribute('aria-hidden')).toBe('true');
         expect(el.hasAttribute('role')).toBe(false);
         expect(el.getAttribute('translate')).toBe('no');
@@ -30,7 +30,7 @@ describe('Icon', () => {
         expect(span(host).style.fontVariationSettings).toContain("'FILL' 0");
         rerender(<Icon name="star" filled />);
         expect(span(host).style.fontVariationSettings).toContain("'FILL' 1");
-        expect(span(host).style.fontVariationSettings).toContain("'wght' 300");
+        expect(span(host).style.fontVariationSettings).toContain("'wght' 400");
     });
 
     it('maps the allowed sizes 16/20/24 to token classes', () => {

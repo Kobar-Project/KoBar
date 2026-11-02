@@ -35,9 +35,9 @@ export interface DialogProps {
 }
 
 const SIZE_CLASS: Record<DialogSize, string> = {
-    sm: 'max-w-80',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
+    sm: 'max-w-[400px]',
+    md: 'max-w-[480px]',
+    lg: 'max-w-[560px]',
 };
 
 /**
@@ -152,34 +152,35 @@ function DialogLayer({
                 tabIndex={-1}
                 onKeyDown={onPanelKeyDown}
                 className={cx(
-                    'kb-pop flex max-h-full w-full flex-col rounded-lg pb-4 border border-stroke bg-surface text-fg-1 shadow-e3 outline-hidden',
+                    'kb-pop flex max-h-full w-full flex-col rounded-[28px] border border-stroke bg-surface p-6 text-fg-1 shadow-e3 outline-hidden',
                     SIZE_CLASS[size],
                     className
                 )}
             >
-                <div className="flex items-start gap-2 px-4 pt-4">
-                    <h2 id={titleId} className="min-w-0 flex-1 text-[0.9375rem] leading-6 font-semibold text-fg-1">
+                <div className="flex items-start gap-2">
+                    <h2 id={titleId} className="min-w-0 flex-1 [font:var(--kb-type-title)] text-fg-1">
                         {title}
                     </h2>
                     {closeLabel && (
                         <IconButton
                             icon="close"
                             label={closeLabel}
-                            size={28}
+                            size={36}
+                            variant="tonal"
                             tooltip={false}
                             data-kb-dialog-close=""
-                            className="-me-1"
+                            className="-me-1 -mt-1"
                             onClick={() => onClose('close-button')}
                         />
                     )}
                 </div>
                 {descriptionId && (
-                    <p id={descriptionId} className="px-4 pt-1 text-[0.8125rem] leading-5 text-fg-2">
+                    <p id={descriptionId} className="pt-2 [font:var(--kb-type-body)] text-fg-2">
                         {description}
                     </p>
                 )}
-                {hasContent(children) && <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3">{children}</div>}
-                {hasContent(footer) && <div className="flex flex-wrap justify-end gap-2 px-4 pt-4">{footer}</div>}
+                {hasContent(children) && <div className="min-h-0 flex-1 overflow-y-auto pt-4">{children}</div>}
+                {hasContent(footer) && <div className="flex flex-wrap justify-end gap-2 pt-6">{footer}</div>}
             </div>
         </div>,
         document.body

@@ -78,7 +78,7 @@ describe('Segmented', () => {
 
     it('uses token classes, drag-region and focus ring', () => {
         const { host } = render(<Segmented aria-label="x" items={ITEMS} value="left" onChange={() => {}} />);
-        expect(radios()[0].className).toContain('bg-surface');
+        expect(radios()[0].className).toContain('bg-container');
         expect(radios()[0].className).toContain('no-drag-region');
         expect(radios()[0].className).toContain('focus-visible:shadow-[var(--kb-focus-ring)]');
         expect(getByRole('radiogroup').className).toContain('pointer-events-auto');

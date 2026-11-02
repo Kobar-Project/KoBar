@@ -18,7 +18,8 @@ const PLUGIN_DOCS = [
     `${PLUGIN_DIR}/references/platforms.md`,
 ];
 const UI_DOC = 'for-agents/kobar-ui-ux-designer/SKILL.md';
-const ALL_DOCS = [...PLUGIN_DOCS, UI_DOC];
+const CANLI_DOC = 'for-agents/kobar-canli-designer/SKILL.md';
+const ALL_DOCS = [...PLUGIN_DOCS, UI_DOC, CANLI_DOC];
 const API_DOC = read(`${PLUGIN_DIR}/references/api.md`);
 
 /** Keys of the object the preload exposes as window.api (4-space indented `name:` lines of that object literal). */

@@ -39,7 +39,7 @@ export interface MigrationStep {
  * (guarded by tests/store-persist-options.dom.test.ts). Bump together with a
  * new `if (version < N)` block in `migrateVersionedBlocks` (src/store/migrations/index.ts).
  */
-export const KOBAR_STORAGE_VERSION = 32;
+export const KOBAR_STORAGE_VERSION = 33;
 
 /** Profile version of the oldest fixture (tests/fixtures/profiles/v21). The chain starts here. */
 export const BASE_PROFILE_VERSION = 21;

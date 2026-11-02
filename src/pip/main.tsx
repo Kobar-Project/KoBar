@@ -4,6 +4,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@fontsource-variable/space-grotesk';
 import 'material-symbols/outlined.css';
+// Canlı: bundled UI fonts and the Rounded icon font (the Outlined class stays for v1 plugins).
+import '@fontsource-variable/figtree';
+import '@fontsource-variable/outfit';
+import 'material-symbols/rounded.css';
 import PipPlayer from '../components/layout/PipPlayer.tsx';
 import { setDocumentPlatform } from '../platform';
 import { parsePipPlatform } from './params';

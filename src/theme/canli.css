@@ -1,0 +1,327 @@
+/* ==========================================================================================================
+   KoBar Canlı — design tokens (ported from remaster/design/canli/tokens/canli.css; spec: remaster/design/canli/).
+
+   A layer over the --kb-* system in src/index.css, gated by :root[data-ui="canli"]. index.html, settings.html and
+   pip.html write data-ui="canli" on <html>, so this branch always renders Canlı; removing the gate later is one
+   search for [data-ui="canli"] plus deleting the superseded T-501 values in src/index.css.
+   Inputs: the existing root attributes (data-scheme, data-accent, data-density, data-material, data-platform) plus
+     data-tonal   on (default) | off       "Renkli yüzeyler"; off = neutral surfaces (the selection container keeps its tint)
+     data-privacy on | off (default)       "Gizli mod": sensitive tiles hide their values
+   Formula: every surface = color-mix(in oklab, var(--kb-accent) <share>%, <neutral>). The same formula lives in
+   src/theme/canli.ts (contrast-tested by tests/canli.palette.test.ts). Keep both in sync.
+   Fonts: Figtree / Outfit (@fontsource-variable, Latin + Latin Ext) and Material Symbols Rounded are imported by
+   each window entry (src/main.tsx, src/settings/main.tsx, src/pip/main.tsx); nothing is fetched at runtime.
+   ========================================================================================================== */
+
+:root[data-ui='canli'] {
+    /* Typography ------------------------------------------------------------------------------------------ */
+    --kb-font: 'Figtree Variable', 'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --kb-font-display: 'Outfit Variable', 'Figtree Variable', 'Segoe UI Variable Display', 'Segoe UI', -apple-system, system-ui, sans-serif;
+    --kb-font-numeric: var(--kb-font-display); /* always with font-variant-numeric: tabular-nums */
+
+    /* Type roles: font shorthand tokens. Use with `font: var(--kb-type-body)`. Sizes in rem so OS zoom scales them. */
+    --kb-type-micro: 700 0.6875rem/0.75rem var(--kb-font); /* 11/12  tile captions only ("Paz", "Kas") */
+    --kb-type-caption: 500 0.75rem/1rem var(--kb-font); /* 12/16  hints, meta */
+    --kb-type-label: 600 0.8125rem/1.125rem var(--kb-font); /* 13/18  chips, segmented, small buttons */
+    --kb-type-body: 400 0.875rem/1.25rem var(--kb-font); /* 14/20  default */
+    --kb-type-body-strong: 600 0.875rem/1.25rem var(--kb-font); /* 14/20  row titles, buttons */
+    --kb-type-subtitle: 600 0.96875rem/1.375rem var(--kb-font); /* 15.5/22 card titles */
+    --kb-type-title: 600 1.1875rem/1.5rem var(--kb-font-display); /* 19/24  panel titles */
+    --kb-type-headline: 600 1.875rem/2.25rem var(--kb-font-display); /* 30/36  settings page title */
+    --kb-type-display: 600 2.75rem/3.25rem var(--kb-font-display); /* 44/52  note title */
+    --kb-type-tile-value: 600 1.5rem/1 var(--kb-font-numeric); /* 24     tile primary value */
+    --kb-type-tile-small: 700 0.8125rem/1 var(--kb-font-numeric); /* 13     value inside a ring / meter */
+
+    /* Shape ----------------------------------------------------------------------------------------------- */
+    --kb-radius-xs: 6px; /* checkbox, tiny marks */
+    --kb-radius-sm: 10px; /* chips, segmented items, small icon tiles */
+    --kb-radius-md: 14px; /* rows, menu items, list items, inputs in dense places */
+    --kb-radius-lg: 20px; /* bar tiles, plugin cards, option tiles */
+    --kb-radius-xl: 24px; /* cards, menus, settings main inset */
+    --kb-radius-2xl: 32px; /* bar shell (wide), panels, dialogs */
+    --kb-radius-full: 9999px; /* buttons, search fields, switches, thin bar, nav pills */
+
+    /* Elevation (scheme dependent values below) and layers: the six --kb-z-* layers are unchanged. */
+
+    /* Motion ---------------------------------------------------------------------------------------------- */
+    --kb-dur-value: 160ms; /* a tile value or count changes: cross-fade */
+    --kb-dur-progress: 400ms; /* ring / meter progress moves */
+    --kb-dur-resize: 240ms; /* tile <-> icon size change, bar thin <-> wide */
+    /* --kb-dur-fast 100 / --kb-dur-normal 160 / --kb-dur-slow 240 and the easings stay as they are. */
+
+    /* Tonal switch: 1 = surfaces carry the accent tone, 0 = neutral surfaces (container keeps its tint). */
+    --kb-tint: 1;
+}
+
+:root[data-ui='canli'][data-tonal='off'] {
+    --kb-tint: 0;
+}
+
+/* Scripts the bundled fonts do not cover: use the system stack for every role (mixed-font text looks broken). */
+:root[data-ui='canli']:lang(ru),
+:root[data-ui='canli']:lang(ar),
+:root[data-ui='canli']:lang(hi),
+:root[data-ui='canli']:lang(ja),
+:root[data-ui='canli']:lang(zh) {
+    --kb-font: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --kb-font-display: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, system-ui, sans-serif;
+}
+
+:root[data-ui='canli'][data-platform='darwin'] {
+    --kb-font: 'Figtree Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+}
+
+/* ---------- Neutrals and ink per scheme ---------------------------------------------------------------------
+   Declared on the root AND on nested [data-scheme] roots (the v1 plugin wrapper is data-scheme="dark"), because a
+   custom property inherits its computed value: nested roots must re-resolve against their own scheme.              */
+
+:root[data-ui='canli']:not([data-scheme='light']),
+:root[data-ui='canli'] [data-scheme='dark'] {
+    --kb-n-nav: #0d0f14;
+    --kb-n-shell: #111318;
+    --kb-n-surface: #1a1d25;
+    --kb-n-tile: #1d2029;
+    --kb-n-inset: #242833;
+    --kb-n-line: #2c3140;
+    --kb-n-container: #171a22;
+    --kb-share-nav: 6%;
+    --kb-share-shell: 7%;
+    --kb-share-surface: 10%;
+    --kb-share-tile: 11%;
+    --kb-share-inset: 15%;
+    --kb-share-line: 20%;
+    --kb-share-container: 30%;
+    --kb-share-control: 65%;
+
+    --kb-fg-1: #e9ebf1;
+    --kb-fg-2: #b6bbc8;
+    --kb-fg-3: #8e95a5;
+    --kb-on-container: #f4f5f9;
+    --kb-accent-text: var(--kb-accent);
+    --kb-danger: #ffb4ab;
+    --kb-on-danger: #690005;
+    --kb-warning: #f2c46b;
+    --kb-success: #7fd99a;
+    --kb-slot-empty: rgba(255, 255, 255, 0.14);
+    --kb-ring-track: rgba(255, 255, 255, 0.14);
+
+    --kb-shadow-e1: none;
+    --kb-shadow-e2: 0 10px 24px rgba(0, 0, 0, 0.35);
+    --kb-shadow-e3: 0 24px 60px rgba(0, 4, 20, 0.45);
+    --kb-shadow-window: 0 40px 100px rgba(0, 4, 20, 0.6);
+    --kb-card-line: transparent; /* dark cards separate by tone alone */
+}
+
+:root[data-ui='canli'][data-scheme='light'],
+:root[data-ui='canli'] [data-scheme='light'] {
+    --kb-n-nav: #f1f2f6;
+    --kb-n-shell: #fafafc;
+    --kb-n-surface: #ffffff;
+    --kb-n-tile: #f0f1f5;
+    --kb-n-inset: #e8eaf0;
+    --kb-n-line: #d9dce4;
+    --kb-n-container: #ffffff;
+    --kb-share-nav: 6%;
+    --kb-share-shell: 4%;
+    --kb-share-surface: 2%;
+    --kb-share-tile: 9%;
+    --kb-share-inset: 12%;
+    --kb-share-line: 16%;
+    --kb-share-container: 20%;
+    --kb-share-control: 70%;
+
+    --kb-fg-1: #16181d;
+    --kb-fg-2: #4a4f5c;
+    --kb-fg-3: #6b7080;
+    --kb-on-container: #14161b;
+    --kb-accent-text: color-mix(in oklab, black 15%, var(--kb-accent));
+    --kb-danger: #ba1a1a;
+    --kb-on-danger: #ffffff;
+    --kb-warning: #8a5300;
+    --kb-success: #0f6b2e;
+    --kb-slot-empty: rgba(0, 0, 0, 0.12);
+    --kb-ring-track: rgba(0, 0, 0, 0.1);
+
+    --kb-shadow-e1: none;
+    --kb-shadow-e2: 0 8px 20px rgba(20, 34, 70, 0.15);
+    --kb-shadow-e3: 0 18px 44px rgba(20, 34, 70, 0.18);
+    --kb-shadow-window: 0 30px 80px rgba(20, 34, 70, 0.25);
+    --kb-card-line: var(--kb-stroke-subtle); /* light cards need a 1 px line on near-white shells */
+}
+
+/* ---------- Derived tonal surfaces (re-resolved on every scheme root) --------------------------------------- */
+:root[data-ui='canli'],
+:root[data-ui='canli'] [data-scheme] {
+    --kb-bg-nav: color-mix(in oklab, var(--kb-accent) calc(var(--kb-tint) * var(--kb-share-nav)), var(--kb-n-nav));
+    --kb-bg-shell: color-mix(in oklab, var(--kb-accent) calc(var(--kb-tint) * var(--kb-share-shell)), var(--kb-n-shell));
+    --kb-bg-surface: color-mix(in oklab, var(--kb-accent) calc(var(--kb-tint) * var(--kb-share-surface)), var(--kb-n-surface));
+    --kb-bg-tile: color-mix(in oklab, var(--kb-accent) calc(var(--kb-tint) * var(--kb-share-tile)), var(--kb-n-tile));
+    --kb-bg-inset: color-mix(in oklab, var(--kb-accent) calc(var(--kb-tint) * var(--kb-share-inset)), var(--kb-n-inset));
+    --kb-stroke-subtle: color-mix(in oklab, var(--kb-accent) calc(var(--kb-tint) * var(--kb-share-line)), var(--kb-n-line));
+    /* Selection container keeps its tint even with tonal surfaces off: it is a state, not a surface. */
+    --kb-bg-container: color-mix(in oklab, var(--kb-accent) var(--kb-share-container), var(--kb-n-container));
+
+    /* Interaction fills stay neutral overlays so they work on every surface. */
+    --kb-fill-hover: color-mix(in srgb, var(--kb-fg-1) 6%, transparent);
+    --kb-fill-pressed: color-mix(in srgb, var(--kb-fg-1) 10%, transparent);
+    --kb-fill-selected: var(--kb-bg-container);
+    --kb-accent-subtle: var(--kb-bg-container);
+    --kb-stroke-strong: color-mix(in oklab, var(--kb-fg-2) 40%, var(--kb-bg-shell));
+    --kb-stroke-control: color-mix(in oklab, var(--kb-fg-2) var(--kb-share-control), var(--kb-bg-shell));
+    --kb-focus-ring: 0 0 0 2px var(--kb-bg-shell), 0 0 0 4px var(--kb-accent);
+
+    /* Material: bar and panel shells only (cards, menus, tooltips, dialogs stay solid). */
+    --kb-material-bg: var(--kb-bg-shell);
+}
+
+:root[data-ui='canli'][data-material='translucent'],
+:root[data-ui='canli'][data-material='translucent'] [data-scheme] {
+    --kb-material-bg: color-mix(in srgb, var(--kb-bg-shell) 82%, transparent);
+}
+
+/* ---------- Density: bar geometry --------------------------------------------------------------------------
+   thin bar  = only icons on the bar (one column/row, today's look)
+   wide bar  = at least one item shown as a tile; icons pack into a 2-column (vertical) / 2-row (horizontal) grid */
+:root[data-ui='canli'],
+:root[data-ui='canli'][data-density='normal'] {
+    --kb-bar-thickness: 48px; /* thin bar */
+    --kb-bar-wide: 84px; /* wide bar */
+    --kb-bar-pad: 10px;
+    --kb-bar-gap: 8px;
+    --kb-bar-item: 36px; /* icon button in the thin bar */
+    --kb-bar-icon: 20px;
+    --kb-tile: 64px; /* tile edge; = 2 × icon cell + gap */
+    --kb-tile-cell: 30px; /* icon cell in the wide-bar grid */
+    --kb-tile-gap: 4px;
+    --kb-control-h: 40px;
+    --kb-row-h: 44px;
+}
+
+:root[data-ui='canli'][data-density='compact'] {
+    --kb-bar-thickness: 44px;
+    --kb-bar-wide: 76px;
+    --kb-bar-pad: 8px;
+    --kb-bar-gap: 6px;
+    --kb-bar-item: 32px;
+    --kb-bar-icon: 18px;
+    --kb-tile: 60px;
+    --kb-tile-cell: 28px;
+    --kb-tile-gap: 4px;
+    --kb-control-h: 36px;
+    --kb-row-h: 40px;
+}
+
+:root[data-ui='canli'][data-density='comfortable'] {
+    --kb-bar-thickness: 56px;
+    --kb-bar-wide: 100px;
+    --kb-bar-pad: 12px;
+    --kb-bar-gap: 10px;
+    --kb-bar-item: 44px;
+    --kb-bar-icon: 22px;
+    --kb-tile: 76px;
+    --kb-tile-cell: 36px;
+    --kb-tile-gap: 4px;
+    --kb-control-h: 44px;
+    --kb-row-h: 52px;
+}
+
+/* ---------- Icons: Material Symbols Rounded (same names as Outlined, so the plugin contract is unchanged) -----
+   In @layer base so Tailwind size/display utilities on an icon win (the package class it replaces was unlayered). */
+@layer base {
+    :root[data-ui='canli'] .kb-icon {
+        font-family: 'Material Symbols Rounded';
+        font-weight: normal;
+        font-style: normal;
+        font-size: 24px;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        white-space: nowrap;
+        direction: ltr;
+        display: inline-block;
+        word-wrap: normal;
+        user-select: none;
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: 'liga';
+        font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 20;
+    }
+    :root[data-ui='canli'] .kb-icon[data-filled] {
+        font-variation-settings:
+            'FILL' 1,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 20;
+    }
+}
+
+/* Numbers that change in place never jump in width. */
+:root[data-ui='canli'] .kb-num {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Privacy mode: tiles fall back to their icon; host also swaps the accessible name ---------------- */
+:root[data-ui='canli'][data-privacy='on'] [data-tile-sensitive] [data-tile-value] {
+    visibility: hidden;
+}
+
+/* ---------- Windows high contrast (forced colors) ----------------------------------------------------------- */
+@media (forced-colors: active) {
+    :root[data-ui='canli'] [data-bar-tile],
+    :root[data-ui='canli'] [data-kb-card] {
+        border: 1px solid CanvasText;
+        forced-color-adjust: auto;
+    }
+    :root[data-ui='canli'] [data-bar-tile][aria-pressed='true'],
+    :root[data-ui='canli'] [aria-current='page'] {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+}
+
+/* ---------- Reduced motion: value changes snap, live meters stop ------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+    :root[data-ui='canli'] {
+        --kb-dur-value: 0ms;
+        --kb-dur-progress: 0ms;
+        --kb-dur-resize: 0ms;
+    }
+    :root[data-ui='canli'] [data-tile-live] * {
+        animation: none !important;
+    }
+}
+
+/* ---------- v1 plugin aliases ---------------------------------------------------------------------------------
+   --theme-surface was --kb-bg-inset, a shade DARKER than the shell in T-501 (#181818 under #1f1f1f); v1 plugins paint their
+   panel backgrounds with it. The Canlı inset is lighter than the shell (it is the input/track tone), which turned those
+   panels into a light, accent-tinted grey. --kb-bg-nav keeps the old relation (darker than the shell in both schemes). */
+:root[data-ui='canli'],
+:root[data-ui='canli'] [data-scheme] {
+    --theme-surface: var(--kb-bg-nav);
+    --theme-border: var(--kb-stroke-subtle);
+    --theme-scrollbar: var(--kb-stroke-strong);
+    --theme-bg-light: var(--kb-n-shell);
+}
+
+/* ---------- Note tile hues (08 Notes panel): 6 fixed hues at container strength, never the full accent ------- */
+:root[data-ui='canli'],
+:root[data-ui='canli'] [data-scheme] {
+    --kb-note-hue-1: color-mix(in oklab, #e0607a 30%, var(--kb-n-container));
+    --kb-note-hue-2: color-mix(in oklab, #e08a3c 30%, var(--kb-n-container));
+    --kb-note-hue-3: color-mix(in oklab, #c9b02e 30%, var(--kb-n-container));
+    --kb-note-hue-4: color-mix(in oklab, #3fb37f 30%, var(--kb-n-container));
+    --kb-note-hue-5: color-mix(in oklab, #3f9fd6 30%, var(--kb-n-container));
+    --kb-note-hue-6: color-mix(in oklab, #8f6fe0 30%, var(--kb-n-container));
+}
+:root[data-ui='canli'][data-scheme='light'],
+:root[data-ui='canli'] [data-scheme='light'] {
+    --kb-note-hue-1: color-mix(in oklab, #e0607a 24%, var(--kb-n-container));
+    --kb-note-hue-2: color-mix(in oklab, #e08a3c 24%, var(--kb-n-container));
+    --kb-note-hue-3: color-mix(in oklab, #c9b02e 28%, var(--kb-n-container));
+    --kb-note-hue-4: color-mix(in oklab, #3fb37f 24%, var(--kb-n-container));
+    --kb-note-hue-5: color-mix(in oklab, #3f9fd6 24%, var(--kb-n-container));
+    --kb-note-hue-6: color-mix(in oklab, #8f6fe0 24%, var(--kb-n-container));
+}

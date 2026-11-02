@@ -12,6 +12,7 @@ import {
 import { cx, INTERACTIVE } from './cx';
 import { focusElement } from './focus';
 import { Icon } from './Icon';
+import { IconTile } from './IconTile';
 import { Popover, type PopoverCloseReason, type PopoverPlacement, type PopoverTriggerProps } from './Popover';
 import { usePopoverClose } from './popoverContext';
 
@@ -59,10 +60,19 @@ export type MenuItem = MenuActionItem | MenuCheckboxItem | MenuRadioItem | MenuS
 
 type MenuTriggerProps = PopoverTriggerProps & { id?: string };
 
+/** Optional heading block above the items: icon tile 34 + title + subtitle. */
+export interface MenuHeader {
+    icon?: string;
+    title: ReactNode;
+    subtitle?: ReactNode;
+}
+
 export interface MenuProps {
     /** A single focusable element. Click, Enter/Space or Arrow Down opens the menu (Arrow Up focuses the last item). */
     trigger: ReactElement<MenuTriggerProps>;
+    /** Danger actions belong last, after a separator (the caller orders them). */
     items: readonly MenuItem[];
+    header?: MenuHeader;
     open?: boolean;
     defaultOpen?: boolean;
     onOpenChange?: (open: boolean, reason: PopoverCloseReason) => void;
@@ -76,7 +86,14 @@ const ITEM_SELECTOR = '[data-kb-menu-item]:not([disabled])';
 const TYPEAHEAD_RESET_MS = 500;
 
 const ITEM =
-    'flex min-h-8 w-full cursor-pointer items-center gap-2 rounded-sm px-2 text-start text-[0.8125rem] leading-5 transition-colors duration-[var(--kb-dur-fast)] hover:bg-[var(--kb-fill-hover)] focus:bg-[var(--kb-fill-hover)] active:bg-[var(--kb-fill-pressed)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-fg-3';
+    'flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-start text-[0.90625rem] leading-5 font-medium transition-colors duration-[var(--kb-dur-fast)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-fg-3';
+
+// Highlight (hover / keyboard focus) = inset fill; checked radio / checkbox = container + accent icon.
+const ITEM_IDLE = 'text-fg-1 hover:bg-inset focus:bg-inset active:bg-[var(--kb-fill-pressed)]';
+const ITEM_CHECKED = 'bg-container text-on-container';
+
+// The popover base sets radius, fill, elevation and width; these win with `!` so the menu keeps its own look.
+const MENU_BOX = 'flex flex-col rounded-xl! bg-nav! p-2 shadow-e3! min-w-[248px]! max-w-[300px]!';
 
 function enabledItems(menu: HTMLElement): HTMLElement[] {
     return Array.from(menu.querySelectorAll<HTMLElement>(ITEM_SELECTOR));
@@ -101,6 +118,7 @@ function roleOf(item: Exclude<MenuItem, MenuSeparator>): 'menuitem' | 'menuitemc
 export function Menu({
     trigger,
     items,
+    header,
     open: openProp,
     defaultOpen = false,
     onOpenChange,
@@ -209,9 +227,18 @@ export function Menu({
             aria-label={ariaLabel}
             aria-labelledby={ariaLabel ? undefined : triggerId}
             aria-orientation="vertical"
-            className={cx('flex flex-col p-1', className)}
+            className={cx(MENU_BOX, className)}
             onKeyDown={onMenuKeyDown}
         >
+            {header && (
+                <div className="flex items-center gap-3 px-3 pt-2 pb-3">
+                    {header.icon && <IconTile icon={header.icon} size="sm" />}
+                    <div className="flex min-w-0 flex-col">
+                        <span className="truncate [font:var(--kb-type-body-strong)] text-fg-1">{header.title}</span>
+                        {header.subtitle && <span className="truncate [font:var(--kb-type-caption)] text-fg-2">{header.subtitle}</span>}
+                    </div>
+                </div>
+            )}
             {items.map((item, index) =>
                 item.type === 'separator' ? (
                     <div key={item.id ?? `separator-${index}`} role="separator" className="my-1 border-t border-stroke" />
@@ -249,17 +276,30 @@ function MenuRow({ item, reserveLeading }: { item: Exclude<MenuItem, MenuSeparat
             aria-checked={checkable ? item.checked : undefined}
             data-kb-menu-item=""
             onClick={select}
-            className={cx(INTERACTIVE, ITEM, action?.danger ? 'text-[var(--kb-danger)]' : 'text-fg-1')}
+            className={cx(
+                INTERACTIVE,
+                ITEM,
+                checkable && item.checked
+                    ? ITEM_CHECKED
+                    : action?.danger
+                      ? 'text-[var(--kb-danger)] hover:bg-inset focus:bg-inset'
+                      : ITEM_IDLE
+            )}
         >
             {reserveLeading && (
-                <span className="flex size-4 shrink-0 items-center justify-center">
-                    {leadingIcon && <Icon name={leadingIcon} size={16} />}
+                <span
+                    className={cx(
+                        'flex size-5 shrink-0 items-center justify-center',
+                        checkable && item.checked ? 'text-accent' : action?.danger ? 'text-[var(--kb-danger)]' : 'text-fg-2'
+                    )}
+                >
+                    {leadingIcon && <Icon name={leadingIcon} size={20} filled={checkable} />}
                 </span>
             )}
             <span data-kb-menu-label="" className="min-w-0 flex-1 truncate">
                 {item.label}
             </span>
-            {action?.shortcut && <span className="shrink-0 ps-4 text-[0.6875rem] leading-4 text-fg-3">{action.shortcut}</span>}
+            {action?.shortcut && <span className="shrink-0 ps-4 [font:var(--kb-type-caption)] text-fg-3">{action.shortcut}</span>}
         </button>
     );
 }

@@ -214,7 +214,7 @@ describe('useAppStore persist through the debounced storage', () => {
         window.dispatchEvent(new Event('pagehide'));
 
         const persisted = persistedState();
-        expect(persisted.version).toBe(32);
+        expect(persisted.version).toBe(33);
         expect(persisted.state.notePanelWidth).toBe(444);
         const partialize = useAppStore.persist.getOptions().partialize!;
         expect(Object.keys(persisted.state).sort()).toEqual(

@@ -10,11 +10,11 @@ import type {} from '../src/components/extensions/extensionRegistry';
 // and use the moved migration function.
 
 describe('useAppStore persist options', () => {
-    it('keeps the kobar-storage key, version 32 and the persisted-state migrate (T-601, T-602, T-603, T-604, T-615d, R-11)', () => {
+    it('keeps the kobar-storage key, version 33 and the persisted-state migrate (T-601, T-602, T-603, T-604, T-615d, R-11, CNL-03)', () => {
         const options = useAppStore.persist.getOptions();
 
         expect(options.name).toBe('kobar-storage');
-        expect(options.version).toBe(32);
+        expect(options.version).toBe(33);
         expect(options.migrate).toBe(migratePersistedKobarStorage);
     });
 

@@ -41,6 +41,16 @@ function withoutComments(text: string): string {
 describe('settingsWindowFrameOptions', () => {
     const options = settingsWindowFrameOptions({ iconPath: '/x/icon.png', title: 'KoBar' });
 
+    it('Canlı: opens wide enough for the full nav column, shrinking to fit a small work area', () => {
+        expect(options.width).toBeGreaterThanOrEqual(1000);
+        const small = settingsWindowFrameOptions({ iconPath: '/x/icon.png', title: 'KoBar', workArea: { width: 1093, height: 614 } });
+        expect(small.width).toBe(1093 - 48);
+        expect(small.height).toBe(614 - 48);
+        const tiny = settingsWindowFrameOptions({ iconPath: '/x/icon.png', title: 'KoBar', workArea: { width: 500, height: 300 } });
+        expect(tiny.width).toBe(tiny.minWidth);
+        expect(tiny.height).toBe(tiny.minHeight);
+    });
+
     it('is a normal window: framed, titled, resizable, in the taskbar, never always-on-top or transparent', () => {
         expect(options).toMatchObject({
             frame: true,

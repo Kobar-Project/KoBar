@@ -78,7 +78,11 @@ export function Segmented<V extends string = string>({
                             fullWidth && 'flex-1'
                         )}
                     >
-                        {item.icon && <Icon name={item.icon} size={16} filled={selected} />}
+                        {selected ? (
+                            <Icon name="check" size={16} className="text-accent" />
+                        ) : (
+                            item.icon && <Icon name={item.icon} size={16} />
+                        )}
                         <span>{item.label}</span>
                     </button>
                 );

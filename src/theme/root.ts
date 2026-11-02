@@ -47,3 +47,14 @@ export function applyRootAppearance(root: HTMLElement, appearance: RootAppearanc
     root.setAttribute('data-material', appearance.material);
     root.setAttribute('data-density', appearance.density);
 }
+
+export interface RootCanli {
+    tonalSurfaces: boolean;
+    privacyMode: boolean;
+}
+
+/** Canlı (CNL-03): `data-tonal` ('on' | 'off') and `data-privacy` ('on' | 'off'), read by src/theme/canli.css. */
+export function applyRootCanli(root: HTMLElement, canli: RootCanli): void {
+    root.setAttribute('data-tonal', canli.tonalSurfaces ? 'on' : 'off');
+    root.setAttribute('data-privacy', canli.privacyMode ? 'on' : 'off');
+}

@@ -1,6 +1,8 @@
 import { useAppStore } from './useAppStore';
 import { subscribeWindowGeometry, type WindowGeometry } from '../utils/windowGeometry';
 import { clampEyePosition, computeVisibleArea, defaultEyePosition, hasDisplayInfo, reconcileBarPosition } from '../utils/visibleArea';
+import { barThickness, MINI_ORB_SIZE } from '../sidebar/barLayout';
+import { getBarMode } from '../sidebar/barModeStore';
 
 /*
  * T-322 (window model A): when main re-fits the window (display added/removed, resolution or scale change, taskbar moved, bar
@@ -13,9 +15,6 @@ import { clampEyePosition, computeVisibleArea, defaultEyePosition, hasDisplayInf
  *   plugins does not change; it is only refreshed sooner.
  * Nothing happens on macOS (main never sends the event there) or while a drag owns the positions (the drop path places them).
  */
-
-/** The eye button is 48px (w-12) scaled by iconScale; this much of it stays on screen. */
-const EYE_HALF_SIZE = 24;
 
 function isWindowsRenderer(): boolean {
     try {
@@ -59,16 +58,18 @@ export function applyWindowGeometryChange(next: Readonly<WindowGeometry>, prev: 
 
     const barPos = state.sidebarPosition;
     if (barPos) {
+        // Canlı: the real cross-axis thickness (thin or wide bar at this density), not the v1 `sidebarWidth` field.
+        const thickness = barThickness(state.density, getBarMode());
         const size =
             state.orientation === 'horizontal'
-                ? { width: state.lastSidebarWidth, height: state.sidebarWidth }
-                : { width: state.sidebarWidth, height: state.lastSidebarHeight };
+                ? { width: state.lastSidebarWidth, height: thickness }
+                : { width: thickness, height: state.lastSidebarHeight };
         const reconciled = reconcileBarPosition(barPos, size, prevArea, nextArea);
         if (reconciled !== barPos) state.setSidebarPosition(reconciled);
     }
 
     if (state.isMiniMode) {
-        const half = EYE_HALF_SIZE * (Number.isFinite(state.iconScale) && state.iconScale > 0 ? state.iconScale : 1);
+        const half = MINI_ORB_SIZE / 2;
         const eyePos = state.miniModePosition ?? defaultEyePosition(nextArea, state.edgePosition);
         const clamped = clampEyePosition(eyePos, half, nextArea);
         if (clamped !== state.miniModePosition) state.setMiniMode(true, { x: clamped.x, y: clamped.y });

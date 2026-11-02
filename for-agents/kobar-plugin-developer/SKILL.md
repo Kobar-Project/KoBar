@@ -26,7 +26,7 @@ listed in section 6. Version notes below name the first public release that has 
 read and write all of `localStorage` (including the app's stores and other plugins' data), call every `window.api` method,
 change the DOM and the app store, and read other workspaces' and other plugins' data. Installing a plugin means trusting its
 code completely. The host adds friction (confirmation dialogs, rate limits, path checks, allow-lists; see
-`references/host-behaviour.md` section 8), but it cannot prove that a call came from a real user action, so none of this is
+`references/host-behaviour.md` section 9), but it cannot prove that a call came from a real user action, so none of this is
 isolation. Write plugins that never touch data that is not theirs.
 
 ## 2. Rules the host enforces or relies on
@@ -69,7 +69,7 @@ isolation. Write plugins that never touch data that is not theirs.
 | `window.ReactDOM` | The host's `react-dom` module (`createPortal`, `flushSync`). It is **not** `react-dom/client`: there is no `createRoot`. |
 | `window.useAppStore` | The host's Zustand store: call it as a hook (`window.useAppStore((s) => s.edgePosition)`) or use `getState()`, `setState()`, `subscribe()`. Fields: `references/api.md` section 3. |
 | `window.api` | The IPC bridge to the main process. Full list with status: `references/api.md` section 1. |
-| `window.KoBarExtensions` | The extension registry: `registerSidebarButton`, `registerPanel`, `registerSettingsPanel`, `registerInlineWidget`, `getData`, `setData`. See `references/api.md` section 2. |
+| `window.KoBarExtensions` | The extension registry: `registerSidebarButton`, `registerPanel`, `registerSettingsPanel`, `registerInlineWidget`, `getData`, `setData` (newer hosts also `setBarItemState`, `onBarItemChange`). See `references/api.md` section 2. |
 
 ## 4. A complete plugin
 
@@ -214,6 +214,35 @@ registration.
 - If the plugin has a build step, **run it yourself after every change** (for example `node build.mjs`); KoBar loads only the
   built entry file, never `.jsx`/`.tsx` sources. Then reload the KoBar window: there is no file watcher.
 - Before you finish, walk the checklist below.
+
+## 8. Bar tiles and designing plugin UI (newer hosts)
+
+Newer hosts can show every bar item as an icon or as a larger tile that carries live data. The API is additive: declare a tile
+(`bar.tile` in the manifest or `tile` in `registerSidebarButton`), push state with `KoBarExtensions.setBarItemState(id, state)`
+and pause work with `KoBarExtensions.onBarItemChange(id, listener)`. Details, limits and examples: `references/api.md` section
+2.1, `references/host-behaviour.md` section 8, `references/manifest-and-publishing.md` (the `bar` block). **Old hosts lack these
+methods**, so feature-detect before use: `typeof KoBarExtensions.setBarItemState === 'function'`.
+
+Your three surfaces: the **icon** (host draws it from `icon`, `label` and an optional badge), the **tile** (host draws it from
+your data, or your `custom` render inside the host's box) and your **panel**.
+
+Panel rules (look native):
+- Width 320, 340, 400 or 480. Radius 32 if you draw the shell yourself, padding 20. Header: 44 px icon tile, title 19/600,
+  optional subtitle 12, close button at the end (36 px circle).
+- Buttons are pills; **one filled (accent) button per panel**, the others tonal or text.
+- New code uses Material Symbols **Rounded**. Inherit the host font; Outfit (`var(--kb-font-display)`) only for big values.
+- Numbers that change: `font-variant-numeric: tabular-nums`. No glow, gradients, neon borders, pulse or scale on press.
+- Text contrast 4.5:1; do not put the accent colour on small text. Close on Esc and return focus to your bar item; label every
+  icon-only button.
+
+Tile rules:
+- Pick the template that fits your data; use `custom` only when none does.
+- `value` at most 5 characters, `caption` at most 4 ("18:42", "4/10", "99+"); never a sentence.
+- Always set `label`: the full sentence a screen reader should read.
+- Mark anything personal `sensitive: true` (clipboard, messages, task titles, track names).
+- Update at most once per second and stop when `visible` is `false`. Do not carry meaning in colour alone.
+- A badge counts things that need the user (unread, open, waiting); clear it when the user has seen them, use `'dot'` when a
+  count is meaningless.
 
 ## Checklist
 

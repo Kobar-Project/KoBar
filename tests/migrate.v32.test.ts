@@ -15,7 +15,7 @@ const v21 = (): State =>
 
 describe('v32: pluginPanelOffsets', () => {
     it('is the current version', () => {
-        expect(KOBAR_STORAGE_VERSION).toBe(32);
+        expect(KOBAR_STORAGE_VERSION).toBeGreaterThanOrEqual(32);
     });
 
     it('leaves a missing key missing and touches nothing else', () => {

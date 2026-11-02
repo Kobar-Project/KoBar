@@ -237,7 +237,7 @@ describe('buildRequest', () => {
         const r = ok({ provider: 'openai', model: '', messages, apiKeys: {}, apiKey: 'sk', systemPrompt: 'be brief' });
         expect(r.url).toBe('https://api.openai.com/v1/chat/completions');
         expect(r.headers).toEqual({ 'Content-Type': 'application/json', Authorization: 'Bearer sk' });
-        expect(r.body).toEqual({ model: 'gpt-4o', messages: [{ role: 'system', content: 'be brief' }, ...messages], stream: true });
+        expect(r.body).toEqual({ model: 'gpt-6.1-sol', messages: [{ role: 'system', content: 'be brief' }, ...messages], stream: true });
         expect(messages).toHaveLength(1); // the input array is never mutated
     });
 
@@ -253,7 +253,7 @@ describe('buildRequest', () => {
         expect(r.body.model).toBe('pro');
         expect(r.body.messages[0]).toEqual({ role: 'system', content: 's' });
         expect(ok({ provider: 'gemini', model: 'gemini:-latest', messages, apiKeys: {}, apiKey: 'gk' }).body.model).toBe(
-            'gemini-3.1-flash'
+            'gemini-3.8-flash'
         );
     });
 
@@ -262,7 +262,7 @@ describe('buildRequest', () => {
         expect(r.url).toBe('https://api.anthropic.com/v1/messages');
         expect(r.headers).toEqual({ 'Content-Type': 'application/json', 'x-api-key': 'ak', 'anthropic-version': '2023-06-01' });
         expect(r.body).toEqual({
-            model: 'claude-sonnet-4-6',
+            model: 'claude-sonnet-5-5',
             max_tokens: 4096,
             messages: [
                 {
@@ -408,7 +408,7 @@ describe('main.cts wiring (T-305)', () => {
         const iKey = handler.indexOf('pickApiKey(');
         const iMissing = handler.indexOf('API key not found');
         const iBuild = handler.indexOf('buildRequest(');
-        const iFetch = handler.indexOf('await fetch(url');
+        const iFetch = handler.indexOf('await net.fetch(url');
         expect(iKey).toBeGreaterThan(-1);
         expect(iMissing).toBeGreaterThan(iKey);
         expect(iBuild).toBeGreaterThan(iMissing);

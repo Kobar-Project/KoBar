@@ -246,7 +246,7 @@ export function PluginPanelHost({ pluginId, orientation, area, children }: Plugi
             >
                 <span
                     aria-hidden="true"
-                    className="h-1 w-8 rounded-full bg-[var(--kb-fg-3)] opacity-40 transition-opacity duration-[var(--kb-dur-fast)] group-hover:bg-[var(--kb-accent)] group-hover:opacity-100"
+                    className="h-1 w-8 rounded-full bg-[var(--kb-stroke-strong)] transition-colors duration-[var(--kb-dur-fast)] group-hover:bg-[var(--kb-fg-3)]"
                 />
             </div>
         </>

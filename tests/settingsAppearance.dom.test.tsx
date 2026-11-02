@@ -104,7 +104,7 @@ describe('AppearancePage', () => {
         const { host } = render(<AppearancePage t={tEn} />);
         expect(host.querySelector('[role="status"]')!.textContent).toBe(tEn('settingsWaiting'));
         const all = groups(host).flatMap(radios);
-        expect(all).toHaveLength(3 + 9 + 2);
+        expect(all).toHaveLength(3 + 8 + 2);
         expect(all.every((r) => r.disabled)).toBe(true);
         all.forEach(click);
         expect(bridge.sent).toEqual([]);
@@ -158,7 +158,7 @@ describe('AppearancePage', () => {
             ).toMatchObject({ ok: true });
     });
 
-    it('arrow keys move through the accents and select presets; "Custom…" only takes focus', () => {
+    it('arrow keys move through the accents and select presets', () => {
         ready({ accent: 'amber' });
         const { host } = render(<AppearancePage t={tEn} />);
         const accent = groups(host)[1];
@@ -168,19 +168,22 @@ describe('AppearancePage', () => {
         expect(document.activeElement).toBe(swatches[1]);
         keyDown(swatches[1], 'ArrowLeft');
         keyDown(swatches[0], 'ArrowLeft');
-        expect(document.activeElement).toBe(swatches[8]);
-        keyDown(swatches[8], 'Home');
+        expect(document.activeElement).toBe(swatches[7]);
+        keyDown(swatches[7], 'Home');
         expect(document.activeElement).toBe(swatches[0]);
-        // ArrowLeft back to amber and Home send nothing: amber is still the main window's value (read-only mirror).
-        expect(sent()).toEqual([{ type: 'setAccent', payload: 'orange' }]);
+        // Wrapping left from amber selects graphite (8 swatches); Home sends nothing: the mirror is read-only.
+        expect(sent()).toEqual([
+            { type: 'setAccent', payload: 'orange' },
+            { type: 'setAccent', payload: 'graphite' },
+        ]);
         expect(popover()).toBeNull();
     });
 
     it('"Custom…" opens a popover that only applies a valid hex, normalised', () => {
         ready({ accent: 'amber', customThemeColor: '#f4a125' });
         const { host } = render(<AppearancePage t={tEn} />);
-        const custom = radios(groups(host)[1])[8];
-        expect(custom.getAttribute('aria-label')).toBe(tEn('settingsAccentCustom'));
+        const custom = host.querySelector<HTMLButtonElement>('[data-testid="accent-custom"]')!;
+        expect(custom.textContent).toContain(tEn('settingsAccentCustom'));
         click(custom);
         const dialog = popover()!;
         expect(dialog.getAttribute('aria-label')).toBe(tEn('settingsCustomColorTitle'));
@@ -212,10 +215,32 @@ describe('AppearancePage', () => {
     it('shows a selected custom colour on its swatch', () => {
         ready({ accent: 'custom', customThemeColor: '#3a7bd5' });
         const { host } = render(<AppearancePage t={tEn} />);
-        const custom = radios(groups(host)[1])[8];
-        expect(custom.getAttribute('aria-checked')).toBe('true');
-        expect(custom.style.getPropertyValue('--kb-swatch-dark')).toMatch(/^#[0-9a-f]{6}$/);
+        const custom = host.querySelector<HTMLButtonElement>('[data-testid="accent-custom"]')!;
+        expect(custom.getAttribute('aria-pressed')).toBe('true');
+        expect(host.querySelector<HTMLElement>('[data-testid="accent-custom-dot"]')!.style.backgroundColor).not.toBe('');
         expect(host.querySelector('[data-testid="accent-name"]')!.textContent).toContain(tEn('settingsCustomColorTitle'));
+    });
+
+    it('"Tinted surfaces" dispatches setTonalSurfaces and the preview follows the mirrored tonal and scheme', () => {
+        ready({ tonalSurfaces: true, scheme: 'dark' });
+        const { host } = render(<AppearancePage t={tEn} />);
+        const preview = () => host.querySelector<HTMLElement>('[data-testid="appearance-preview"]')!;
+        expect(preview().dataset.previewTonal).toBe('on');
+        expect(preview().dataset.previewScheme).toBe('dark');
+        const toggle = [...host.querySelectorAll<HTMLButtonElement>('[role="switch"]')].find(
+            (s) => host.querySelector(`label[for="${s.id}"]`)?.textContent === tEn('settingsTonalSurfaces')
+        )!;
+        expect(toggle.getAttribute('aria-checked')).toBe('true');
+        click(toggle);
+        expect(sent()).toEqual([{ type: 'setTonalSurfaces', payload: false }]);
+        // Read-only mirror: nothing changes until the main window's snapshot comes back.
+        expect(preview().dataset.previewTonal).toBe('on');
+        ready({ tonalSurfaces: false, scheme: 'light' });
+        expect(preview().dataset.previewTonal).toBe('off');
+        expect(preview().dataset.previewScheme).toBe('light');
+        expect(toggle.getAttribute('aria-checked')).toBe('false');
+        useAppStore.setState({ isHydrated: true });
+        expect(applySettingsAction(useAppStore, bridge.sent[0], () => {})).toMatchObject({ ok: true });
     });
 
     it('is registered in the Settings window', () => {

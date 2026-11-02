@@ -22,7 +22,7 @@ describe('Select', () => {
         expect(Array.from(el.options).map((o) => o.textContent)).toEqual(['English', 'Türkçe', 'Deutsch']);
         expect(el.options[2].disabled).toBe(true);
         expect(el.value).toBe('tr');
-        const chevron = host.querySelector('.material-symbols-outlined')!;
+        const chevron = host.querySelector('.kb-icon')!;
         expect(chevron.textContent).toBe('expand_more');
         expect(chevron.getAttribute('aria-hidden')).toBe('true');
     });
@@ -86,8 +86,8 @@ describe('Select', () => {
         expect(el.className).toContain('no-drag-region');
         expect(el.className).toContain('pointer-events-auto');
         expect(el.className).toContain('focus-visible:shadow-[var(--kb-focus-ring)]');
-        expect(el.className).toContain('h-[var(--kb-control-h)]');
-        expect(el.className).toContain('border-[var(--kb-stroke-control)]');
+        expect(el.className).toContain('h-[46px]');
+        expect(el.className).toContain('border-transparent');
         expect(host.innerHTML).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
     });
 });

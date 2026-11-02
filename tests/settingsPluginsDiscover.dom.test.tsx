@@ -60,7 +60,11 @@ function publish(plugins: PluginSummary | undefined, state: Record<string, unkno
     act(() => settingsMirror.receive({ seq, state, ack: 0, ...(plugins === undefined ? {} : { plugins }) }));
 }
 const openDiscover = (host: HTMLElement) =>
-    click([...host.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === tEn('settingsPluginsTabDiscover'))!);
+    click(
+        [...host.querySelectorAll('[role="tab"]')].find(
+            (tab) => tab.textContent?.replace(/ \(\d+\)$/, '') === tEn('settingsPluginsTabDiscover')
+        )!
+    );
 
 afterEach(() => {
     cleanup();
@@ -73,13 +77,13 @@ describe('PluginsPage tabs', () => {
         const { host } = render(<PluginsPage t={t} />);
         publish(summary(catalog()));
         const tabs = [...host.querySelectorAll('[role="tab"]')];
-        expect(tabs.map((tab) => [tab.textContent, tab.getAttribute('aria-selected')])).toEqual([
+        expect(tabs.map((tab) => [tab.textContent?.replace(/ \(\d+\)$/, ''), tab.getAttribute('aria-selected')])).toEqual([
             [tEn('settingsPluginsTabInstalled'), 'true'],
             [tEn('settingsPluginsTabDiscover'), 'false'],
         ]);
         expect(host.textContent).toContain(tEn('settingsPluginsEmpty'));
         openDiscover(host);
-        expect(host.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toBe(tEn('settingsPluginsTabDiscover'));
+        expect(host.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toMatch(/^Discover \(\d+\)$/);
         expect(host.textContent).not.toContain(tEn('settingsPluginsEmpty'));
     });
 });
@@ -226,13 +230,17 @@ describe('Discover', () => {
 });
 
 describe('the "..." menu', () => {
-    const openMenu = () => click(byLabel(tEn('settingsPluginsMore'))!);
+    const trigger = () =>
+        [...document.body.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
+            b.textContent?.includes(tEn('pluginInstallFromFileOrGithub'))
+        )!;
+    const openMenu = () => click(trigger());
     const menuItem = (text: string) =>
         [...document.body.querySelectorAll('[role^="menuitem"]')].find((el) => el.textContent?.includes(text))!;
 
     it('is disabled before the first snapshot and sends nothing', () => {
         render(<PluginsPage t={t} />);
-        expect((byLabel(tEn('settingsPluginsMore')) as HTMLButtonElement).disabled).toBe(true);
+        expect(trigger().disabled).toBe(true);
         expect(bridge.sent).toEqual([]);
     });
 

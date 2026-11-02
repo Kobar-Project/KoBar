@@ -4,17 +4,19 @@
 // and it shows no repository statistics. Nothing is optimistic: "Installed" appears when the main window reports it.
 import { useEffect, useId, useRef, useState } from 'react';
 import { EMPTY_PLUGIN_CATALOG, type PluginCatalogItem } from '../../../store/pluginSummary';
-import { Button, EmptyState, IconButton, ListItem, Segmented, Skeleton, Surface, TextField } from '../../../ui';
+import { Button, Card, Chip, EmptyState, IconButton, IconTile, Skeleton, TextField } from '../../../ui';
 import { dispatchPluginAction, useSettingsState, usePluginSummary } from '../../mirror';
 import type { SettingsPageProps } from '../../pages';
 import { getDocumentPlatform } from '../../../platform';
 import { isPluginSupportedOn, platformDisplayName } from '../../../../shared/pluginPlatforms';
+import { cx } from '../../../ui/cx';
+import { StaticChip } from '../shared';
+import { PluginOrigin } from './PluginOrigin';
 import { PluginRepoLink } from './PluginRepoLink';
 
 type CatalogFilter = 'all' | 'installed' | 'notInstalled';
 
-const HINT = 'text-[0.6875rem] leading-4 text-fg-2';
-const SECTION_LABEL = 'text-[0.8125rem] leading-5 font-semibold text-fg-1';
+const HINT = '[font:var(--kb-type-caption)] text-fg-2';
 
 /** Case-insensitive match on name, description, author and category. */
 function matchesQuery(item: PluginCatalogItem, query: string): boolean {
@@ -78,53 +80,54 @@ export function DiscoverView({ t }: SettingsPageProps) {
         const unsupportedText = platform ? t('pluginUnsupportedOnPlatform').replace('{platform}', platformDisplayName(platform)) : '';
         const meta = [item.author, item.category].filter((part) => part !== '').join(' · ');
         return (
-            <li key={item.id} className="flex flex-col">
-                <ListItem
-                    leading="extension"
-                    title={
-                        <>
+            <li key={item.id} className="flex flex-col gap-2 rounded-lg bg-surface p-3.5">
+                <div className="flex items-center gap-3">
+                    <IconTile icon="extension" size="md" muted={item.installed} />
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="min-w-0 [font:var(--kb-type-body-strong)] text-fg-1">
                             {item.name}
-                            {item.beta && <span className="ms-2 text-[0.6875rem] font-normal text-fg-2">{t('settingsPluginsBeta')}</span>}
-                            {unsupported && <span className="ms-2 text-[0.6875rem] font-normal text-danger">{unsupportedText}</span>}
-                        </>
-                    }
-                    description={meta || item.description}
-                    trailing={
-                        <>
-                            <IconButton
-                                icon={open ? 'expand_less' : 'expand_more'}
-                                label={`${open ? t('settingsPluginsDetailsHide') : t('settingsPluginsDetails')}: ${item.name}`}
-                                size={28}
-                                aria-expanded={open}
-                                aria-controls={detailId}
-                                onClick={() => setOpenId(open ? null : item.id)}
-                            />
-                            {item.installed ? (
-                                <span className={HINT}>{t('settingsPluginsInstalledBadge')}</span>
-                            ) : (
-                                <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    loading={catalog.installingId === item.id}
-                                    disabled={!ready || installing || unsupported}
-                                    title={unsupported ? unsupportedText : undefined}
-                                    aria-label={`${t('settingsPluginsInstall')}: ${item.name}`}
-                                    onClick={() => dispatchPluginAction('plugin.install', { id: item.id })}
-                                >
-                                    {catalog.installingId === item.id ? t('settingsPluginsInstalling') : t('settingsPluginsInstall')}
-                                </Button>
+                            {item.beta && (
+                                <StaticChip tone="inset" className="ms-2 align-middle">
+                                    {t('settingsPluginsBeta')}
+                                </StaticChip>
                             )}
-                        </>
-                    }
-                />
+                            {unsupported && <span className="ms-2 [font:var(--kb-type-caption)] text-danger">{unsupportedText}</span>}
+                        </span>
+                        <span className={cx(HINT, 'truncate')}>{meta || item.description}</span>
+                        <PluginOrigin t={t} repo={item.repo} />
+                    </div>
+                    <IconButton
+                        icon={open ? 'expand_less' : 'expand_more'}
+                        label={`${open ? t('settingsPluginsDetailsHide') : t('settingsPluginsDetails')}: ${item.name}`}
+                        size={32}
+                        aria-expanded={open}
+                        aria-controls={detailId}
+                        onClick={() => setOpenId(open ? null : item.id)}
+                    />
+                    {item.installed ? (
+                        <StaticChip>{t('settingsPluginsInstalledBadge')}</StaticChip>
+                    ) : (
+                        <Button
+                            size="sm"
+                            variant="tonal"
+                            loading={catalog.installingId === item.id}
+                            disabled={!ready || installing || unsupported}
+                            title={unsupported ? unsupportedText : undefined}
+                            aria-label={`${t('settingsPluginsInstall')}: ${item.name}`}
+                            onClick={() => dispatchPluginAction('plugin.install', { id: item.id })}
+                        >
+                            {catalog.installingId === item.id ? t('settingsPluginsInstalling') : t('settingsPluginsInstall')}
+                        </Button>
+                    )}
+                </div>
                 {item.repo && (
-                    <div className="min-w-0 px-3 pb-1 ps-11">
+                    <div className="min-w-0 ps-14">
                         <PluginRepoLink repo={item.repo} label={t('settingsPluginsGithubLink').replace('{name}', item.name)} />
                     </div>
                 )}
                 {open && (
-                    <div id={detailId} className="flex flex-col gap-1 px-3 pb-3 ps-11">
-                        <p className="text-[0.75rem] leading-4 text-fg-1">{item.description || t('settingsPluginsNoDescription')}</p>
+                    <div id={detailId} className="flex flex-col gap-1 ps-14">
+                        <p className="[font:var(--kb-type-body)] text-fg-1">{item.description || t('settingsPluginsNoDescription')}</p>
                         <p className={HINT}>
                             {[
                                 item.author ? t('settingsPluginsAuthor').replace('{author}', item.author) : '',
@@ -168,49 +171,54 @@ export function DiscoverView({ t }: SettingsPageProps) {
         body = <EmptyState icon="search_off" title={t('settingsPluginsNoMatch')} />;
     } else {
         body = (
-            <ul aria-labelledby={listId} className="flex flex-col gap-0.5">
+            <ul aria-labelledby={listId} className="flex flex-col gap-2">
                 {visible.map(renderRow)}
             </ul>
         );
     }
 
+    const filters: { value: CatalogFilter; label: string }[] = [
+        { value: 'all', label: t('settingsPluginsFilterAll') },
+        { value: 'installed', label: t('settingsPluginsFilterInstalled') },
+        { value: 'notInstalled', label: t('settingsPluginsFilterNotInstalled') },
+    ];
+
     return (
-        <Surface as="section" level="surface" elevation="e1" radius="lg" aria-labelledby={listId} className="flex flex-col gap-3 p-4">
-            <div className="flex items-center justify-between gap-2">
-                <span id={listId} className={SECTION_LABEL}>
-                    {t('settingsPluginsTabDiscover')}
-                </span>
+        <Card
+            as="section"
+            variant="list"
+            aria-labelledby={listId}
+            title={<span id={listId}>{t('settingsPluginsTabDiscover')}</span>}
+            control={
                 <IconButton
                     icon="refresh"
                     label={t('settingsPluginsRefresh')}
-                    size={28}
+                    size={32}
                     disabled={!ready || loading || installing}
                     onClick={() => dispatchPluginAction('plugin.refreshCatalog', {})}
                 />
-            </div>
+            }
+        >
             <TextField
                 hideLabel
-                icon="search"
+                variant="search"
                 type="search"
                 label={t('settingsPluginsSearch')}
                 placeholder={t('settingsPluginsSearch')}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
             />
-            <Segmented<CatalogFilter>
-                aria-label={t('settingsPluginsFilter')}
-                items={[
-                    { value: 'all', label: t('settingsPluginsFilterAll') },
-                    { value: 'installed', label: t('settingsPluginsFilterInstalled') },
-                    { value: 'notInstalled', label: t('settingsPluginsFilterNotInstalled') },
-                ]}
-                value={filter}
-                onChange={setFilter}
-            />
+            <div role="group" aria-label={t('settingsPluginsFilter')} className="flex flex-wrap gap-2">
+                {filters.map((item) => (
+                    <Chip key={item.value} selected={filter === item.value} onClick={() => setFilter(item.value)}>
+                        {item.label}
+                    </Chip>
+                ))}
+            </div>
             <span role="status" aria-live="polite" className={HINT}>
                 {resultText}
             </span>
             {body}
-        </Surface>
+        </Card>
     );
 }

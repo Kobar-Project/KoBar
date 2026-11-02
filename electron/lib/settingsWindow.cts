@@ -4,12 +4,15 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
 import type { TopmostLevel } from './platform.cjs';
 
-export const SETTINGS_WINDOW_WIDTH = 920;
-export const SETTINGS_WINDOW_HEIGHT = 640;
+/** Canlı: room for the 264 px nav column and the 800 px content column (the nav collapses to icons below 1000 px). */
+export const SETTINGS_WINDOW_WIDTH = 1120;
+export const SETTINGS_WINDOW_HEIGHT = 720;
 export const SETTINGS_WINDOW_MIN_WIDTH = 640;
 export const SETTINGS_WINDOW_MIN_HEIGHT = 440;
-/** The dark shell token (--kb-bg-shell in src/index.css), so the first paint does not flash white. */
-export const SETTINGS_WINDOW_BACKGROUND = '#1f1f1f';
+/** Margin kept free around the window when the work area is smaller than the default size. */
+export const SETTINGS_WINDOW_SCREEN_MARGIN = 48;
+/** The Canlı dark shell neutral (--kb-n-shell in src/theme/canli.css), so the first paint does not flash white. */
+export const SETTINGS_WINDOW_BACKGROUND = '#111318';
 /** The page of the Settings window: settings.html (Vite input `settings`, built to dist/settings.html). */
 export const SETTINGS_PAGE_FILE = 'settings.html';
 
@@ -21,10 +24,19 @@ export type SettingsWindowFrameOptions = Omit<BrowserWindowConstructorOptions, '
  * (no position is remembered: neither the main window nor the PiP window restores a saved position or size). `show: false`
  * until ready-to-show avoids an empty frame.
  */
-export function settingsWindowFrameOptions(input: { iconPath: string; title: string }): SettingsWindowFrameOptions {
+export function settingsWindowFrameOptions(input: {
+    iconPath: string;
+    title: string;
+    /** Work area of the display the window opens on; the default size shrinks to fit it (never below the minimum). */
+    workArea?: { width: number; height: number };
+}): SettingsWindowFrameOptions {
+    const fit = (wanted: number, available: number | undefined, min: number) =>
+        available && Number.isFinite(available)
+            ? Math.max(min, Math.min(wanted, Math.floor(available) - SETTINGS_WINDOW_SCREEN_MARGIN))
+            : wanted;
     return {
-        width: SETTINGS_WINDOW_WIDTH,
-        height: SETTINGS_WINDOW_HEIGHT,
+        width: fit(SETTINGS_WINDOW_WIDTH, input.workArea?.width, SETTINGS_WINDOW_MIN_WIDTH),
+        height: fit(SETTINGS_WINDOW_HEIGHT, input.workArea?.height, SETTINGS_WINDOW_MIN_HEIGHT),
         minWidth: SETTINGS_WINDOW_MIN_WIDTH,
         minHeight: SETTINGS_WINDOW_MIN_HEIGHT,
         center: true,

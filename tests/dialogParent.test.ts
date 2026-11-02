@@ -23,11 +23,15 @@ describe('pickDialogParent', () => {
         expect(pickDialogParent({ isMac: true, mainWindow: null, settingsWindow: null })).toBeNull();
         expect(pickDialogParent({ isMac: true, mainWindow: win({ destroyed: true }), settingsWindow: win({ focused: false }) })).toBeNull();
     });
-    it('win32/linux: always main, even with a focused Settings window', () => {
+    it('win32/linux (CNL): a focused visible Settings window wins too, so dialogs never open behind it', () => {
         const main = win();
-        expect(pickDialogParent({ isMac: false, mainWindow: main, settingsWindow: win() })).toBe(main);
+        const settings = win();
+        expect(pickDialogParent({ isMac: false, mainWindow: main, settingsWindow: settings })).toBe(settings);
+        expect(pickDialogParent({ isMac: false, mainWindow: main, settingsWindow: win({ focused: false }) })).toBe(main);
     });
-    it('main destroyed gives null on non-mac', () => {
-        expect(pickDialogParent({ isMac: false, mainWindow: win({ destroyed: true }), settingsWindow: win() })).toBeNull();
+    it('main destroyed and no usable Settings gives null on non-mac', () => {
+        expect(
+            pickDialogParent({ isMac: false, mainWindow: win({ destroyed: true }), settingsWindow: win({ visible: false }) })
+        ).toBeNull();
     });
 });

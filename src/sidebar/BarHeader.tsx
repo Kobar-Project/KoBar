@@ -1,6 +1,8 @@
 import type { MouseEvent } from 'react';
 import { useT } from '../i18n/useT';
+import { useAppStore } from '../store/useAppStore';
 import { cx, INTERACTIVE } from '../ui/cx';
+import { Icon } from '../ui/Icon';
 import { BarContextMenu } from './ContextMenu';
 
 export interface BarHeaderProps {
@@ -22,6 +24,7 @@ export interface BarHeaderProps {
  */
 export function BarHeader({ orientation, open, onOpenChange, onReorder, onMiniMode, onDragStart, consumeDrag }: BarHeaderProps) {
     const t = useT();
+    const privacyMode = useAppStore((s) => s.privacyMode);
     const horizontal = orientation === 'horizontal';
     const trigger = (
         <button
@@ -44,17 +47,21 @@ export function BarHeader({ orientation, open, onOpenChange, onReorder, onMiniMo
             }}
             className={cx(
                 INTERACTIVE,
-                'no-drag-region flex shrink-0 cursor-grab items-center justify-center border-stroke text-fg-3 transition-colors duration-[var(--kb-dur-fast)] hover:bg-[var(--kb-fill-hover)] hover:text-fg-1 active:cursor-grabbing',
-                horizontal ? 'h-full w-6 self-stretch border-r' : 'h-6 w-full border-b'
+                'no-drag-region flex shrink-0 cursor-grab items-center justify-center gap-0.5 rounded-sm transition-colors duration-[var(--kb-dur-fast)] active:cursor-grabbing',
+                open
+                    ? 'bg-[var(--kb-bg-container)] text-accent'
+                    : 'text-fg-3 hover:bg-[var(--kb-fill-hover)] hover:text-fg-1 active:bg-[var(--kb-fill-pressed)]',
+                horizontal ? 'h-full w-[22px] flex-col self-stretch' : 'h-[22px] w-full'
             )}
         >
-            <svg width="12" height="10" viewBox="0 0 12 10" aria-hidden="true" data-testid="bar-grip" className="pointer-events-none">
-                <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                    <line x1="1" y1="1.5" x2="11" y2="1.5" />
-                    <line x1="1" y1="5" x2="11" y2="5" />
-                    <line x1="1" y1="8.5" x2="11" y2="8.5" />
-                </g>
-            </svg>
+            <span data-testid="bar-grip" className="pointer-events-none flex">
+                <Icon name="drag_indicator" size={18} className={horizontal ? '' : 'rotate-90'} />
+            </span>
+            {privacyMode && (
+                <span data-testid="bar-privacy-mark" title={t('privacyModeOnHint')} className="pointer-events-none flex text-fg-2">
+                    <Icon name="visibility_off" size={16} />
+                </span>
+            )}
         </button>
     );
     return <BarContextMenu open={open} onOpenChange={onOpenChange} onReorder={onReorder} onMiniMode={onMiniMode} trigger={trigger} />;

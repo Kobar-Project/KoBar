@@ -13,9 +13,10 @@ import { migrateToV29 } from './v29';
 import { migrateToV30 } from './v30';
 import { migrateToV31 } from './v31';
 import { migrateToV32 } from './v32';
+import { migrateToV33 } from './v33';
 
 /** Current `kobar-storage` persist version (useAppStore `persist({ version })`, settings export `version`). */
-export const KOBAR_STORAGE_VERSION = 32;
+export const KOBAR_STORAGE_VERSION = 33;
 
 /** Inputs of the persisted-state path that are not part of the persisted state itself. */
 export interface KobarStorageMigrateOptions {
@@ -90,6 +91,11 @@ function migrateVersionedBlocks<T>(
     // normalized (bad entries dropped, numbers rounded/clamped), a missing key stays missing. Logic lives in ./v32.
     if (version < 32) {
         migrateToV32(persistedState);
+    }
+    // version 33 (Canlı): bar presentation (`barItemSizes`, `barHiddenItems`), `tonalSurfaces`, `notesTabVisible` (top level and
+    // every workspace record) and `privacyMode`; existing users get "no tiles, nothing hidden". Logic lives in ./v33.
+    if (version < 33) {
+        migrateToV33(persistedState);
     }
     return persistedState;
 }

@@ -55,10 +55,10 @@ export function ConfirmDialog({
             onClose={cancel}
             footer={
                 <>
-                    <Button ref={cancelRef} variant="secondary" aria-disabled={loading || undefined} onClick={cancel}>
+                    <Button ref={cancelRef} variant="outline" aria-disabled={loading || undefined} onClick={cancel}>
                         {cancelLabel}
                     </Button>
-                    <Button ref={confirmRef} variant={danger ? 'danger' : 'primary'} loading={loading} onClick={onConfirm}>
+                    <Button ref={confirmRef} variant={danger ? 'danger' : 'filled'} loading={loading} onClick={onConfirm}>
                         {confirmLabel}
                     </Button>
                 </>

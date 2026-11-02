@@ -42,19 +42,19 @@ const header = (host: HTMLElement) => host.querySelector<HTMLButtonElement>('[da
 const menu = () => document.querySelector('[role="menu"]');
 
 describe('BarHeader', () => {
-    it('renders a full-width divider header with a three-line grip and no dots', () => {
+    it('renders a 22 px full-width handle strip with the drag_indicator glyph and no dots', () => {
         const { host } = render(<Harness />);
         const h = header(host);
         expect(h.className).toContain('w-full');
-        expect(h.className).toContain('border-b');
-        expect(h.querySelectorAll('line')).toHaveLength(3);
+        expect(h.className).toContain('h-[22px]');
+        expect(h.className).not.toContain('border-b');
         expect(host.querySelector('[data-testid="bar-more"]')).toBeNull();
     });
 
-    it('horizontal header is a full-height block at the left end with a right divider', () => {
+    it('horizontal handle is a 22 px full-height strip at the start', () => {
         const { host } = render(<Harness orientation="horizontal" />);
         expect(header(host).className).toContain('h-full');
-        expect(header(host).className).toContain('border-r');
+        expect(header(host).className).toContain('w-[22px]');
     });
 
     it('left click opens the menu', () => {
@@ -99,10 +99,10 @@ describe('plugin bar button normalisation (R2-01)', () => {
         expect(block).toMatch(/border: 0 !important/);
         expect(block).toMatch(/box-shadow: none !important/);
         expect(block).toMatch(/scale: none !important/);
-        expect(block).toMatch(/color: var\(--kb-fg-2\) !important/);
+        expect(block).toMatch(/color: var\(--kb-bar-widget-fg\) !important/);
         expect(block).toMatch(/font-size: var\(--kb-bar-icon\) !important/);
     });
     it('only hover adds emphasis', () => {
-        expect(block).toMatch(/\[data-bar-widget\] button:hover \{[^}]*var\(--kb-fill-hover\)/);
+        expect(block).toMatch(/\[data-bar-widget\] button:hover \{[^}]*var\(--kb-bar-widget-fill-hover\)/);
     });
 });

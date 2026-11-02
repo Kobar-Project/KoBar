@@ -1,8 +1,8 @@
 import type { ComponentPropsWithRef } from 'react';
 import { cx } from './cx';
 
-/** Icon sizes from the fixed size scale. */
-export type IconSize = 16 | 20 | 24;
+/** Icon sizes from the fixed size scale (Canlı 05-iconography: 16 / 18 / 20 / 24 / 32). */
+export type IconSize = 16 | 18 | 20 | 24 | 32;
 
 export interface IconProps extends Omit<ComponentPropsWithRef<'span'>, 'children'> {
     /** Material Symbols ligature name, e.g. "settings". */
@@ -16,8 +16,10 @@ export interface IconProps extends Omit<ComponentPropsWithRef<'span'>, 'children
 
 const SIZE_CLASS: Record<IconSize, string> = {
     16: 'size-4 text-base',
+    18: 'size-[18px] text-[18px]',
     20: 'size-5 text-xl',
     24: 'size-6 text-2xl',
+    32: 'size-8 text-[32px]',
 };
 
 export function Icon({ name, filled = false, size = 20, label, className, style, ...rest }: IconProps) {
@@ -26,11 +28,12 @@ export function Icon({ name, filled = false, size = 20, label, className, style,
         <span
             {...rest}
             className={cx(
-                'material-symbols-outlined inline-flex shrink-0 items-center justify-center leading-none',
+                // Canlı: Material Symbols Rounded (.kb-icon, src/theme/canli.css); same ligature names as Outlined.
+                'kb-icon inline-flex shrink-0 items-center justify-center leading-none',
                 SIZE_CLASS[size],
                 className
             )}
-            style={{ fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 300, 'GRAD' 0, 'opsz' ${size === 24 ? 24 : 20}`, ...style }}
+            style={{ fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' ${size >= 24 ? 24 : 20}`, ...style }}
             translate="no"
             role={labelled ? 'img' : undefined}
             aria-label={labelled ? label : undefined}

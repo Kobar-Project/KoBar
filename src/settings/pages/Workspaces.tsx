@@ -4,15 +4,17 @@
 // Workspaces screen used (src/store/workspaceSync.ts). Nothing is optimistic: a row shows what the main window reported.
 // The summary holds no notes and no isolated data. Deleting asks first (ConfirmDialog) and says what is lost; the main window then
 // takes its automatic backup before deleting, exactly like the old screen.
+// CNL-08 (Canlı): a hero card for "save the current layout", a list card (name, mode chip, tonal Activate, a "..." menu with
+// Rename / Delete) and an about card. Behaviour, dialogs and actions are unchanged.
 import { useId, useState, type FormEvent } from 'react';
 import type { TranslationKeys } from '../../i18n';
 import { WORKSPACE_SUMMARY_LIMITS } from '../../store/workspaceSummary';
-import { Button, ConfirmDialog, Dialog, EmptyState, IconButton, ListItem, Surface, TextField, Toggle } from '../../ui';
+import { Button, Card, ConfirmDialog, Dialog, EmptyState, IconButton, IconTile, Menu, TextField, Toggle } from '../../ui';
 import { dispatchWorkspaceAction, useSettingsState, useWorkspaceSummary } from '../mirror';
 import type { SettingsPageProps } from '../pages';
+import { PAGE_STACK, StaticChip, WaitingNote } from './shared';
 
-const HINT = 'text-[0.6875rem] leading-4 text-fg-2';
-const SECTION_LABEL = 'text-[0.8125rem] leading-5 font-semibold text-fg-1';
+const HINT = '[font:var(--kb-type-caption)] text-fg-2';
 
 const fill = (text: string, name: string) => text.replace('{name}', () => name);
 
@@ -57,15 +59,10 @@ export function WorkspacesPage({ t }: SettingsPageProps) {
     }
 
     return (
-        <div className="flex max-w-xl flex-col gap-4">
-            {!ready && (
-                <p role="status" className="text-[0.8125rem] leading-5 text-fg-2">
-                    {t('settingsWaiting')}
-                </p>
-            )}
-            <p className="text-[0.8125rem] leading-5 text-fg-2">{t('settingsWorkspacesAbout')}</p>
-            <Surface as="section" level="surface" elevation="e1" radius="lg" aria-labelledby={newId} className="flex flex-col gap-3 p-4">
-                <span id={newId} className={SECTION_LABEL}>
+        <div className={PAGE_STACK}>
+            {!ready && <WaitingNote>{t('settingsWaiting')}</WaitingNote>}
+            <section aria-labelledby={newId} className="flex flex-col gap-3 rounded-xl bg-container p-5 text-on-container">
+                <span id={newId} className="[font:var(--kb-type-title)]">
                     {t('settingsWorkspacesNewTitle')}
                 </span>
                 <form onSubmit={create} className="flex flex-col gap-3">
@@ -86,16 +83,13 @@ export function WorkspacesPage({ t }: SettingsPageProps) {
                         fullWidth
                     />
                     <div>
-                        <Button type="submit" variant="primary" icon="add" disabled={!canAct || trimmed === ''}>
+                        <Button type="submit" variant="filled" icon="add" disabled={!canAct || trimmed === ''}>
                             {t('settingsWorkspacesCreate')}
                         </Button>
                     </div>
                 </form>
-            </Surface>
-            <Surface as="section" level="surface" elevation="e1" radius="lg" aria-labelledby={listId} className="flex flex-col gap-2 p-4">
-                <span id={listId} className={SECTION_LABEL}>
-                    {t('settingsWorkspacesListTitle')}
-                </span>
+            </section>
+            <Card as="section" variant="list" aria-labelledby={listId} title={<span id={listId}>{t('settingsWorkspacesListTitle')}</span>}>
                 {!summary ? (
                     <span role="status" className={HINT}>
                         {t('settingsWorkspacesLoading')}
@@ -103,59 +97,65 @@ export function WorkspacesPage({ t }: SettingsPageProps) {
                 ) : items.length === 0 ? (
                     <EmptyState icon="space_dashboard" title={t('workspacesEmpty')} />
                 ) : (
-                    <ul aria-labelledby={listId} className="flex flex-col gap-0.5">
+                    <ul aria-labelledby={listId} className="flex flex-col gap-2">
                         {items.map((item) => (
-                            <ListItem
-                                key={item.id}
-                                as="li"
-                                leading="space_dashboard"
-                                title={item.name}
-                                selected={item.active}
-                                description={[
-                                    item.active ? t('activeWorkspace') : null,
-                                    item.isolated ? t('isolatedBadge') : t('sharedBadge'),
-                                ]
-                                    .filter(Boolean)
-                                    .join(' · ')}
-                                trailing={
-                                    <>
-                                        {!item.active && (
-                                            <Button
-                                                size="sm"
-                                                variant="secondary"
-                                                disabled={!canAct}
-                                                aria-label={`${t('loadWorkspace')}: ${item.name}`}
-                                                onClick={() => dispatchWorkspaceAction('workspace.switch', { id: item.id })}
-                                            >
-                                                {t('loadWorkspace')}
-                                            </Button>
-                                        )}
+                            <li key={item.id} className="flex min-w-0 items-center gap-3 rounded-lg bg-surface p-3.5">
+                                <IconTile icon="space_dashboard" size="md" muted={!item.active} />
+                                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                                    <span className="truncate [font:var(--kb-type-body-strong)] text-fg-1">{item.name}</span>
+                                    <span className="flex flex-wrap gap-1.5">
+                                        {item.active && <StaticChip>{t('activeWorkspace')}</StaticChip>}
+                                        <StaticChip tone="inset">{item.isolated ? t('isolatedBadge') : t('sharedBadge')}</StaticChip>
+                                    </span>
+                                </div>
+                                {!item.active && (
+                                    <Button
+                                        size="sm"
+                                        variant="tonal"
+                                        disabled={!canAct}
+                                        aria-label={`${t('loadWorkspace')}: ${item.name}`}
+                                        onClick={() => dispatchWorkspaceAction('workspace.switch', { id: item.id })}
+                                    >
+                                        {t('workspaceActivate')}
+                                    </Button>
+                                )}
+                                <Menu
+                                    placement="bottom-end"
+                                    aria-label={t('barItemMenu').replace('{name}', item.name)}
+                                    trigger={
                                         <IconButton
-                                            icon="edit"
-                                            label={`${t('renameWorkspace')}: ${item.name}`}
-                                            tooltip={t('renameWorkspace')}
-                                            size={28}
+                                            icon="more_horiz"
+                                            label={t('barItemMenu').replace('{name}', item.name)}
+                                            size={32}
                                             disabled={!canAct}
-                                            onClick={() => {
+                                        />
+                                    }
+                                    items={[
+                                        {
+                                            id: 'rename',
+                                            icon: 'edit',
+                                            label: t('renameWorkspace'),
+                                            onSelect: () => {
                                                 setRenameDraft(item.name);
                                                 setRenameId(item.id);
-                                            }}
-                                        />
-                                        <IconButton
-                                            icon="delete"
-                                            label={`${t('deleteWorkspace')}: ${item.name}`}
-                                            tooltip={t('deleteWorkspace')}
-                                            size={28}
-                                            disabled={!canAct}
-                                            onClick={() => setDeleteId(item.id)}
-                                        />
-                                    </>
-                                }
-                            />
+                                            },
+                                        },
+                                        { type: 'separator', id: 'sep' },
+                                        {
+                                            id: 'delete',
+                                            icon: 'delete',
+                                            label: t('deleteWorkspace'),
+                                            danger: true,
+                                            onSelect: () => setDeleteId(item.id),
+                                        },
+                                    ]}
+                                />
+                            </li>
                         ))}
                     </ul>
                 )}
-            </Surface>
+            </Card>
+            <Card as="section" icon="info" title={t('settingsWorkspacesAbout')} />
             <Dialog
                 open={!!renaming}
                 size="sm"
@@ -163,10 +163,10 @@ export function WorkspacesPage({ t }: SettingsPageProps) {
                 onClose={() => setRenameId(null)}
                 footer={
                     <>
-                        <Button variant="secondary" onClick={() => setRenameId(null)}>
+                        <Button variant="tonal" onClick={() => setRenameId(null)}>
                             {t('cancel')}
                         </Button>
-                        <Button variant="primary" type="submit" form={`${listId}-rename`} disabled={draftTrimmed === ''}>
+                        <Button variant="filled" type="submit" form={`${listId}-rename`} disabled={draftTrimmed === ''}>
                             {t('renameWorkspace')}
                         </Button>
                     </>

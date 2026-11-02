@@ -62,7 +62,8 @@ export const useChatStore = create<ChatState>()(
                 localUrl: 'http://localhost:11434',
                 systemMessage: '',
                 customInstructions: '',
-                defaultModel: 'anthropic:claude-sonnet-4-6'
+                // Fresh installs only (persisted chats/settings keep their model); current model ids, 2026-11.
+                defaultModel: 'anthropic:claude-sonnet-5-5'
             },
             aiAvatar: null,
             userAvatar: null,

@@ -10,7 +10,7 @@ describe('IconButton', () => {
         const btn = getByRole<HTMLButtonElement>('button');
         expect(btn.getAttribute('aria-label')).toBe('Settings');
         expect(btn.type).toBe('button');
-        const icon = btn.querySelector('.material-symbols-outlined')!;
+        const icon = btn.querySelector('.kb-icon')!;
         expect(icon.textContent).toBe('settings');
         expect(icon.getAttribute('aria-hidden')).toBe('true');
     });
@@ -49,7 +49,7 @@ describe('IconButton', () => {
         rerender(<IconButton icon="push_pin" label="Pin" pressed tooltip={false} />);
         const btn = getByRole('button');
         expect(btn.getAttribute('aria-pressed')).toBe('true');
-        expect(btn.querySelector<HTMLElement>('.material-symbols-outlined')!.style.fontVariationSettings).toContain("'FILL' 1");
+        expect(btn.querySelector<HTMLElement>('.kb-icon')!.style.fontVariationSettings).toContain("'FILL' 1");
         rerender(<IconButton icon="push_pin" label="Pin" pressed={false} tooltip={false} />);
         expect(getByRole('button').getAttribute('aria-pressed')).toBe('false');
     });

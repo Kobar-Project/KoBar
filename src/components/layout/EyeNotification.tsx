@@ -1,13 +1,24 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { useT } from '../../i18n/useT';
+import { Icon } from '../../ui';
+import { cx, INTERACTIVE } from '../../ui/cx';
+
+// Inverse pill like the Toast: --kb-fg-1 fill, shell-coloured text. A button's colour hint shows as a tinted label
+// (success / danger / accent) instead of a coloured fill, so it stays readable on both schemes.
+const BUTTON_TONE: Record<string, string> = {
+    green: 'text-[var(--kb-success)]',
+    red: 'text-[var(--kb-danger)]',
+    blue: 'text-[var(--kb-accent)]',
+    primary: 'text-[var(--kb-accent)]',
+};
 
 const EyeNotification: React.FC = () => {
-    const notification = useAppStore(state => state.eyeNotification);
-    const hideEyeNotification = useAppStore(state => state.hideEyeNotification);
-    const orientation = useAppStore(state => state.orientation);
-    const edgePosition = useAppStore(state => state.edgePosition);
-    const design = useAppStore(state => state.design);
-    const glassOpacity = useAppStore(state => state.glassOpacity);
+    const t = useT();
+    const notification = useAppStore((state) => state.eyeNotification);
+    const hideEyeNotification = useAppStore((state) => state.hideEyeNotification);
+    const orientation = useAppStore((state) => state.orientation);
+    const edgePosition = useAppStore((state) => state.edgePosition);
 
     if (!notification || !notification.isVisible) return null;
 
@@ -18,57 +29,58 @@ const EyeNotification: React.FC = () => {
         positionClasses = edgePosition === 'left' ? 'left-full ml-4 bottom-0' : 'right-full mr-4 bottom-0';
     }
 
+    const lines = notification.message.split(/\\n|\n/);
+
     return (
-        <div 
+        <div
+            role="status"
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className={`absolute ${positionClasses} z-[100] w-64 p-4 rounded-2xl shadow-2xl animate-pop-in pointer-events-auto
-                ${design === 'style2' ? ('backdrop-blur-(--kb-blur-notification)' + ' border border-stroke') : 'bg-[var(--theme-bg-dark)] border border-[var(--theme-border)]'}`}
-            style={{
-                backgroundColor: design === 'style2' 
-                    ? `color-mix(in srgb, var(--theme-bg-dark) ${glassOpacity}%, transparent)` 
-                    : 'var(--theme-bg-dark)'
-            }}
+            className={`absolute ${positionClasses} z-[100] flex w-64 flex-col gap-3 rounded-[18px] bg-[var(--kb-fg-1)] py-3 ps-4 pe-2 text-[var(--kb-bg-shell)] shadow-e2 animate-pop-in pointer-events-auto`}
         >
-            <p className="text-sm text-fg-1 mb-4">
-                {notification.message.split(/\\n|\n/).map((line, i) => (
-                    <React.Fragment key={i}>
-                        {line}
-                        {i < notification.message.split(/\\n|\n/).length - 1 && <br />}
-                    </React.Fragment>
-                ))}
-            </p>
-            
+            <div className="flex items-start gap-2.5">
+                <Icon name="info" size={20} className="mt-0.5" />
+                <p className="min-w-0 flex-1 [font:var(--kb-type-body)]">
+                    {lines.map((line, i) => (
+                        <React.Fragment key={i}>
+                            {line}
+                            {i < lines.length - 1 && <br />}
+                        </React.Fragment>
+                    ))}
+                </p>
+                <button
+                    type="button"
+                    aria-label={t('hydrationFailedDismiss')}
+                    onClick={hideEyeNotification}
+                    className={cx(
+                        INTERACTIVE,
+                        'inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_oklab,var(--kb-bg-shell)_14%,transparent)]'
+                    )}
+                >
+                    <Icon name="close" size={18} />
+                </button>
+            </div>
+
             {notification.buttons && notification.buttons.length > 0 && (
-                <div className="flex gap-2 justify-end">
-                    {notification.buttons.map((btn, idx) => {
-                        let btnColorClass = 'bg-fill-selected hover:bg-fill-hover text-fg-1';
-                        if (btn.color === 'green') btnColorClass = 'bg-green-600 hover:bg-green-500 text-white';
-                        if (btn.color === 'red') btnColorClass = 'bg-red-600 hover:bg-red-500 text-white';
-                        if (btn.color === 'blue') btnColorClass = 'bg-blue-600 hover:bg-blue-500 text-white';
-                        if (btn.color === 'primary') btnColorClass = 'bg-primary/80 hover:bg-primary text-[var(--kb-on-accent)]';
-                        
-                        return (
-                            <button 
-                                key={idx}
-                                onClick={() => {
-                                    btn.onClick();
-                                }}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${btnColorClass}`}
-                            >
-                                {btn.label}
-                            </button>
-                        );
-                    })}
+                <div className="flex flex-wrap justify-end gap-1 pe-1">
+                    {notification.buttons.map((btn, idx) => (
+                        <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                                btn.onClick();
+                            }}
+                            className={cx(
+                                INTERACTIVE,
+                                'inline-flex h-8 items-center rounded-full px-3 [font:var(--kb-type-label)] transition-colors hover:bg-[color-mix(in_oklab,var(--kb-bg-shell)_14%,transparent)]',
+                                BUTTON_TONE[btn.color] ?? 'text-[var(--kb-bg-container)]'
+                            )}
+                        >
+                            {btn.label}
+                        </button>
+                    ))}
                 </div>
             )}
-            
-            <button 
-                onClick={hideEyeNotification} 
-                className="absolute -top-2 -right-2 w-6 h-6 bg-surface text-fg-2 rounded-full hover:text-fg-1 border border-[var(--theme-border)] flex items-center justify-center transition-colors"
-            >
-                <span className="material-symbols-outlined text-[14px]">close</span>
-            </button>
         </div>
     );
 };

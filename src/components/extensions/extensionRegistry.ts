@@ -1,16 +1,26 @@
 import React from 'react';
+import type { BarItemChange, BarItemState, TileDeclaration } from '../../../shared/barPresentation';
+import { barClear, barDropExtension, barOnItemChange, barRegisterButton, barRegisterManifest, barSetItemState } from './barPresentation';
 
 export interface ExtensionButton {
     id: string;
     icon: string;
     label: string;
-    onClick: (e: React.MouseEvent<HTMLButtonElement>, anchorRect: { top: number; left: number; bottom: number; right: number; width: number; height: number; } | null) => void;
+    onClick: (
+        e: React.MouseEvent<HTMLButtonElement>,
+        anchorRect: { top: number; left: number; bottom: number; right: number; width: number; height: number } | null
+    ) => void;
     isActive?: boolean;
+    /** Canlı: optional tile declaration (same shape as the manifest's `bar.tile`). Unknown fields are dropped. */
+    tile?: TileDeclaration;
 }
 
 export interface ExtensionPanel {
     id: string;
-    render: (props: { onClose: () => void; anchorRect: { top: number; left: number; bottom: number; right: number; width: number; height: number; } | null }) => React.ReactNode;
+    render: (props: {
+        onClose: () => void;
+        anchorRect: { top: number; left: number; bottom: number; right: number; width: number; height: number } | null;
+    }) => React.ReactNode;
 }
 
 export interface ExtensionSettingsPanel {
@@ -58,6 +68,7 @@ class ExtensionRegistry {
 
     registerManifest(id: string, manifest: any) {
         this.manifests.set(id, manifest);
+        barRegisterManifest(id, manifest);
     }
 
     getManifest(id: string) {
@@ -65,10 +76,24 @@ class ExtensionRegistry {
     }
 
     registerSidebarButton(button: ExtensionButton) {
-        this.buttons = this.buttons.filter(b => b.id !== button.id);
+        this.buttons = this.buttons.filter((b) => b.id !== button.id);
         this.buttons.push(button);
         this.trackOwner('button', button.id);
+        barRegisterButton(button.id, this.owners.button.get(button.id) ?? null, button.tile);
         this.notify();
+    }
+
+    /**
+     * Canlı: sets the dynamic state of a bar item (label, value, progress...). May be called any time, also from timers
+     * and promises. Values are sanitised and throttled by the host; v1 has no isolation between plugins.
+     */
+    setBarItemState(id: string, state: BarItemState) {
+        barSetItemState(id, state);
+    }
+
+    /** Canlı: calls `listener` now and whenever size, visibility, privacy, locale or auto-collapse of item `id` changes. */
+    onBarItemChange(id: string, listener: (change: BarItemChange) => void): () => void {
+        return barOnItemChange(id, listener);
     }
 
     registerPanel(panelId: string, panel: ExtensionPanel) {
@@ -111,6 +136,7 @@ class ExtensionRegistry {
         const kinds = Object.keys(this.owners) as RegistrationKind[];
         if (kinds.some((kind) => Array.from(this.owners[kind].values()).includes(null))) return false;
         const owned = (kind: RegistrationKind, id: string) => this.owners[kind].get(id) === extensionId;
+        const ownedButtonIds = this.buttons.filter((b) => owned('button', b.id)).map((b) => b.id);
         this.buttons = this.buttons.filter((b) => !owned('button', b.id));
         for (const [map, kind] of [
             [this.panels, 'panel'],
@@ -127,6 +153,7 @@ class ExtensionRegistry {
             }
         }
         this.manifests.delete(extensionId);
+        barDropExtension(extensionId, ownedButtonIds);
         this.notify();
         return true;
     }
@@ -158,7 +185,7 @@ class ExtensionRegistry {
 
     notify() {
         if (!this.isSuspended) {
-            this.listeners.forEach(l => l());
+            this.listeners.forEach((l) => l());
         }
     }
 
@@ -192,6 +219,7 @@ class ExtensionRegistry {
         this.inlineWidgets.clear();
         this.manifests.clear();
         for (const owners of Object.values(this.owners)) owners.clear();
+        barClear();
         this.notify();
     }
 }
@@ -211,7 +239,7 @@ export function useExtensionRegistry() {
     const [, setTick] = React.useState(0);
     React.useEffect(() => {
         return registry.subscribe(() => {
-            setTick(t => t + 1);
+            setTick((t) => t + 1);
         });
     }, []);
     return registry;
@@ -222,7 +250,7 @@ export function useExtensionRegistry() {
  */
 export function usePluginData<T = any>(pluginId: string, defaultValue?: T): [T, (data: T | ((prev: T) => T)) => void] {
     const getStore = () => (typeof window !== 'undefined' && window.useAppStore ? window.useAppStore.getState() : null);
-    
+
     // Subscribe to workspace switches and plugin data changes
     const [data, setDataState] = React.useState<T>(() => {
         const store = getStore();
@@ -258,18 +286,20 @@ export function usePluginData<T = any>(pluginId: string, defaultValue?: T): [T, 
         };
     }, [pluginId, defaultValue]);
 
-    const setPluginData = React.useCallback((nextValueOrUpdater: T | ((prev: T) => T)) => {
-        const store = getStore();
-        if (!store) return;
+    const setPluginData = React.useCallback(
+        (nextValueOrUpdater: T | ((prev: T) => T)) => {
+            const store = getStore();
+            if (!store) return;
 
-        const current = store.getPluginData(pluginId, defaultValue);
-        const resolvedValue = typeof nextValueOrUpdater === 'function'
-            ? (nextValueOrUpdater as (prev: T) => T)(current)
-            : nextValueOrUpdater;
+            const current = store.getPluginData(pluginId, defaultValue);
+            const resolvedValue =
+                typeof nextValueOrUpdater === 'function' ? (nextValueOrUpdater as (prev: T) => T)(current) : nextValueOrUpdater;
 
-        store.setPluginData(pluginId, resolvedValue);
-        setDataState(resolvedValue);
-    }, [pluginId, defaultValue]);
+            store.setPluginData(pluginId, resolvedValue);
+            setDataState(resolvedValue);
+        },
+        [pluginId, defaultValue]
+    );
 
     return [data, setPluginData];
 }

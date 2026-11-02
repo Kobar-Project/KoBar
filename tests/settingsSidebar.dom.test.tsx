@@ -73,7 +73,7 @@ const groups = (host: HTMLElement) => [...host.querySelectorAll<HTMLElement>('[r
 const radios = (group: HTMLElement) => [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
 const labelOf = (group: HTMLElement) => document.getElementById(group.getAttribute('aria-labelledby')!)!.textContent;
 const rows = (host: HTMLElement) => [...host.querySelectorAll<HTMLElement>('ol > li')];
-const moveButtons = (row: HTMLElement) => [...row.querySelectorAll<HTMLButtonElement>('button')];
+const moveButtons = (row: HTMLElement) => [...row.querySelectorAll<HTMLButtonElement>('button:not([role="radio"])')];
 
 afterEach(() => {
     cleanup();
@@ -137,7 +137,7 @@ describe('SidebarPage', () => {
         ]);
         expect(checked(edge).textContent).toContain(tEn('settingsEdgeTop'));
         expect(host.textContent?.toLowerCase()).not.toContain('smart');
-        expect(host.querySelector('[role="switch"]')).toBeNull();
+        expect(host.querySelectorAll('[role="switch"]')).toHaveLength(1); // the notes tab only
     });
 
     it('falls back to the density derived from sidebarWidth', () => {
@@ -190,11 +190,41 @@ describe('SidebarPage', () => {
         expect(applySettingsAction(useAppStore, bridge.sent[0], () => {})).toMatchObject({ ok: true });
     });
 
+    it('sends the whole new size map when a button size changes', () => {
+        ready({ barItemSizes: { kobox: 'tile' } });
+        const { host } = render(<SidebarPage t={tEn} />);
+        const first = radios(rows(host)[0].querySelector<HTMLElement>('[role="radiogroup"]')!);
+        expect(first.map((r) => r.getAttribute('aria-checked'))).toEqual(['true', 'false']); // missing key = icon
+        click(first[1]);
+        click(first[0]); // already selected: nothing is sent
+        expect(sent()).toEqual([{ type: 'setBarItemSizes', payload: { kobox: 'tile', 'com.kobar.aihub.btn': 'tile' } }]);
+        useAppStore.setState({ isHydrated: true });
+        expect(applySettingsAction(useAppStore, bridge.sent[0], () => {})).toMatchObject({ ok: true });
+    });
+
+    it('lists every button in order: no hidden section (owner decision: everything enabled is on the bar)', () => {
+        ready({ barHiddenItems: ['todolist-plugin-btn'] });
+        const { host } = render(<SidebarPage t={tEn} />);
+        const list = rows(host);
+        expect(list.map((r) => r.hasAttribute('data-hidden'))).toEqual([false, false, false]);
+        expect(list.some((r) => r.textContent?.includes('Todolist'))).toBe(true);
+        expect(list.flatMap(moveButtons).some((b) => b.textContent?.includes(tEn('barItemShow')))).toBe(false);
+    });
+
+    it('dispatches the notes tab switch', () => {
+        ready({ notesTabVisible: true });
+        const { host } = render(<SidebarPage t={tEn} />);
+        const toggle = host.querySelector<HTMLElement>('[role="switch"]')!;
+        expect(toggle.getAttribute('aria-checked')).toBe('true');
+        click(toggle);
+        expect(sent()).toEqual([{ type: 'setNotesTabVisible', payload: false }]);
+    });
+
     it('is mounted by the Settings shell as the Sidebar page', () => {
         ready();
         const { host } = render(<SettingsApp lang="en" />);
         click([...host.querySelectorAll<HTMLButtonElement>('nav button')].find((b) => b.textContent?.includes(tEn('settingsSidebar')))!);
         expect(host.querySelector('ol')).not.toBeNull();
-        expect(groups(host)).toHaveLength(3);
+        expect(groups(host)).toHaveLength(6); // density, orientation, edge + one size group per button
     });
 });

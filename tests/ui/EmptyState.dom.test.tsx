@@ -11,14 +11,14 @@ describe('EmptyState', () => {
         );
         expect(host.textContent).toContain('No tasks yet');
         expect(host.textContent).toContain('Add one with the + button.');
-        expect(host.querySelector('.material-symbols-outlined')!.getAttribute('aria-hidden')).toBe('true');
+        expect(host.querySelector('.kb-icon')!.getAttribute('aria-hidden')).toBe('true');
         expect(getByRole('button', host).textContent).toBe('Add task');
     });
 
     it('omits empty slots', () => {
         const { host } = render(<EmptyState title="Nothing here" />);
         expect(host.querySelectorAll('p')).toHaveLength(1);
-        expect(host.querySelector('.material-symbols-outlined')).toBeNull();
+        expect(host.querySelector('.kb-icon')).toBeNull();
     });
 });
 
@@ -27,7 +27,7 @@ describe('Skeleton', () => {
         const { host } = render(<Skeleton width={120} />);
         const el = host.querySelector<HTMLElement>('[data-skeleton]')!;
         expect(el.getAttribute('aria-hidden')).toBe('true');
-        expect(el.className).toContain('bg-[var(--kb-fill-selected)]');
+        expect(el.className).toContain('bg-inset');
         expect(el.className).not.toMatch(/animate-/);
         expect(el.style.width).toBe('120px');
         expect(el.style.height).toBe('12px');

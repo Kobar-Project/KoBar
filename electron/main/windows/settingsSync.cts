@@ -18,6 +18,7 @@ import { createSettingsRelay, type SettingsRelay } from '../../lib/settingsSync.
 import type { IpcRegistry } from '../ipc/registry.cjs';
 import { SETTINGS_ACTION_OPTIONS, SETTINGS_PUBLISH_STATE_OPTIONS, SETTINGS_REQUEST_STATE_OPTIONS } from '../ipc/schemas.cjs';
 import { appState } from '../state.cjs';
+import { installGrants } from '../services/extensions/installGrants.cjs';
 
 const watched = new WeakSet<WebContents>();
 
@@ -56,6 +57,9 @@ export function registerSettingsSyncIpc(registry: IpcRegistry): SettingsRelay {
         current.requestState();
     });
     registry.on('settings:action', SETTINGS_ACTION_OPTIONS, (_event, action) => {
+        // CNL: an install / update clicked in the Settings window (this channel accepts only its top frame) is the owner's own
+        // decision, so the GitHub install it leads to does not ask again (electron/lib/installGrants.cts). Granted before relaying.
+        installGrants.grantFromSettingsAction(action.type, action.payload);
         // Only the three known fields travel on (the registry hands over the original object; extra fields are never forwarded).
         current.action({ id: action.id, type: action.type, payload: action.payload });
         // T-610: the v1 plugin settings panel opens in the main window, so bring that window forward (no new channel; the main

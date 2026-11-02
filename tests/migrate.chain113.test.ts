@@ -24,7 +24,7 @@ describe('1.1.3 (v21) -> current chain', () => {
         input.notes.push({ id: 4, title: 'Plugins', icon: 'extension', emoji: null, content: '', isPlugins: true });
         input.nextNoteId = 5;
 
-        expect(KOBAR_STORAGE_VERSION).toBe(32);
+        expect(KOBAR_STORAGE_VERSION).toBe(33);
         const out = migrateKobarStorage(input, fixture.version) as S;
 
         // Real notes survive unchanged, pseudo-notes are gone.

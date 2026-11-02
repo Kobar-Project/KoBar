@@ -1,6 +1,6 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { cx } from './cx';
-import { FIELD_CONTROL, FIELD_INTERACTIVE, fieldBorder, hasErrorMessage, useFieldIds } from './fieldProps';
+import { FIELD_CONTROL, FIELD_INTERACTIVE, FIELD_SHAPE, fieldBorder, hasErrorMessage, useFieldIds } from './fieldProps';
 import { FieldShell } from './FieldShell';
 import { Icon } from './Icon';
 
@@ -44,8 +44,9 @@ export function Select({ label, hideLabel = false, hint, error, options, id, dis
                     className={cx(
                         FIELD_INTERACTIVE,
                         FIELD_CONTROL,
+                        FIELD_SHAPE,
                         fieldBorder(invalid),
-                        'cursor-pointer appearance-none ps-3 pe-8 *:bg-surface *:text-fg-1'
+                        'cursor-pointer appearance-none ps-4 pe-[42px] [font:var(--kb-type-body-strong)] *:bg-surface *:text-fg-1'
                     )}
                 >
                     {options
@@ -56,7 +57,7 @@ export function Select({ label, hideLabel = false, hint, error, options, id, dis
                           ))
                         : children}
                 </select>
-                <Icon name="expand_more" size={16} className="pointer-events-none absolute end-2 text-fg-2" />
+                <Icon name="expand_more" size={20} className="pointer-events-none absolute end-3.5 text-fg-2" />
             </div>
         </FieldShell>
     );

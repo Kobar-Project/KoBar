@@ -14,7 +14,14 @@ import {
 } from '../store/appearance';
 import { DEFAULT_DENSITY, isDensity } from '../store/density';
 import { startThemeSync } from '../theme';
-import { applyRootAppearance, effectiveThemePrefs, type RootAppearance, type ThemeSource } from '../theme/root';
+import {
+    applyRootAppearance,
+    applyRootCanli,
+    effectiveThemePrefs,
+    type RootAppearance,
+    type RootCanli,
+    type ThemeSource,
+} from '../theme/root';
 import type { SettingsMirrorState } from './mirror';
 
 export type MirroredAppearance = ThemeSource & RootAppearance;
@@ -35,6 +42,14 @@ export function readMirroredAppearance(state: Partial<Record<string, unknown>>):
         design,
         material: isMaterial(state.material) ? state.material : DEFAULT_MATERIAL,
         density: isDensity(state.density) ? state.density : DEFAULT_DENSITY,
+    };
+}
+
+/** Canlı (CNL-03): `tonalSurfaces` (default on) and `privacyMode` (default off) of a snapshot; a non-boolean falls back to the default. */
+export function readMirroredCanli(state: Partial<Record<string, unknown>>): RootCanli {
+    return {
+        tonalSurfaces: typeof state.tonalSurfaces === 'boolean' ? state.tonalSurfaces : true,
+        privacyMode: typeof state.privacyMode === 'boolean' ? state.privacyMode : false,
     };
 }
 
@@ -60,11 +75,13 @@ export function startSettingsAppearanceSync(store: MirrorStoreLike, root: HTMLEl
         const appearance = readMirroredAppearance(mirror.state as unknown as Partial<Record<string, unknown>>);
         applyTheme(true, appearance);
         applyRootAppearance(root, appearance);
+        applyRootCanli(root, readMirroredCanli(mirror.state as unknown as Partial<Record<string, unknown>>));
     }
 
     applyTheme(false, { scheme: DEFAULT_SCHEME, accent: DEFAULT_ACCENT, customThemeColor: DEFAULT_CUSTOM_THEME_COLOR });
     root.setAttribute('data-density', DEFAULT_DENSITY);
     root.setAttribute('data-material', DEFAULT_MATERIAL);
+    applyRootCanli(root, { tonalSurfaces: true, privacyMode: false });
     apply(store.getState());
     const unsubscribe = store.subscribe(apply);
     return () => {

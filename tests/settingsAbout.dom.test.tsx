@@ -53,6 +53,7 @@ describe('AboutPage', () => {
         }
         expect(host.textContent).toContain('KoBar was made by Ekrem EDALI.');
         expect(hrefs).toContain('https://github.com/eedali');
-        expect(host.textContent!.toLowerCase()).not.toContain('licen');
+        // No paid-licence section; the only mention is the "MIT license" chip of the open-source app.
+        expect(host.textContent!.replace(en.aboutLicense, '').toLowerCase()).not.toContain('licen');
     });
 });

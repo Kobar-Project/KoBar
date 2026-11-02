@@ -6,6 +6,7 @@ import { app, BrowserWindow, ipcMain, Notification, screen } from 'electron';
 import * as path from 'path';
 import { secureWebPreferences } from '../../lib/webPrefs.cjs';
 import { parsePinPositionReply } from '../../lib/pinPosition.cjs';
+import { buildPinTargetScript } from '../../lib/pinTarget.cjs';
 import {
     type CssSlot,
     type PinBorderStyle,
@@ -78,6 +79,32 @@ export function initPinBorderStyle(userDataPath: string) {
     pinBorderStyle = readPinStyleFile(pinStylePath);
 }
 
+/** Decimal native handles of every KoBar window (they must never be the pin target). */
+function ownWindowHandles(): string[] {
+    const handles: string[] = [];
+    for (const win of BrowserWindow.getAllWindows()) {
+        if (win.isDestroyed()) continue;
+        try {
+            const buf = win.getNativeWindowHandle();
+            handles.push(buf.length >= 8 ? buf.readBigUInt64LE(0).toString() : String(buf.readUInt32LE(0)));
+        } catch {
+            // A window being torn down has no handle any more.
+        }
+    }
+    return handles;
+}
+
+/**
+ * CNL: leaves pin targeting (if armed) without pinning anything, and resets the plugin's targeting UI. Called before KoBar hides
+ * its own window for a capture, so that blur does not complete the request and pin the desktop.
+ */
+export function cancelPinTargeting(): void {
+    if (!appState.isAwaitingPinTarget) return;
+    appState.isAwaitingPinTarget = false;
+    const win = appState.mainWindow;
+    if (win && !win.isDestroyed()) win.webContents.send('pin-targeting-complete');
+}
+
 /** Registers the main window blur listener that completes a pin request. Call from the app 'ready' callback, as before. */
 export function registerPinTargetingHandler() {
     app.on('browser-window-blur', (_event, window) => {
@@ -86,24 +113,9 @@ export function registerPinTargetingHandler() {
             // Wait 200ms for the OS to fully focus the new third-party window
             setTimeout(() => {
                 if (isWin) {
-                    const psPinScript = (id: number) => `
-                    $hwnd = [K]::GetForegroundWindow()
-                    $GWL_EXSTYLE = -20
-                    $WS_EX_TOPMOST = 0x0008
-                    $HWND_TOPMOST = -1
-                    $HWND_NOTOPMOST = -2
-                    
-                    $exStyle = [K]::GetWindowLong($hwnd, $GWL_EXSTYLE)
-                    if (($exStyle -band $WS_EX_TOPMOST) -eq $WS_EX_TOPMOST) {
-                        # Already TopMost, so UNPIN it
-                        [K]::SetWindowPos($hwnd, $HWND_NOTOPMOST, 0, 0, 0, 0, 3)
-                        Write-Output "${id}|UNPINNED:$hwnd"
-                    } else {
-                        # Not TopMost, so PIN it
-                        [K]::SetWindowPos($hwnd, $HWND_TOPMOST, 0, 0, 0, 0, 3)
-                        Write-Output "${id}|PINNED:$hwnd"
-                    }
-                    `;
+                    // CNL: the desktop shell, the taskbars and KoBar's own windows are never pinned (electron/lib/pinTarget.cts).
+                    const own = ownWindowHandles();
+                    const psPinScript = (id: number) => buildPinTargetScript(id, own);
                     if (isPsAvailable()) {
                         psRequest((id) => psPinScript(id) + '\n', { timeoutMs: 10000 }).then((output) => {
                             if (!output) return;

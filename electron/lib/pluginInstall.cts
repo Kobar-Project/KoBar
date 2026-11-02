@@ -3,6 +3,7 @@ import * as nodePath from 'path';
 import { isSafeId, resolveInsideWith } from './paths.cjs';
 import { isOfficialGithubOwner, isOfficialPluginId } from './officialPlugins.cjs';
 import type { ZipLike } from './zipGuards.cjs';
+import { sanitizeBarBlock } from '../../shared/barManifest.js';
 
 /** Where a plugin package comes from. */
 export type InstallSource =
@@ -15,7 +16,8 @@ export interface InstallValidationOptions {
     allowOfficialFromLocal?: boolean;
 }
 
-export type InstallValidationResult = { ok: true; id: string } | { ok: false; reason: string };
+/** `warnings` is only present when the optional `bar` block had problems (it is ignored, never a reason to refuse). */
+export type InstallValidationResult = { ok: true; id: string; warnings?: string[] } | { ok: false; reason: string };
 
 const GITHUB_OWNER_RE = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
 const GITHUB_REPO_RE = /^[A-Za-z0-9._-]{1,100}$/;
@@ -101,5 +103,7 @@ export function validateManifestForInstall(
             };
         }
     }
-    return { ok: true, id: m.id };
+    // Canlı: the optional `bar` block is advisory. Problems are reported, the install is never refused because of it.
+    const { warnings } = sanitizeBarBlock(m.bar);
+    return warnings.length > 0 ? { ok: true, id: m.id, warnings } : { ok: true, id: m.id };
 }

@@ -4,6 +4,53 @@ All notable changes to KoBar are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.0] - 2026-11-02
+
+The "Canlı" release: a new look for the whole app. Stored data moves from `kobar-storage` v32 to v33 with a migration that keeps
+every existing bar exactly as it was (all items stay icons, same order, nothing hidden). The plugin contract is unchanged and
+gains additive, optional parts (bar tiles); every v1 plugin keeps working.
+
+### Added
+
+- Bar tiles. Any bar item can be shown as a tile (item menu > "Show as tile", or Settings > Sidebar > Size). As soon as one item is a
+  tile the bar becomes the wide bar: tiles show a plugin's live state (a value with a caption, a progress ring, level bars, a slot
+  meter, a badge or a plugin-drawn tile) and the remaining icons sit in a two-column grid. Without tiles the thin bar looks as
+  before. Fresh installs start with To-Do List and Clipboard Manager as tiles.
+- Privacy mode (bar menu): tiles that a plugin marks as sensitive show only their icon and name.
+- New settings: "Tinted surfaces" (backgrounds take a light tone of the accent colour, on by default), "Show the notes tab" (on
+  by default) and the per-item size in Settings > Sidebar.
+- The mini button (mini mode) shows the sum of the plugin badges.
+- Plugin API, additive and optional: `registerSidebarButton({ tile })`, `KoBarExtensions.setBarItemState(id, state)`,
+  `KoBarExtensions.onBarItemChange(listener)` and a manifest `bar` block (`tile`, `defaultSize`). Updates are rate limited, text
+  is bounded, a failing custom tile falls back to the label tile. Hosts without these parts ignore them; plugins feature-detect.
+- Screenshot captures carry each display's work area (additive field), so a plugin can keep its toolbar clear of the taskbar.
+
+### Changed
+
+- New design system "Canlı": accent-tinted tonal surfaces, Figtree and Outfit fonts (bundled), Material Symbols Rounded icons,
+  rounder shapes, new buttons, switches, tabs, menus, dialogs and toasts, in light and dark.
+- The Settings window is redesigned: navigation rail, page header and card layout on all pages, a live preview of the bar in
+  Appearance. It opens at 1120 x 720 (clamped to the screen) so the navigation is not collapsed, and its page never scrolls into
+  empty space.
+- Note panel, note list, note editor and all host panels use the new panel header and cards.
+- Every enabled plugin stays on the bar: the "More" overflow menu and "Hide from bar" are gone; a long bar scrolls in the middle.
+- Plugin installs and updates started with a click in Settings > Plugins no longer ask again in a native dialog. The click grants
+  exactly that one plugin (or "Update all") for a few seconds; installs a plugin starts on its own, drag and drop and replacing an
+  installed plugin still ask. Remaining dialogs open in front of the Settings window.
+- Older (v1) plugin panels use the darker panel tone instead of a lighter surface; single-button v1 widgets sit in the wide bar's
+  icon grid, larger ones (Clipboard Manager slots) get their own block and are no longer clipped in the compact density.
+- AI requests (AI Hub) go through Chromium's network stack, so system proxies and certificates apply; a network error now names
+  its cause instead of "fetch failed". Default models for fresh installs: `claude-sonnet-5-5`, `gpt-6.1-sol`,
+  `gemini-3.8-flash` (saved choices are not changed).
+
+### Fixed
+
+- Taking a screenshot no longer pins the desktop window (a light-blue frame around the whole screen). Pin targeting never picks
+  the desktop, the taskbar or KoBar's own windows.
+- The bar marks a plugin's button active while its panel is open, even when the button and panel ids differ.
+- The colour picker's eyedropper restores the bar's click-through when it ends.
+- Plugin ZIPs made on a Mac (Finder metadata) install cleanly.
+
 ## [1.4.3] - 2026-10-16
 
 No stored data changes (`kobar-storage` stays at v32) and the plugin contract is unchanged (`window.api` gains three additive methods: `pickTextFiles`, `takeOpenTextFiles`, `onOpenTextFilesAvailable`).

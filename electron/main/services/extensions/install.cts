@@ -31,6 +31,7 @@ import { currentDialogParent } from '../../app/helpers.cjs';
 import { notifyBlockedFileAccess } from '../notifications.cjs';
 import type { ExtensionsConfigStore } from './config.cjs';
 import { type PluginConfirm, declinedReason } from './confirm.cjs';
+import { installGrants } from './installGrants.cjs';
 import type { ExtensionOrigins } from './origins.cjs';
 
 export interface ExtensionInstallDeps {
@@ -131,6 +132,7 @@ export function registerExtensionInstallIpc(deps: ExtensionInstallDeps): void {
             await fs.promises.rm(tempExtractDir, { recursive: true, force: true });
             return { success: false, reason: validation.reason };
         }
+        for (const warning of validation.warnings ?? []) console.warn(`[Extensions] ${validation.id}: ${warning}`);
         // T-220: this host runs plugin API v1 only. A plugin that needs a newer API or app is refused here, before anything
         // is moved into extensions/ (every install and update path goes through this function).
         const gate = checkPluginApiGate(manifest, app.getVersion());
@@ -298,10 +300,8 @@ export function registerExtensionInstallIpc(deps: ExtensionInstallDeps): void {
             }
             recordDialogPick(dialogPathsFile, 'install-zip', filePaths[0]);
 
-            const outcome = await confirmPluginAction({ kind: 'zip', fileName: path.basename(filePaths[0]) });
-            if (outcome !== 'ok') {
-                return { success: false, reason: declinedReason(outcome) };
-            }
+            // CNL: picking the file in main's own native dialog is the user's decision; no second confirmation (owner request).
+            // Replacing an installed plugin still asks inside installExtensionFromZipPath.
             return await installExtensionFromZipPath(filePaths[0]);
         } catch (e: any) {
             console.error('Failed to install extension from file:', e);
@@ -347,7 +347,11 @@ export function registerExtensionInstallIpc(deps: ExtensionInstallDeps): void {
             // When the repo is the recorded origin of an installed plugin, the dialog says "update" and warns
             // if that origin was only taken from the plugin's own manifest (legacy install).
             const update = await withInstallLock(() => findUpdateTarget(repo));
-            const outcome = await confirmPluginAction(update ? { kind: 'github', repo, update } : { kind: 'github', repo });
+            // CNL: an install / update the owner clicked in the Settings window carries a grant and does not ask again; a call
+            // without one (e.g. a plugin through window.api) still gets the native confirmation. The grant is for one plugin id.
+            const outcome = installGrants.consume(update ? 'update' : 'install', id)
+                ? 'ok'
+                : await confirmPluginAction(update ? { kind: 'github', repo, update } : { kind: 'github', repo });
             if (outcome !== 'ok') {
                 return { success: false, reason: declinedReason(outcome) };
             }

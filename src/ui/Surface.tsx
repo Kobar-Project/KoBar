@@ -3,7 +3,7 @@ import { cx } from './cx';
 
 export type SurfaceLevel = 'shell' | 'surface' | 'inset';
 export type SurfaceElevation = 'e0' | 'e1' | 'e2' | 'e3';
-export type SurfaceRadius = 'none' | 'sm' | 'md' | 'lg' | 'xl';
+export type SurfaceRadius = 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 export type SurfaceElement = 'div' | 'section' | 'aside' | 'header' | 'footer' | 'nav' | 'main';
 
 export interface SurfaceProps extends HTMLAttributes<HTMLElement> {
@@ -39,9 +39,17 @@ const RADIUS_CLASS: Record<SurfaceRadius, string> = {
     md: 'rounded-md',
     lg: 'rounded-lg',
     xl: 'rounded-xl',
+    '2xl': 'rounded-2xl',
 };
 
-/** Background/elevation container. Not interactive itself; it only opts out of the overlay's pointer-events-none. */
+// Card level (surface, no elevation): the light scheme adds a 1 px line, dark cards separate by tone alone. Written as
+// box-shadow: so it never reads as an elevation shadow.
+const CARD_LINE = '[[data-scheme=light]_&]:[box-shadow:inset_0_0_0_1px_var(--kb-card-line)]';
+
+/**
+ * Background/elevation container (card = level surface, radius xl; floating levels e2/e3 carry the subtle 1 px stroke).
+ * Not interactive itself; it only opts out of the overlay's pointer-events-none.
+ */
 export function Surface({
     as = 'div',
     level = 'surface',
@@ -58,6 +66,7 @@ export function Surface({
             'pointer-events-auto text-fg-1',
             useMaterial ? 'bg-[var(--kb-material-bg)] [backdrop-filter:var(--kb-material-blur)]' : LEVEL_CLASS[level],
             ELEVATION_CLASS[elevation],
+            level === 'surface' && elevation === 'e0' && CARD_LINE,
             RADIUS_CLASS[radius],
             className
         ),

@@ -206,6 +206,9 @@ state machines.
 | Member | For plugins | Notes |
 |---|---|---|
 | `registerSidebarButton({ id, icon, label, onClick })` | yes | `icon`: Material Symbols Outlined name. `label`: tooltip. `onClick(event, anchorRect)`: `anchorRect` is the bar's rectangle (`{ top, left, bottom, right, width, height }`, window coordinates). Re-registering an id replaces the button. An `isActive` field is ignored; the host derives the active marker from the open panel. |
+| `registerSidebarButton({ …, tile })` | yes | Optional `tile` field: a tile declaration (`{ template, sensitive, live, pinnable, render }`) that takes precedence over the manifest's `bar.tile`. Section 2.1. |
+| `setBarItemState(id, state)` | yes, newer hosts | Sets what the bar shows for item `id` (label, value, progress, badge …). Section 2.1. |
+| `onBarItemChange(id, listener)` | yes, newer hosts | Tells you when the item's size, visibility, privacy mode or language changes. Returns an unsubscribe function. Section 2.1. |
 | `registerPanel(id, { id, render })` | yes | `render({ onClose, anchorRect })` returns one root element. Shown while `useAppStore.getState().activeExtensionPanelId === id`. |
 | `registerSettingsPanel(pluginId, { id, render })` | yes | Key = **your plugin id** (`dev-<id>` in the playground). `render()` gets no props. |
 | `registerInlineWidget(id, { id, render })` | yes | Rendered directly in the bar, in the user's order, inside a dark-scheme `display: contents` wrapper. |
@@ -215,6 +218,59 @@ state machines.
 
 Do not mutate the registry's internal `buttons` / `panels` fields (one legacy official plugin does; it is kept working, but new
 code must not copy it).
+
+### 2.1 Bar presentation: tiles and live state (newer hosts)
+
+Every bar item can be shown as an icon or as a larger tile. The user chooses the size per workspace; a plugin never sets it. A
+plugin that gives no tile data still gets a tile (icon, short name, badge). These additions are optional and never change the
+older members. Detect them first, because older hosts lack them:
+
+```js
+const bar = window.KoBarExtensions;
+if (typeof bar.setBarItemState === 'function') {
+  bar.registerSidebarButton({ id: 'focus-btn', icon: 'hourglass_top', label: 'Focus', onClick: toggle, tile: { template: 'ring', live: true } });
+  bar.setBarItemState('focus-btn', { label: 'Focus: 18 minutes left', value: '18:42', progress: 0.75 });
+  const off = bar.onBarItemChange('focus-btn', ({ visible }) => (visible ? startTicking() : stopTicking()));
+  // call off() from your cleanup
+}
+```
+
+**Tile declaration** (the `tile` field above, or `bar.tile` in `manifest.json`; the registration value wins field by field):
+
+| Field | Meaning |
+|---|---|
+| `template` | `value-caption`, `ring`, `level`, `meter`, `badge` or `custom`. Absent or unknown: the host label template. |
+| `sensitive` | `true` hides values (and names and tooltips) in privacy mode. Set it for anything personal. |
+| `live` | The value changes on its own (timer, player): enables the heartbeat check. |
+| `pinnable` | `ring` only: may be pinned around the mini-mode orb. |
+| `render(ctx)` | `custom` only: presentational React content drawn inside the host's tile button. `ctx` is `{ width, height, scheme, accent, reducedMotion, locale, privacy }`. Draw inside the box, no `<button>`, no portals, no fixed positioning, no animation loops. |
+
+Unknown fields are dropped. A `custom` template without a `render` function falls back to the label template.
+
+**`setBarItemState(id, state)`**: callable at any time, also from timers and promises. It is not a registration and has no
+ownership check: v1 has no isolation, so a plugin could set another plugin's state; never rely on that.
+
+| State field | Used by | Limit (enforced) |
+|---|---|---|
+| `label` | all | **Required.** The full sentence used as accessible name and tooltip. At most 80 characters; longer is cut with "…". Without a label the update is ignored. |
+| `value` | `value-caption`, `ring`, `meter` | At most 5 visible characters. |
+| `caption`, `sub` | `value-caption` | At most 4 visible characters each. |
+| `progress` | `ring` | 0 to 1 (clamped). |
+| `levels`, `playing` | `level` | 3 to 5 numbers 0 to 1; animates only while `playing`, visible and motion is allowed. |
+| `slots` | `meter` | `{ filled, total, next? }`, `total` at most 12; `filled` is clamped. |
+| `badge` | `badge` template and icon mode | A number of 0 or more (0 hides, above 99 shows "99+") or `'dot'`. |
+| `tone` | all | `default`, `attention` or `error`. |
+| `icon` | all | Material Symbols name that replaces the button icon (for example `pause`). |
+
+An over-long `value`, `caption` or `sub` is rejected and the tile shows "—" (a console warning appears once per item and field in
+development builds). Format numbers and dates with `Intl` and the locale from `onBarItemChange`.
+
+**`onBarItemChange(id, listener)`** returns an unsubscribe function. `listener` is called once immediately with the current
+`{ size, visible, privacy, locale, autoCollapsed }` and again only when one of them changes. `visible` is `false` while the window
+is hidden, in mini mode, or (for `sensitive` tiles) in privacy mode: stop timers then. Exceptions thrown by a listener are
+caught and logged.
+
+Throttling, the heartbeat and the custom-render error budget are described in `host-behaviour.md` section 8.
 
 ## 3. `window.useAppStore`: fields plugins may use
 

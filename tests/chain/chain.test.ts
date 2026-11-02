@@ -10,6 +10,7 @@ import { migrateKobarStorage } from '../../src/store/migrations';
 import { createStorageClient } from '../../src/storage/client';
 import { createFileBackedStorage } from '../../src/storage/fileBackedStorage';
 import { type FileStoreHarness, createFileStoreHarness } from '../helpers/fileStoreHarness';
+import { undoV33 } from '../helpers/undoV33';
 import {
     BASE_PROFILE_VERSION,
     KOBAR_STORAGE_VERSION,
@@ -27,6 +28,10 @@ import {
 // Persisted blob is untyped legacy state, so `state` is loose on purpose.
 const persisted = (p: Profile) => JSON.parse(p.localStorage['kobar-storage']) as { state: Record<string, unknown>; version: number };
 
+// CNL-03 (v33): what the migration adds to every existing user's state.
+const V33_WORKSPACE_DEFAULTS = { barItemSizes: {}, barHiddenItems: [], tonalSurfaces: true, notesTabVisible: true };
+const V33_TOP_KEYS = [...Object.keys(V33_WORKSPACE_DEFAULTS), 'privacyMode'];
+
 describe('profile fixture chain', () => {
     const v21 = loadProfileFixture(21);
 
@@ -40,7 +45,7 @@ describe('profile fixture chain', () => {
                 'extensions-config.json',
                 'extensions/fake-plugin/manifest.json',
                 'KoBox/example.txt',
-            ]),
+            ])
         );
     });
 
@@ -54,7 +59,7 @@ describe('profile fixture chain', () => {
         const out = persisted(migrateProfileToLatest(v21));
         const before = persisted(v21);
         expect(out.version).toBe(KOBAR_STORAGE_VERSION);
-        expect(out.version).toBe(32);
+        expect(out.version).toBe(33);
         expect(out.state.toggleWidth).toBe(22);
         expect(out.state.featureSpacing).toBe(8);
         // v27 (T-602): readable as true; the v22 default false is backed up (top level and the active record).
@@ -73,12 +78,14 @@ describe('profile fixture chain', () => {
             accent: 'amber',
             material: 'solid',
             density: 'comfortable',
+            ...V33_WORKSPACE_DEFAULTS,
         });
         expect((out.state.workspaces as Ws[])[0]).toMatchObject({
             theme: before.state.theme,
             toggleWidth: 22,
             featureSpacing: 8,
             density: 'comfortable',
+            ...V33_WORKSPACE_DEFAULTS,
             isPopupSmartPositioning: true,
         });
         const { workspaces: outWs, legacyBackup, ...outRest } = out.state;
@@ -107,6 +114,8 @@ describe('profile fixture chain', () => {
             accent: 'custom',
             material: 'solid',
             density: 'comfortable',
+            ...V33_WORKSPACE_DEFAULTS,
+            privacyMode: false,
             onboarding: { status: 'completed', version: 1, migrated: true },
         });
         expect((out.state.workspaces as Ws[])[0]).toMatchObject({ accent: 'custom', material: 'solid', customThemeColor: '#aa22cc' });
@@ -117,15 +126,21 @@ describe('profile fixture chain', () => {
         const old: Profile = { ...v21, localStorage: { ...v21.localStorage, 'kobar-storage': JSON.stringify(raw) } };
         const { state, version } = persisted(migrateProfileToLatest(old));
         expect(version).toBe(KOBAR_STORAGE_VERSION);
-        const { workspaceModelV24, appearanceV26, densityV27, onboardingV29, cleanupV30, ...legacyBackup } = state.legacyBackup as Record<string, unknown>;
+        const { workspaceModelV24, appearanceV26, densityV27, onboardingV29, cleanupV30, ...legacyBackup } = state.legacyBackup as Record<
+            string,
+            unknown
+        >;
         expect(workspaceModelV24).toBeDefined(); // T-408 slot, see tests/migrate.v24.test.ts
         expect(appearanceV26).toBeDefined(); // T-601 slot (teleportShortcut), see tests/migrate.v26.test.ts
         expect(densityV27).toBeDefined(); // T-602 slot (isPopupSmartPositioning), see tests/migrate.v27.test.ts
         expect(onboardingV29).toBeDefined(); // T-604 slot (tutorialState copy), see tests/migrate.v29.test.ts
         expect(cleanupV30).toStrictEqual({ settingsWorkspaceViewMode: raw.state.settingsWorkspaceViewMode }); // T-615d, see tests/migrate.v30.test.ts
         expect(legacyBackup).toStrictEqual({
-            todos: raw.state.todos, isTodoListEnabled: true, isColorPickerEnabled: false,
-            colorPalettes: raw.state.colorPalettes, currentColor: '#336699',
+            todos: raw.state.todos,
+            isTodoListEnabled: true,
+            isColorPickerEnabled: false,
+            colorPalettes: raw.state.colorPalettes,
+            currentColor: '#336699',
         });
         expect(state).not.toHaveProperty('todos');
         expect(state.featureOrder).toEqual(['com.kobar.aihub.btn', 'copypaste', 'kobox', 'fixture.plugin-btn']);
@@ -133,7 +148,9 @@ describe('profile fixture chain', () => {
     });
 
     it('v27 fake-notes fixture through the chain (T-603): pseudo-notes leave every note list, real notes and the backup stay', () => {
-        const raw = JSON.parse(readFileSync(fileURLToPath(new URL('../fixtures/kobar-storage/v27-fake-notes.json', import.meta.url)), 'utf8'));
+        const raw = JSON.parse(
+            readFileSync(fileURLToPath(new URL('../fixtures/kobar-storage/v27-fake-notes.json', import.meta.url)), 'utf8')
+        );
         const old: Profile = { ...v21, localStorage: { ...v21.localStorage, 'kobar-storage': JSON.stringify(raw) } };
         const out = migrateProfileToLatest(old);
         const { state, version } = persisted(out);
@@ -155,14 +172,28 @@ describe('profile fixture chain', () => {
         // Everything but the note lists, their activeNoteId, the new backup slots and the v29 `onboarding` is unchanged.
         const omit = (s: Record<string, unknown>) =>
             Object.fromEntries(
-                Object.entries(s).filter(([k]) => !['notes', 'globalNotes', 'activeNoteId', 'legacyBackup', 'workspaces', 'onboarding', 'settingsWorkspaceViewMode'].includes(k))
+                Object.entries(s).filter(
+                    ([k]) =>
+                        ![
+                            'notes',
+                            'globalNotes',
+                            'activeNoteId',
+                            'legacyBackup',
+                            'workspaces',
+                            'onboarding',
+                            'settingsWorkspaceViewMode',
+                            ...V33_TOP_KEYS,
+                        ].includes(k)
+                )
             );
         expect(omit(state)).toStrictEqual(omit(raw.state));
         expect(migrateProfileToLatest(out)).toStrictEqual(out);
     });
 
     it('v28 onboarding fixture through the chain (T-604): an existing user is onboarded, tutorialState and everything else stay', () => {
-        const raw = JSON.parse(readFileSync(fileURLToPath(new URL('../fixtures/kobar-storage/v28-onboarding.json', import.meta.url)), 'utf8'));
+        const raw = JSON.parse(
+            readFileSync(fileURLToPath(new URL('../fixtures/kobar-storage/v28-onboarding.json', import.meta.url)), 'utf8')
+        );
         const old: Profile = { ...v21, localStorage: { ...v21.localStorage, 'kobar-storage': JSON.stringify(raw) } };
         const out = migrateProfileToLatest(old);
         const { state, version } = persisted(out);
@@ -174,8 +205,10 @@ describe('profile fixture chain', () => {
         expect(cleanupV30).toStrictEqual({ settingsWorkspaceViewMode: raw.state.settingsWorkspaceViewMode });
         expect(olderSlots).toStrictEqual(raw.state.legacyBackup);
         const omit = (s: Record<string, unknown>) =>
-            Object.fromEntries(Object.entries(s).filter(([k]) => !['onboarding', 'legacyBackup', 'settingsWorkspaceViewMode'].includes(k)));
-        expect(omit(state)).toStrictEqual(omit(raw.state));
+            Object.fromEntries(
+                Object.entries(s).filter(([k]) => !['onboarding', 'legacyBackup', 'settingsWorkspaceViewMode', ...V33_TOP_KEYS].includes(k))
+            );
+        expect(omit(undoV33(state))).toStrictEqual(omit(raw.state));
         expect(migrateProfileToLatest(out)).toStrictEqual(out);
     });
 
@@ -208,9 +241,7 @@ describe('profile fixture chain', () => {
     });
 
     it('an old kobar-storage (v5) also reaches the latest state in one call', () => {
-        const raw = JSON.parse(
-            readFileSync(fileURLToPath(new URL('../fixtures/kobar-storage/v5.json', import.meta.url)), 'utf8'),
-        );
+        const raw = JSON.parse(readFileSync(fileURLToPath(new URL('../fixtures/kobar-storage/v5.json', import.meta.url)), 'utf8'));
         // Profile version stays at the baseline: the chain counter starts at 21 for every user,
         // only the kobar-storage blob is old.
         const old: Profile = { ...v21, localStorage: { ...v21.localStorage, 'kobar-storage': JSON.stringify(raw) } };
@@ -307,9 +338,7 @@ describe('profile fixture chain: simulated future migrations', () => {
 
     it('both together: v21 and an old v5 blob reach the simulated latest in one call, idempotently', () => {
         const options = { steps: [windowStateStep], kobarStorageVersion: NEXT_STORAGE_VERSION, migrate: nextMigrate };
-        const raw = JSON.parse(
-            readFileSync(fileURLToPath(new URL('../fixtures/kobar-storage/v5.json', import.meta.url)), 'utf8'),
-        );
+        const raw = JSON.parse(readFileSync(fileURLToPath(new URL('../fixtures/kobar-storage/v5.json', import.meta.url)), 'utf8'));
         const v5blob: Profile = { ...v21, localStorage: { ...v21.localStorage, 'kobar-storage': JSON.stringify(raw) } };
         for (const input of [v21, v5blob]) {
             const snapshot = structuredClone(input);

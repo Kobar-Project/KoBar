@@ -18,6 +18,8 @@ export interface TabItem<V extends string = string> extends ChoiceItem<V> {
     id?: string;
     /** Id of the role="tabpanel" element this tab controls (aria-controls). */
     panelId?: string;
+    /** Segmented variant: count pill after the label (selected: accent / on-accent, others: tile / fg-2). */
+    count?: number;
 }
 
 export interface TabsProps<V extends string = string> extends Omit<
@@ -37,7 +39,7 @@ export interface TabsProps<V extends string = string> extends Omit<
 const UNDERLINE_LIST = 'no-drag-region pointer-events-auto flex items-end gap-1 border-b border-stroke';
 
 const UNDERLINE_TAB =
-    'relative inline-flex h-[var(--kb-control-h)] items-center gap-2 rounded-t-sm px-3 text-[0.8125rem] leading-5 whitespace-nowrap transition-colors duration-[var(--kb-dur-fast)] after:absolute after:inset-x-3 after:bottom-0 after:h-0.75 after:rounded-full disabled:cursor-not-allowed disabled:text-fg-3';
+    'relative inline-flex h-[var(--kb-control-h)] items-center gap-2 rounded-t-sm px-3 [font:var(--kb-type-label)] whitespace-nowrap transition-colors duration-[var(--kb-dur-fast)] after:absolute after:inset-x-3 after:bottom-0 after:h-0.75 after:rounded-full disabled:cursor-not-allowed disabled:text-fg-3';
 
 /**
  * Tab strip (role="tablist"/"tab"). Controlled; roving tabindex with Arrow Left/Right (mirrored in RTL),
@@ -103,6 +105,16 @@ export function Tabs<V extends string = string>({
                     >
                         {item.icon && <Icon name={item.icon} size={16} filled={selected} />}
                         <span>{item.label}</span>
+                        {segmented && item.count !== undefined && (
+                            <span
+                                className={cx(
+                                    'kb-num inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 text-[11px] leading-none font-bold',
+                                    selected ? 'bg-[var(--kb-accent)] text-[var(--kb-on-accent)]' : 'bg-tile text-fg-2'
+                                )}
+                            >
+                                {item.count}
+                            </span>
+                        )}
                     </button>
                 );
             })}

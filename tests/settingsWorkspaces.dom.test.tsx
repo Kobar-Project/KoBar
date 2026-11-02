@@ -25,6 +25,12 @@ const t = (key: keyof typeof en) => en[key];
 const click = (el: Element) => fire(el, new MouseEvent('click', { bubbles: true, cancelable: true }));
 const byLabel = (label: string) => document.body.querySelector<HTMLElement>(`[aria-label="${label}"]`);
 
+/** Open the "..." menu of a workspace row and pick an item by its label. */
+const menuAction = (workspace: string, label: string) => {
+    click(byLabel(en.barItemMenu.replace('{name}', workspace))!);
+    click([...document.body.querySelectorAll('[role^="menuitem"]')].find((el) => el.textContent?.includes(label))!);
+};
+
 const SUMMARY: IpcWorkspaceSummary = {
     items: [
         { id: 'a', name: 'Alpha', isolated: false, hasIsolatedData: false, active: true },
@@ -102,7 +108,7 @@ describe('WorkspacesPage actions', () => {
     it('rename opens a dialog and sends the new name', () => {
         publish(SUMMARY);
         render(<WorkspacesPage t={t} />);
-        click(byLabel(`${en.renameWorkspace}: Beta`)!);
+        menuAction('Beta', en.renameWorkspace);
         const input = document.body.querySelector<HTMLInputElement>('[role="dialog"] input')!;
         expect(input.value).toBe('Beta');
         type(input, ' Bee ');
@@ -113,7 +119,7 @@ describe('WorkspacesPage actions', () => {
     it('delete asks first, warns about isolated data, and only then sends the id', () => {
         publish(SUMMARY);
         render(<WorkspacesPage t={t} />);
-        click(byLabel(`${en.deleteWorkspace}: Beta`)!);
+        menuAction('Beta', en.deleteWorkspace);
         const dialog = document.body.querySelector('[role="alertdialog"], [role="dialog"]')!;
         expect(dialog.textContent).toContain(en.workspaceDeleteIsoNote);
         expect(bridge.sent).toEqual([]);
@@ -125,7 +131,7 @@ describe('WorkspacesPage actions', () => {
     it('delete of a shared active workspace uses the shared and active notes', () => {
         publish(SUMMARY);
         render(<WorkspacesPage t={t} />);
-        click(byLabel(`${en.deleteWorkspace}: Alpha`)!);
+        menuAction('Alpha', en.deleteWorkspace);
         const text = document.body.textContent ?? '';
         expect(text).toContain(en.settingsWorkspacesDeleteSharedNote);
         expect(text).toContain(en.workspaceDeleteActiveNote);
@@ -134,7 +140,7 @@ describe('WorkspacesPage actions', () => {
     it('the delete dialog closes by itself when the workspace disappears from the live list', () => {
         publish(SUMMARY);
         render(<WorkspacesPage t={t} />);
-        click(byLabel(`${en.deleteWorkspace}: Beta`)!);
+        menuAction('Beta', en.deleteWorkspace);
         expect(document.body.textContent).toContain(en.workspaceDeleteIsoNote);
         publish({ items: [SUMMARY.items[0]] });
         expect(document.body.textContent).not.toContain(en.workspaceDeleteIsoNote);

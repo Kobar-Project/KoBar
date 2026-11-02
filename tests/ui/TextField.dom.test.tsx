@@ -41,7 +41,7 @@ describe('TextField', () => {
         expect(document.getElementById(ids[0])?.textContent).toBe('Hint');
         const err = document.getElementById(ids[1])!;
         expect(err.textContent).toBe('errorRequired');
-        expect(err.querySelector('.material-symbols-outlined')!.getAttribute('aria-hidden')).toBe('true');
+        expect(err.querySelector('.kb-icon')!.getAttribute('aria-hidden')).toBe('true');
         expect(ids[2]).toBe('extra');
         expect(el.className).toContain('border-[var(--kb-danger)]');
     });
@@ -81,10 +81,10 @@ describe('TextField', () => {
     it('disabled and leading icon', () => {
         const { host } = render(<TextField label="Search" icon="search" disabled />);
         expect(input().disabled).toBe(true);
-        const icon = host.querySelector('.material-symbols-outlined')!;
+        const icon = host.querySelector('.kb-icon')!;
         expect(icon.textContent).toBe('search');
         expect(icon.getAttribute('aria-hidden')).toBe('true');
-        expect(input().className).toContain('ps-8');
+        expect(input().className).toContain('ps-11');
     });
 
     it('hideLabel keeps the label for assistive technology only', () => {

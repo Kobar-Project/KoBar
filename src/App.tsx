@@ -4,6 +4,8 @@ import './index.css';
 import { useAppStore } from './store/useAppStore';
 import { clearLegacyThemeCSS } from './utils/color';
 import Sidebar from './components/layout/Sidebar';
+import { useBarMode } from './sidebar/barModeStore';
+import { barThickness } from './sidebar/barLayout';
 import NotePanel from './components/notes/NotePanel';
 import FloatingEye from './components/layout/FloatingEye';
 import { Onboarding } from './onboarding/Onboarding';
@@ -22,7 +24,7 @@ import { ToastRegion } from './ui';
 import { translate } from './i18n/translate';
 import { useOpenWithFiles } from './notes/useOpenWithFiles';
 import { pluginSync } from './store/pluginSyncHost';
-import { applyRootAppearance, effectiveThemePrefs } from './theme/root';
+import { applyRootAppearance, applyRootCanli, effectiveThemePrefs } from './theme/root';
 
 // MAC-032: fired by window.api.stopEyeDropper() in electron/preload.cts (the name is mirrored there; the preload is sandboxed and
 // cannot import it).
@@ -61,7 +63,10 @@ const App: React.FC = () => {
   const density = useAppStore(state => state.density);
   const setIsTargetingMode = useAppStore(state => state.setIsTargetingMode);
   const design = useAppStore(state => state.design);
-  const sidebarWidth = useAppStore(state => state.sidebarWidth);
+  // Canlı: the bar wrapper is sized from mode (thin / wide) and density, not from the legacy `sidebarWidth` setting
+  // (the store keeps writing that for v1 readers).
+  const barMode = useBarMode();
+  const sidebarWidth = barThickness(density, barMode);
   const setPinnedWindowHwnd = useAppStore(state => state.setPinnedWindowHwnd);
   const isMac = useAppStore(state => state.isMac);
   const orientation = useAppStore(state => state.orientation);
@@ -108,6 +113,14 @@ const App: React.FC = () => {
     applyRootAppearance(document.documentElement, { accent, customThemeColor, design, material, density });
     clearLegacyThemeCSS();
   }, [accent, customThemeColor, design, material, density, isHydrated]);
+
+  // Canlı (CNL-03): data-tonal / data-privacy once hydrated; until then the HTML defaults (tonal on, privacy off) apply.
+  const tonalSurfaces = useAppStore((state) => state.tonalSurfaces);
+  const privacyMode = useAppStore((state) => state.privacyMode);
+  useEffect(() => {
+    if (!isHydrated) return;
+    applyRootCanli(document.documentElement, { tonalSurfaces, privacyMode });
+  }, [tonalSurfaces, privacyMode, isHydrated]);
 
   // T-202: persistent warning when saving kobar-storage fails (once per failure streak).
   useEffect(() => {

@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* Canlı tokens (gated by :root[data-ui="canli"], which every window entry writes on <html>). */
+@import "./theme/canli.css";
+/* The design kit and audit docs under remaster/ contain class-like text with placeholders; never scan them. */
+@source not "../remaster";
 
 /* Alias so plugins that hardcode font-family: "Space Grotesk" keep the bundled font. */
 @font-face {
@@ -33,7 +37,10 @@
   --radius-md: var(--kb-radius-md);
   --radius-lg: var(--kb-radius-lg);
   --radius-xl: var(--kb-radius-xl);
+  --radius-2xl: var(--kb-radius-2xl);
   --radius-full: var(--kb-radius-full);
+  /* Canlı: titles, headlines and tile values (Outfit). font-display stays Space Grotesk for v1 plugins. */
+  --font-heading: var(--kb-font-display);
 }
 
 /* Semantic utilities (bg-shell, text-fg-1, border-stroke, shadow-e1…). Inline so a nested
@@ -49,6 +56,18 @@
   --color-fill-hover: var(--kb-fill-hover);
   --color-fill-selected: var(--kb-fill-selected);
   --color-stroke: var(--kb-stroke-subtle);
+  /* Canlı roles (src/theme/canli.css). */
+  --color-nav: var(--kb-bg-nav);
+  --color-tile: var(--kb-bg-tile);
+  --color-container: var(--kb-bg-container);
+  --color-on-container: var(--kb-on-container);
+  --color-accent: var(--kb-accent);
+  --color-on-accent: var(--kb-on-accent);
+  --color-accent-text: var(--kb-accent-text);
+  --color-on-danger: var(--kb-on-danger);
+  --color-warning: var(--kb-warning);
+  --color-success: var(--kb-success);
+  --color-stroke-control: var(--kb-stroke-control);
   --shadow-e1: var(--kb-shadow-e1);
   --shadow-e2: var(--kb-shadow-e2);
   --shadow-e3: var(--kb-shadow-e3);
@@ -509,14 +528,23 @@ body {
   font-family: var(--kb-font);
 }
 
-/* Tiptap Editor Dark Theme Overrides */
+/* CNL: the Settings window is a normal framed window that scrolls inside its own panes. The rule above keeps html/body/#root
+   overflow visible for the transparent main window; here the document itself must never scroll, or an off-screen layer
+   (tooltip, popover) lets the page scroll into empty space below the app. */
+:root[data-window='settings'],
+:root[data-window='settings'] body,
+:root[data-window='settings'] #root {
+  overflow: hidden !important;
+}
+
+/* Tiptap note editor: Canlı text tokens, body 17/28. */
 .tiptap {
   outline: none;
   min-height: 200px;
-  color: #cbd5e1;
-  /* slate-300 */
-  font-size: 1.125rem;
-  line-height: 1.75;
+  color: var(--kb-fg-1);
+  font-family: var(--kb-font);
+  font-size: 1.0625rem;
+  line-height: 1.75rem;
 }
 
 /* R-12: no frame around the text area when the editor is clicked. */
@@ -541,8 +569,7 @@ body {
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #334155;
-  /* slate-700 */
+  color: var(--kb-fg-3);
   pointer-events: none;
   height: 0;
   font-style: italic;
@@ -565,12 +592,44 @@ body {
 }
 
 .tiptap ul>li::marker {
-  color: var(--theme-marker);
+  color: var(--kb-accent);
+}
+
+.tiptap ol>li::marker {
+  color: var(--kb-accent);
+}
+
+.tiptap a {
+  color: var(--kb-accent-text);
+  text-decoration: underline;
+}
+
+.tiptap h1,
+.tiptap h2,
+.tiptap h3 {
+  font-family: var(--kb-font-display);
+  font-weight: 600;
+  color: var(--kb-fg-1);
+  margin-bottom: 0.75rem;
+}
+
+.tiptap h1 {
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+}
+
+.tiptap h2 {
+  font-size: 1.375rem;
+  line-height: 1.875rem;
+}
+
+.tiptap h3 {
+  font-size: 1.125rem;
+  line-height: 1.625rem;
 }
 
 .tiptap strong {
-  color: #e2e8f0;
-  /* slate-200 */
+  color: var(--kb-fg-1);
   font-weight: 700;
 }
 
@@ -658,6 +717,15 @@ button, [role="button"] {
 /* R2-01: host-side normalisation of plugin inline-widget bar buttons (v1 plugins draw their own round, filled, glowing buttons).
    No fill/border/shadow/scale behind any bar icon, even when active; one colour and one icon size/weight; emphasis only on hover.
    Unlayered + !important so it also beats utility classes and inline styles from the plugin. */
+/* Canlı: v1 inline widgets sit in a data-scheme="dark" wrapper. The bar's own scheme colours are captured outside it (a custom
+   property inherits its computed value), so widget icons stay readable on a light bar. */
+#kobar-sidebar-wrapper {
+  --kb-bar-widget-fg: var(--kb-fg-2);
+  --kb-bar-widget-fg-hover: var(--kb-fg-1);
+  --kb-bar-widget-fill-hover: var(--kb-fill-hover);
+  --kb-bar-widget-fill-pressed: var(--kb-fill-pressed);
+}
+
 [data-bar-widget] button {
   width: var(--kb-bar-item) !important;
   height: var(--kb-bar-item) !important;
@@ -666,24 +734,35 @@ button, [role="button"] {
   border-radius: var(--kb-radius-md) !important;
   background: transparent !important;
   box-shadow: none !important;
-  color: var(--kb-fg-2) !important;
+  color: var(--kb-bar-widget-fg) !important;
   transform: none !important;
   scale: none !important;
   animation: none !important;
 }
 
+/* CNL: a single-button widget placed in a wide-bar grid cell takes the cell's size and radius, like an icon cell. */
+[data-bar-widget-cell] [data-bar-widget] button {
+  width: var(--kb-tile-cell) !important;
+  height: var(--kb-tile-cell) !important;
+  border-radius: var(--kb-radius-sm) !important;
+}
+
+[data-bar-widget-cell] [data-bar-widget] button .material-symbols-outlined {
+  font-size: 18px !important;
+}
+
 [data-bar-widget] button:hover {
-  background: var(--kb-fill-hover) !important;
-  color: var(--kb-fg-1) !important;
+  background: var(--kb-bar-widget-fill-hover) !important;
+  color: var(--kb-bar-widget-fg-hover) !important;
 }
 
 [data-bar-widget] button:active {
-  background: var(--kb-fill-pressed) !important;
+  background: var(--kb-bar-widget-fill-pressed) !important;
 }
 
 [data-bar-widget] button .material-symbols-outlined {
   font-size: var(--kb-bar-icon) !important;
-  font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 20 !important;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20 !important;
   color: inherit !important;
   transform: none !important;
 }

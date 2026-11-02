@@ -127,7 +127,32 @@ permissions and the security limits. Names of `window.api` members are explained
 - `fetch` is not restricted by the host. Requests come from a `file://` page (`Origin: null`), so servers that require a
   specific origin will refuse them.
 
-## 8. Security limits
+## 8. Bar tiles and live state (newer hosts)
+
+How the host treats `setBarItemState` and tile declarations (`api.md` section 2.1):
+
+- **Size is the user's choice.** Icon or tile, per workspace. The manifest `bar.defaultSize` is only a suggestion for fresh
+  installs; the user's choice always wins, and the host may collapse a tile to an icon when the bar runs out of room
+  (`autoCollapsed` in `onBarItemChange`).
+- **Throttling, latest wins.** Per item, changes to text fields (`label`, `value`, `caption`, `sub`, `badge`, `icon`, `tone`)
+  are applied at most once per second; changes that only touch `progress`, `levels`, `playing` or `slots` at most four times
+  per second. The newest state is held and applied when the window ends; the final state is never dropped. Updating faster
+  only wastes work. A pending text change holds the whole state until its window ends, so in a burst that mixes text and
+  progress the progress may move less than four times per second: send text changes only when the text really changes.
+- **Registration timing.** The manifest `bar.tile` block is merged into a button only when `registerSidebarButton` runs
+  synchronously while your entry script executes (that is how the host knows which plugin owns the button). If you register
+  later (after an `await`, in a timer), pass the `tile` object to `registerSidebarButton` yourself.
+- **Heartbeat for `live` tiles.** While the item is visible and no `setBarItemState` call arrived for 10 seconds, the host
+  greys the last value until the next call. Calling with unchanged values counts as an update. Call again at least every few
+  seconds while your timer runs, or switch off `live` when nothing is running.
+- **Visibility.** `visible` is `false` while the window is hidden, in mini mode, or (for `sensitive` tiles) in privacy mode.
+  Pause timers and polling then, and resume when `visible` is `true` again. Updates sent while hidden are still stored.
+- **Privacy mode.** For `sensitive` tiles the host draws the label template and removes values from names and tooltips.
+- **Custom tiles.** The host clips `render` output to the tile box and wraps it in an error boundary. After 3 render errors in 60
+  seconds the host stops calling `render` for that item for the rest of the session and shows the label.
+- **Cleanup.** Unloading a plugin drops its items' state and listeners; a full reload does the same before the plugins run again.
+
+## 9. Security limits
 
 None of these are isolation (see the trust model in `SKILL.md`). They make abuse slower, rarer or more visible, and your
 plugin has to handle them:

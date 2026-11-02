@@ -55,10 +55,10 @@ const TransferBody: React.FC<{ mode: TransferMode }> = ({ mode }) => {
 
     return (
         <div className="flex flex-col gap-3">
-            {copy.desc && <p className="text-[0.8125rem] leading-5 text-fg-2">{t(copy.desc)}</p>}
+            {copy.desc && <p className="[font:var(--kb-type-caption)] text-fg-2">{t(copy.desc)}</p>}
             {isExport ? (
                 <div>
-                    <Button variant="primary" icon="download" onClick={handleExport}>
+                    <Button variant="filled" icon="download" onClick={handleExport}>
                         {t('downloadJson')}
                     </Button>
                 </div>
@@ -72,13 +72,16 @@ const TransferBody: React.FC<{ mode: TransferMode }> = ({ mode }) => {
                         ref={fileRef}
                         onChange={(e) => void handleFile(e)}
                     />
-                    <Button variant="primary" icon="upload" loading={busy} disabled={busy} onClick={() => fileRef.current?.click()}>
+                    <Button variant="filled" icon="upload" loading={busy} disabled={busy} onClick={() => fileRef.current?.click()}>
                         {t('import')}
                     </Button>
                 </div>
             )}
             {error && (
-                <p role="alert" className="rounded-sm border border-stroke px-2 py-1.5 text-[0.8125rem] leading-5 text-fg-1">
+                <p
+                    role="alert"
+                    className="rounded-md bg-[color-mix(in_oklab,var(--kb-danger)_14%,transparent)] px-3 py-2 [font:var(--kb-type-caption)] text-danger"
+                >
                     {t('importInvalidFile')}
                 </p>
             )}

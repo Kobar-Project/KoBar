@@ -47,7 +47,7 @@ describe('Button', () => {
         const { rerender } = render(<Button size="md">x</Button>);
         expect(getByRole('button').className).toContain('h-[var(--kb-control-h)]');
         rerender(<Button size="sm">x</Button>);
-        expect(getByRole('button').className).toContain('h-7');
+        expect(getByRole('button').className).toContain('h-8');
     });
 
     it('calls onClick when enabled', () => {
@@ -83,7 +83,7 @@ describe('Button', () => {
         expect(btn.disabled).toBe(false);
         click(btn);
         expect(onClick).not.toHaveBeenCalled();
-        const icons = btn.querySelectorAll('.material-symbols-outlined');
+        const icons = btn.querySelectorAll('.kb-icon');
         expect(icons).toHaveLength(1);
         expect(icons[0].textContent).toBe('progress_activity');
         expect(icons[0].getAttribute('aria-hidden')).toBe('true');
@@ -111,7 +111,7 @@ describe('Button', () => {
         );
         const btn = getByRole('button');
         expect(btn.className).toContain('w-full');
-        const icon = btn.querySelector('.material-symbols-outlined')!;
+        const icon = btn.querySelector('.kb-icon')!;
         expect(icon.textContent).toBe('add');
         expect(icon.getAttribute('aria-hidden')).toBe('true');
     });

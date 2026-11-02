@@ -24,7 +24,7 @@ const DEFAULT_HEIGHT: Record<SkeletonShape, number> = { line: 12, block: 48, cir
 
 // Static fill only: continuous shimmer/pulse is not allowed, so there is nothing to disable under
 // prefers-reduced-motion. The block fades in with kb-fade, which keeps its own reduced-motion duration.
-const BASE = 'kb-fade block shrink-0 bg-[var(--kb-fill-selected)]';
+const BASE = 'kb-fade block shrink-0 bg-inset';
 
 /** Loading placeholder. Decorative: aria-hidden; mark the loading container with aria-busy instead. */
 export function Skeleton({ shape = 'line', width, height, lines = 1, className }: SkeletonProps) {

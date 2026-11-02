@@ -266,8 +266,18 @@ function booleanEntries(raw: unknown): { value: Record<string, boolean>; dropped
     return { value, dropped };
 }
 
-/** Top-level keys the v26 / v27 migrations add to every older state (derived values, not user data). */
-const MIGRATION_ADDED_KEYS = new Set(['scheme', 'accent', 'material', 'density']);
+/** Top-level keys the v26 / v27 / v33 migrations add to every older state (derived values, not user data). */
+const MIGRATION_ADDED_KEYS = new Set([
+    'scheme',
+    'accent',
+    'material',
+    'density',
+    'barItemSizes',
+    'barHiddenItems',
+    'tonalSurfaces',
+    'notesTabVisible',
+    'privacyMode',
+]);
 
 /** `onboardingV29`, `onboardingV29#2`, ... (src/store/migrations/v29.ts). */
 const V29_BACKUP_SLOT = new RegExp(`^${BACKUP_KEY_V29}(#[0-9]+)?$`);

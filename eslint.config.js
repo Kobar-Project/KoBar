@@ -20,7 +20,7 @@ const CLASSNAME_COLOR_RULES = [
 ]
 
 export default defineConfig([
-  globalIgnores(['dist', 'dist-electron', 'release', 'node_modules', 'scratch_*']),
+  globalIgnores(['dist', 'dist-electron', 'release', 'node_modules', 'scratch_*', 'remaster/design']),
   // Renderer (React) code.
   {
     files: ['**/*.{ts,tsx}'],

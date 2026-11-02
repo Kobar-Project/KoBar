@@ -5,6 +5,11 @@ import { resolve } from 'node:path';
 import { applyEdgeChanged, applyWindowGeometryChange, installWindowLayoutSync } from '../src/store/windowLayoutSync';
 import { getWindowGeometry, resetWindowGeometryCacheForTests } from '../src/utils/windowGeometry';
 import { installWindowApiMock } from './helpers/windowApi';
+import { barThickness, MINI_ORB_SIZE } from '../src/sidebar/barLayout';
+
+// Canlı: the bar's cross-axis size comes from the density and the bar mode (thin by default), not from `sidebarWidth`.
+const BAR = barThickness('normal', 'thin');
+const ORB_HALF = MINI_ORB_SIZE / 2;
 
 // T-322 (window model A): main re-fits the window to a display and announces it with window-geometry-changed; the bar and the
 // mini-mode eye must stay on screen (through the existing store actions, nothing persisted) and screenBounds keeps its meaning.
@@ -82,9 +87,9 @@ describe('window layout sync (T-322)', () => {
 
     it('re-snaps a bar docked to the right edge after a scale change (100% -> 125%)', () => {
         start();
-        useAppStore.getState().setSidebarPosition({ x: 1920 - 64, y: 20 });
+        useAppStore.getState().setSidebarPosition({ x: 1920 - BAR, y: 20 });
         emit(FHD_125);
-        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 1536 - 64, y: 20 });
+        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 1536 - BAR, y: 20 });
         expect(useAppStore.getState().edgePosition).toBe('right');
     });
 
@@ -92,7 +97,7 @@ describe('window layout sync (T-322)', () => {
         start();
         useAppStore.getState().setSidebarPosition({ x: 1700, y: 700 });
         emit(FHD_125);
-        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 1536 - 64, y: 824 - 400 });
+        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 1536 - BAR, y: 824 - 400 });
 
         const inside = { x: 300, y: 100 };
         useAppStore.getState().setSidebarPosition(inside);
@@ -133,7 +138,7 @@ describe('window layout sync (T-322)', () => {
         start();
         useAppStore.getState().setMiniMode(true, { x: 1900, y: 1000 });
         emit(FHD_125);
-        expect(useAppStore.getState().miniModePosition).toEqual({ x: 1536 - 24, y: 824 - 24 });
+        expect(useAppStore.getState().miniModePosition).toEqual({ x: 1536 - ORB_HALF, y: 824 - ORB_HALF });
         expect(useAppStore.getState().isMiniMode).toBe(true);
     });
 
@@ -187,7 +192,7 @@ describe('window layout sync (T-322)', () => {
     it('applyWindowGeometryChange without a previous geometry only clamps', () => {
         useAppStore.getState().setSidebarPosition({ x: 1900, y: 0 });
         applyWindowGeometryChange(FHD_125, null);
-        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 1536 - 64, y: 0 });
+        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 1536 - BAR, y: 0 });
     });
 });
 
@@ -272,12 +277,12 @@ describe('edge-changed after a re-fit (T-322 review)', () => {
     it('Windows: a right-snapped vertical bar stays right when main reports edge "left" after a scale change', () => {
         start();
         setupWorkspace('vertical', 'right');
-        useAppStore.getState().setSidebarPosition({ x: 1920 - 64, y: 20 });
+        useAppStore.getState().setSidebarPosition({ x: 1920 - BAR, y: 20 });
         const before = persistedEdge();
         emit(FHD_125);
         applyEdgeChanged('left', FHD_125.workArea);
         expect(useAppStore.getState().edgePosition).toBe('right');
-        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 1536 - 64, y: 20 });
+        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 1536 - BAR, y: 20 });
         expect(useAppStore.getState().screenBounds).toEqual(FHD_125.workArea);
         expect(persistedEdge()).toEqual(before);
         expect(before).toEqual({ edge: 'right', workspaceEdge: 'right' });
@@ -286,11 +291,11 @@ describe('edge-changed after a re-fit (T-322 review)', () => {
     it('Windows: a bottom-snapped horizontal bar stays bottom', () => {
         start();
         setupWorkspace('horizontal', 'bottom');
-        useAppStore.getState().setSidebarPosition({ x: 300, y: 1040 - 64 });
+        useAppStore.getState().setSidebarPosition({ x: 300, y: 1040 - BAR });
         emit(FHD_TASKBAR_TOP);
         applyEdgeChanged('left', FHD_TASKBAR_TOP.workArea);
         expect(useAppStore.getState().edgePosition).toBe('bottom');
-        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 300, y: 1080 - 64 });
+        expect(useAppStore.getState().sidebarPosition).toEqual({ x: 300, y: 1080 - BAR });
         expect(persistedEdge()).toEqual({ edge: 'bottom', workspaceEdge: 'bottom' });
     });
 

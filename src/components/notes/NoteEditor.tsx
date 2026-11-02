@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { isSaveShortcut } from './saveShortcut';
-import { IconButton, Menu } from '../../ui';
+import { Icon, IconButton, Menu } from '../../ui';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -12,7 +12,6 @@ import { formatShortcut, modifierLabel } from '../../utils/formatShortcut';
 const NoteEditor: React.FC = React.memo(() => {
     const activeNoteId = useAppStore((s) => s.activeNoteId);
     const updateNoteTitle = useAppStore((s) => s.updateNoteTitle);
-    const design = useAppStore((s) => s.design);
     const t = useT();
     const activeNote = useAppStore((state) => state.notes.find((n) => n.id === activeNoteId));
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +65,7 @@ const NoteEditor: React.FC = React.memo(() => {
                     },
                 },
                 attributes: {
-                    class: 'kobar-note-editor flex-1 text-fg-1 text-lg leading-relaxed outline-none no-drag-region overflow-y-auto max-w-none',
+                    class: 'kobar-note-editor flex-1 text-fg-1 outline-none no-drag-region overflow-y-auto max-w-none',
                     spellcheck: 'false',
                 },
                 clipboardTextSerializer: (slice) => {
@@ -232,15 +231,21 @@ const NoteEditor: React.FC = React.memo(() => {
 
     if (!editor || !activeNote) return null;
 
+    const wordCount = editor.getText({ blockSeparator: ' ' }).trim().split(/\s+/).filter(Boolean).length;
+    const tool = (icon: string, label: string, active: boolean, onClick: () => void) => (
+        <IconButton icon={icon} label={label} size={40} pressed={active || undefined} onClick={onClick} />
+    );
+    const divider = <span aria-hidden="true" className="mx-1 h-5 w-px bg-[var(--kb-stroke-strong)]" />;
+
     return (
-        <div className={`flex-1 p-8 flex flex-col overflow-y-auto w-full max-w-full ${design === 'style2' ? 'bg-transparent' : ''}`}>
+        <div className="flex min-h-0 w-full max-w-full flex-1 flex-col px-9 pt-6 pb-4">
             {/* Hidden file input for image selection */}
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileSelect} />
 
             {/* Title area */}
-            <div className="flex items-center gap-4 mb-6 no-drag-region">
+            <div className="no-drag-region mb-4 flex items-center gap-3">
                 <input
-                    className="bg-transparent text-4xl font-bold text-fg-1 border-none outline-none w-full focus:ring-0 placeholder-fg-3"
+                    className="w-full min-w-0 [font:var(--kb-type-display)] border-none bg-transparent text-fg-1 outline-none placeholder:text-fg-3 focus:ring-0"
                     placeholder={t('noteTitlePlaceholder')}
                     type="text"
                     value={activeNote.title}
@@ -249,7 +254,7 @@ const NoteEditor: React.FC = React.memo(() => {
                 <Menu
                     aria-label={t('noteMenu')}
                     placement="bottom-end"
-                    trigger={<IconButton icon="more_horiz" label={t('noteMenu')} size={28} />}
+                    trigger={<IconButton icon="more_horiz" label={t('noteMenu')} size={36} />}
                     items={[
                         {
                             id: 'save-as-text',
@@ -262,65 +267,34 @@ const NoteEditor: React.FC = React.memo(() => {
                 />
             </div>
 
-            {/* Formatting Toolbar */}
-            <div
-                className="flex items-center gap-4 mb-8 pb-4 border-b text-fg-2 no-drag-region"
-                style={{ borderColor: 'var(--theme-border)' }}
-            >
-                <button
-                    onClick={() => editor.chain().focus().toggleBold().run()}
-                    className={`hover:text-fg-1 transition-colors cursor-pointer ${editor.isActive('bold') ? 'text-primary' : ''}`}
-                    title={t('noteBold')}
-                    aria-label={t('noteBold')}
-                >
-                    <span className="material-symbols-outlined text-[20px]">format_bold</span>
-                </button>
-                <button
-                    onClick={() => editor.chain().focus().toggleItalic().run()}
-                    className={`hover:text-fg-1 transition-colors cursor-pointer ${editor.isActive('italic') ? 'text-primary' : ''}`}
-                    title={t('noteItalic')}
-                    aria-label={t('noteItalic')}
-                >
-                    <span className="material-symbols-outlined text-[20px]">format_italic</span>
-                </button>
-                <button
-                    onClick={() => editor.chain().focus().toggleUnderline().run()}
-                    className={`hover:text-fg-1 transition-colors cursor-pointer ${editor.isActive('underline') ? 'text-primary' : ''}`}
-                    title={t('noteUnderline')}
-                    aria-label={t('noteUnderline')}
-                >
-                    <span className="material-symbols-outlined text-[20px]">format_underlined</span>
-                </button>
-                <div className="w-px h-5" style={{ backgroundColor: 'var(--theme-border)' }}></div>
-                <button
-                    onClick={() => editor.chain().focus().toggleBulletList().run()}
-                    className={`hover:text-fg-1 transition-colors cursor-pointer ${editor.isActive('bulletList') ? 'text-primary' : ''}`}
-                    title={t('noteBulletList')}
-                    aria-label={t('noteBulletList')}
-                >
-                    <span className="material-symbols-outlined text-[20px]">format_list_bulleted</span>
-                </button>
-                <button
-                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                    className={`hover:text-fg-1 transition-colors cursor-pointer ${editor.isActive('orderedList') ? 'text-primary' : ''}`}
-                    title={t('noteNumberedList')}
-                    aria-label={t('noteNumberedList')}
-                >
-                    <span className="material-symbols-outlined text-[20px]">format_list_numbered</span>
-                </button>
-                <div className="w-px h-5" style={{ backgroundColor: 'var(--theme-border)' }}></div>
-                <button
-                    onClick={triggerImagePicker}
-                    className="hover:text-fg-1 transition-colors cursor-pointer"
-                    title={t('noteInsertImage')}
-                    aria-label={t('noteInsertImage')}
-                >
-                    <span className="material-symbols-outlined text-[20px]">image</span>
-                </button>
+            {/* Floating formatting toolbar: an inset pill, active tool = container */}
+            <div className="no-drag-region mb-4 flex items-center gap-1 self-start rounded-full bg-inset p-1">
+                {tool('format_bold', t('noteBold'), editor.isActive('bold'), () => editor.chain().focus().toggleBold().run())}
+                {tool('format_italic', t('noteItalic'), editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run())}
+                {tool('format_underlined', t('noteUnderline'), editor.isActive('underline'), () =>
+                    editor.chain().focus().toggleUnderline().run()
+                )}
+                {divider}
+                {tool('format_list_bulleted', t('noteBulletList'), editor.isActive('bulletList'), () =>
+                    editor.chain().focus().toggleBulletList().run()
+                )}
+                {tool('format_list_numbered', t('noteNumberedList'), editor.isActive('orderedList'), () =>
+                    editor.chain().focus().toggleOrderedList().run()
+                )}
+                {divider}
+                {tool('image', t('noteInsertImage'), false, triggerImagePicker)}
             </div>
 
             {/* Tiptap Editor Content */}
-            <EditorContent editor={editor} className="flex-1 overflow-y-auto no-drag-region" />
+            <EditorContent editor={editor} className="no-drag-region min-h-0 flex-1 overflow-y-auto" />
+
+            {/* Status line: notes are autosaved, so this always reads "saved" */}
+            <p className="mt-3 flex shrink-0 items-center gap-1.5 [font:var(--kb-type-caption)] text-fg-2">
+                <Icon name="check" size={16} className="text-accent" />
+                <span>
+                    {t('notesSaved')} · {t('notesWordCount').replace('{count}', () => String(wordCount))}
+                </span>
+            </p>
         </div>
     );
 });

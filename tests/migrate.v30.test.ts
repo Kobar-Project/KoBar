@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { migrateKobarStorage } from '../src/store/migrations';
 import { BACKUP_KEY_V30, MAX_BACKUP_CHARS_V30, migrateToV30 } from '../src/store/migrations/v30';
 import { undoV30 } from './helpers/undoV30';
+import { undoV33 } from './helpers/undoV33';
 
 // T-615d: the kobar-storage v29 -> v30 block (fake notes created after v28, dead settingsWorkspaceViewMode). Synthetic data only.
 
@@ -26,7 +27,8 @@ function state(): S {
         legacyBackup: { old: { keep: true } },
     };
 }
-const migrate = (s: S, version = 29): S => migrateKobarStorage(structuredClone(s), version);
+// CNL-03: the v33 block adds fields to every state; this file only checks v30, so they are undone.
+const migrate = (s: S, version = 29): S => undoV33(migrateKobarStorage(structuredClone(s), version));
 
 describe('v30', () => {
     it('removes post-v28 fake notes from all three places, keeps real notes and leaves activeNoteId as stored', () => {

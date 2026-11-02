@@ -2,7 +2,7 @@
 // The pure request building and chunk parsing (incl. the loopback check for the local provider) stay in electron/main/lib/llmRequest.cts.
 // The renderer's AI Hub passes the user's keys per request; they are only used to build the provider request and are never logged.
 // NOTE: this main-process proxy is scheduled for removal in 2.0 (the plugin will call the providers itself), so it is moved as is and not reworked.
-import { ipcMain } from 'electron';
+import { ipcMain, net } from 'electron';
 import { buildRequest, parseChunk, pickApiKey } from '../lib/llmRequest.cjs';
 import { appState } from '../state.cjs';
 
@@ -62,7 +62,9 @@ export function registerLlmIpc(): void {
                 }
                 const { url, headers, body } = request;
 
-                const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
+                // CNL: Chromium's network stack (system proxy and certificate store), like the rest of the app; Node's own fetch
+                // ignores them and failed with a bare "fetch failed" on the owner's machine.
+                const res = await net.fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
                 if (!res.ok) {
                     const errorText = await res.text();
                     throw new Error(`API Error: ${res.status} - ${errorText}`);
@@ -118,7 +120,11 @@ export function registerLlmIpc(): void {
                     // LLM Request aborted
                 } else {
                     if (appState.mainWindow) {
-                        const errorMessage = e instanceof Error ? e.message : typeof e === 'object' ? JSON.stringify(e) : String(e);
+                        const base = e instanceof Error ? e.message : typeof e === 'object' ? JSON.stringify(e) : String(e);
+                        // A network failure says why (DNS, TLS, refused connection...), not just "fetch failed".
+                        const cause = e instanceof Error && e.cause ? (e.cause as { code?: string; message?: string }) : null;
+                        const detail = cause?.code ?? cause?.message;
+                        const errorMessage = detail && !base.includes(detail) ? `${base} (${detail})` : base;
                         appState.mainWindow.webContents.send('llm-stream-error', { chatId, messageId, error: errorMessage });
                     }
                 }

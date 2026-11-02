@@ -22,6 +22,8 @@ export function BarContextMenu({ open, onOpenChange, onReorder, onMiniMode, trig
     const [view, setView] = useState<'main' | 'workspaces'>('main');
     const workspaces = useAppStore((s) => s.workspaces);
     const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId);
+    const privacyMode = useAppStore((s) => s.privacyMode);
+    const activeWorkspaceName = workspaces.find((w) => w.id === activeWorkspaceId)?.name ?? t('barMenuDefaultWorkspace');
 
     const switchView = (next: 'main' | 'workspaces') => {
         // Menu closes before onSelect runs; reopening in the same batch keeps the popover open on the other view.
@@ -38,7 +40,7 @@ export function BarContextMenu({ open, onOpenChange, onReorder, onMiniMode, trig
                 {
                     id: 'ws-default',
                     type: 'radio',
-                    label: t('colorDefault'),
+                    label: t('barMenuDefaultWorkspace'),
                     checked: activeWorkspaceId === null,
                     onSelect: () => st().setActiveWorkspaceId(null),
                 },
@@ -58,6 +60,14 @@ export function BarContextMenu({ open, onOpenChange, onReorder, onMiniMode, trig
             { id: 'settings', icon: 'settings', label: t('settings'), onSelect: () => st().openSettingsTab() },
             { type: 'separator', id: 'sep-1' },
             { id: 'reorder', icon: 'drag_indicator', label: t('barMenuReorder'), onSelect: onReorder },
+            {
+                id: 'privacy',
+                type: 'checkbox',
+                icon: 'visibility_off',
+                label: t('privacyMode'),
+                checked: privacyMode,
+                onCheckedChange: (next) => st().setPrivacyMode(next),
+            },
             { id: 'mini', icon: 'visibility', label: t('miniMode'), onSelect: onMiniMode },
             { type: 'separator', id: 'sep-2' },
             { id: 'quit', icon: 'power_settings_new', label: t('barMenuQuit'), danger: true, onSelect: () => window.api?.quitApp?.() },
@@ -82,6 +92,11 @@ export function BarContextMenu({ open, onOpenChange, onReorder, onMiniMode, trig
                 onOpenChange(next);
             }}
             placement="right-start"
+            header={
+                view === 'main'
+                    ? { icon: 'pets', title: 'KoBar', subtitle: t('barMenuWorkspace').replace('{name}', activeWorkspaceName) }
+                    : undefined
+            }
             items={items}
             trigger={
                 trigger ?? (

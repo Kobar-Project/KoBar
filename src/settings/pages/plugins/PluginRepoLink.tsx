@@ -2,6 +2,7 @@
 // (electron/main/app/security.cts) sends it through the checked external-open gate (https is allow-listed there). Renders nothing
 // unless the repo is a strict "owner/name" (the URL is rebuilt from the validated slug, never taken verbatim).
 import { Icon } from '../../../ui';
+import { cx, INTERACTIVE } from '../../../ui/cx';
 import { normalizePluginRepo, pluginRepoUrl } from '../../../store/pluginSummary';
 
 export function PluginRepoLink({ repo, label }: { repo: string | null; label: string }) {
@@ -15,7 +16,10 @@ export function PluginRepoLink({ repo, label }: { repo: string | null; label: st
             rel="noopener noreferrer"
             aria-label={label}
             title={label}
-            className="flex min-w-0 max-w-full items-center gap-1.5 text-[0.6875rem] leading-4 text-fg-2 hover:text-[var(--kb-accent)] hover:underline"
+            className={cx(
+                INTERACTIVE,
+                'flex min-w-0 max-w-full items-center gap-1.5 rounded-xs [font:var(--kb-type-caption)] text-fg-2 hover:text-accent hover:underline'
+            )}
         >
             <Icon name="open_in_new" size={16} className="shrink-0" />
             <span className="min-w-0 truncate">{slug}</span>

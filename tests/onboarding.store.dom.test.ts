@@ -57,7 +57,7 @@ describe('onboarding through the store (T-604)', () => {
 
         persist.flushAppPersist();
         const disk = JSON.parse(localStorage.getItem('kobar-storage') as string);
-        expect(disk.version).toBe(32);
+        expect(disk.version).toBe(33);
         expect(disk.state.onboarding).toStrictEqual({ status: 'completed', version: 1, migrated: true });
         expect(disk.state.legacyBackup.onboardingV29).toStrictEqual({ added: true, tutorialState: data.state.tutorialState });
     });

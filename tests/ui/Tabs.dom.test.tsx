@@ -123,10 +123,10 @@ describe('Tabs', () => {
         expect(tabs()[0].className).toContain('focus-visible:shadow-[var(--kb-focus-ring)]');
         expect(getByRole('tablist').className).toContain('pointer-events-auto');
         rerender(<Tabs aria-label="x" items={ITEMS} value="a" onChange={() => {}} variant="segmented" fullWidth />);
-        expect(tabs()[0].className).toContain('bg-surface');
+        expect(tabs()[0].className).toContain('bg-container');
         expect(tabs()[0].className).toContain('flex-1');
         expect(host.innerHTML).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
-        const icon = tabs()[2].querySelector('.material-symbols-outlined')!;
+        const icon = tabs()[2].querySelector('.kb-icon')!;
         expect(icon.getAttribute('aria-hidden')).toBe('true');
     });
 });

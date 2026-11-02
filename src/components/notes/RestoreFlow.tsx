@@ -6,15 +6,12 @@ import { prepareRestoreFromFile, restoreErrorKey } from '../../backup/prepareRes
 import { restoreFullBackup } from '../../backup/restoreBackup';
 import { isHydrationFailed } from '../../store/hydrationError';
 import { restoreFromRecovery } from '../../store/hydrationRecovery';
+import { Button } from '../../ui';
 import { BackupWarnings } from './BackupWarnings';
 
 // Restore part of the backup UI (T-212/T-213/T-215), shared (formerly also by the old settings panel) with the main window's
 // restore dialog that the Settings window opens through the relayed `backup.restore` action (T-615a): file input, validation,
 // the automatic pre-restore safety backup, the confirmation with the warnings (plugin flags included) and the relaunch.
-
-export const BACKUP_BUTTON =
-    'w-full py-2 rounded-lg bg-inset border border-stroke hover:bg-fill-hover hover:border-primary/50 text-fg-1 hover:text-primary text-xs font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-wait';
-const BUTTON = BACKUP_BUTTON;
 
 function formatCreatedAt(value: string, language: string): string {
     const date = new Date(value);
@@ -97,8 +94,8 @@ const RestoreFlow: React.FC<RestoreFlowProps> = ({ disabled = false, onBusyChang
     return (
         <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-0.5">
-                <span className="text-sm text-fg-1 font-medium">{t('backupRestore')}</span>
-                <span className="text-xs text-fg-2">{t('backupRestoreDesc')}</span>
+                <span className="[font:var(--kb-type-body-strong)] text-fg-1">{t('backupRestore')}</span>
+                <span className="[font:var(--kb-type-caption)] text-fg-2">{t('backupRestoreDesc')}</span>
             </div>
             <input
                 data-testid="backup-file"
@@ -108,25 +105,24 @@ const RestoreFlow: React.FC<RestoreFlowProps> = ({ disabled = false, onBusyChang
                 ref={fileRef}
                 onChange={(e) => void handleFile(e)}
             />
-            <button data-testid="backup-pick" onClick={() => fileRef.current?.click()} disabled={busy} className={BUTTON}>
-                <span className="material-symbols-outlined text-[16px]">upload_file</span>
+            <Button data-testid="backup-pick" variant="outline" icon="upload_file" onClick={() => fileRef.current?.click()} disabled={busy}>
                 {t('backupRestorePick')}
-            </button>
+            </Button>
 
             {message && (
                 <div
                     role={message.tone === 'error' ? 'alert' : 'status'}
                     data-testid="backup-message"
-                    className={`rounded-lg border px-2 py-1.5 text-xs ${message.tone === 'error' ? 'border-red-500/40 bg-red-500/10 text-danger' : 'border-stroke bg-fill-hover text-fg-1'}`}
+                    className={`rounded-md px-3 py-2 [font:var(--kb-type-caption)] ${message.tone === 'error' ? 'bg-[color-mix(in_oklab,var(--kb-danger)_14%,transparent)] text-danger' : 'bg-inset text-fg-1'}`}
                 >
                     {message.text}
                 </div>
             )}
 
             {pending && preview && (
-                <div data-testid="backup-confirm" className="flex flex-col gap-2 rounded-lg border border-primary/40 bg-primary/10 p-2">
-                    <span className="text-sm text-fg-1 font-medium">{t('backupConfirmTitle')}</span>
-                    <div className="text-xs text-fg-1 flex flex-col gap-0.5">
+                <div data-testid="backup-confirm" className="flex flex-col gap-2 rounded-lg bg-container p-3 text-on-container">
+                    <span className="[font:var(--kb-type-body-strong)]">{t('backupConfirmTitle')}</span>
+                    <div className="flex flex-col gap-0.5 [font:var(--kb-type-caption)]">
                         {preview.createdAt && (
                             <span>
                                 {t('backupCreatedAt')}: {formatCreatedAt(preview.createdAt, language)}
@@ -147,7 +143,7 @@ const RestoreFlow: React.FC<RestoreFlowProps> = ({ disabled = false, onBusyChang
                             {t('backupCountChats')}: {preview.counts.chats}
                         </span>
                     </div>
-                    <ul className="text-xs text-fg-2 list-disc pl-4 flex flex-col gap-0.5">
+                    <ul className="flex list-disc flex-col gap-0.5 ps-4 [font:var(--kb-type-caption)]">
                         <li>{t('backupWarnOwn')}</li>
                         <BackupWarnings preview={preview} t={t} />
                         {preview.missingPlugins.length > 0 && (
@@ -156,15 +152,21 @@ const RestoreFlow: React.FC<RestoreFlowProps> = ({ disabled = false, onBusyChang
                             </li>
                         )}
                     </ul>
-                    <span className="text-xs text-fg-1">{t('backupConfirmBody')}</span>
-                    <div className="flex gap-2">
-                        <button data-testid="backup-cancel" onClick={() => setPending(null)} disabled={busy} className={BUTTON}>
+                    <span className="[font:var(--kb-type-caption)]">{t('backupConfirmBody')}</span>
+                    <div className="flex justify-end gap-2">
+                        <Button data-testid="backup-cancel" variant="text" size="sm" onClick={() => setPending(null)} disabled={busy}>
                             {t('backupCancel')}
-                        </button>
-                        <button data-testid="backup-confirm-button" onClick={() => void handleConfirm()} disabled={busy} className={BUTTON}>
-                            <span className="material-symbols-outlined text-[16px]">restore</span>
+                        </Button>
+                        <Button
+                            data-testid="backup-confirm-button"
+                            variant="filled"
+                            size="sm"
+                            icon="restore"
+                            onClick={() => void handleConfirm()}
+                            disabled={busy}
+                        >
                             {t('backupConfirmButton')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}

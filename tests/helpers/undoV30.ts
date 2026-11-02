@@ -1,3 +1,4 @@
+import { undoV33 } from './undoV33';
 import { BACKUP_KEY_V30, VIEW_MODE_KEY_V30 } from '../../src/store/migrations/v30';
 
 // T-615d: rebuilds the pre-v30 state from a migrated one, as documented in src/store/migrations/v30.ts: re-insert the removed
@@ -22,9 +23,9 @@ function reinsert(holder: Loose, key: string, removed: Removed[] | undefined): v
     holder[key] = list;
 }
 
-/** Returns a reverted copy; the input is not changed. Uses the newest v30 backup slot. */
+/** Returns a reverted copy (v33 is undone first, CNL-03); the input is not changed. Uses the newest v30 backup slot. */
 export function undoV30<T>(migrated: T): T {
-    const state = structuredClone(migrated) as unknown;
+    const state = structuredClone(undoV33(migrated)) as unknown;
     if (!isObject(state)) return state as T;
     const backup = isObject(state.legacyBackup) ? state.legacyBackup : undefined;
     const slots = backup ? Object.keys(backup).filter((key) => SLOT.test(key)) : [];

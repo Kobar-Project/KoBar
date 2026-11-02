@@ -28,6 +28,7 @@ blob'un kendi `version` alanına bakar, güncelse dokunmaz), sonra profil sürü
 1. **Yalnızca `kobar-storage` değişiyorsa:** `src/store/migrations/index.ts` içindeki `migrateVersionedBlocks` fonksiyonuna yeni `if (version < N)` bloğunu
    (mantık ayrı `vN.ts` dosyasında) ekle, store persist `version`'ını ve `runChain.ts` içindeki `KOBAR_STORAGE_VERSION`'ı artır. **Adım ekleme,
    `LATEST_PROFILE_VERSION`'a dokunma.** Beklenen yeni alanı `chain.test.ts`'e yaz.
+   (Örnek: v33, Canlı alanları. `runChain.ts` 33'e çıktı, `tests/helpers/undoV33.ts` eski blok testleri için yeni alanları geri siler, anlık görüntüler `-u` ile yenilendi.)
 2. **`userData` (veya başka kalıcı dosya) değişiyorsa:** `MIGRATION_STEPS` listesinin SONUNA bir adım ekle:
    `{ from: <önceki to ya da BASE_PROFILE_VERSION>, to: <yeni profil sürümü>, name, apply(profile) }`,
    `LATEST_PROFILE_VERSION`'ı artır. Eski `vN/` fikstürünü olduğu gibi bırak (eski profil hâlâ yükseltilebilmeli);

@@ -1,6 +1,4 @@
-// T-605: the pages of the Settings window, in menu order. Each page is a placeholder
-// until its own task: General T-607, Appearance T-608, Sidebar T-609, Plugins T-610/T-611, Workspaces T-612,
-// Backup & Updates and About T-614.
+// T-605: the pages of the Settings window, in menu order. CNL-08 restyled them as Canlı bento pages.
 import type { TranslationKeys } from '../i18n';
 
 export type SettingsPageId = 'general' | 'appearance' | 'sidebar' | 'plugins' | 'workspaces' | 'backup' | 'integrations' | 'about';
@@ -8,19 +6,21 @@ export type SettingsPageId = 'general' | 'appearance' | 'sidebar' | 'plugins' | 
 export interface SettingsPage {
     id: SettingsPageId;
     labelKey: TranslationKeys;
+    /** One-line page subtitle shown under the page headline. */
+    subtitleKey: TranslationKeys;
     /** Material Symbols name. */
     icon: string;
 }
 
 export const SETTINGS_PAGES: readonly SettingsPage[] = [
-    { id: 'general', labelKey: 'settingsGeneral', icon: 'tune' },
-    { id: 'appearance', labelKey: 'appearance', icon: 'palette' },
-    { id: 'sidebar', labelKey: 'settingsSidebar', icon: 'view_sidebar' },
-    { id: 'plugins', labelKey: 'plugins', icon: 'extension' },
-    { id: 'workspaces', labelKey: 'workspaces', icon: 'space_dashboard' },
-    { id: 'backup', labelKey: 'settingsBackupUpdates', icon: 'backup' },
-    { id: 'integrations', labelKey: 'settingsIntegrations', icon: 'hub' },
-    { id: 'about', labelKey: 'about', icon: 'info' },
+    { id: 'general', labelKey: 'settingsGeneral', subtitleKey: 'settingsSubtitleGeneral', icon: 'tune' },
+    { id: 'appearance', labelKey: 'appearance', subtitleKey: 'settingsSubtitleAppearance', icon: 'palette' },
+    { id: 'sidebar', labelKey: 'settingsSidebar', subtitleKey: 'settingsSubtitleSidebar', icon: 'dock_to_right' },
+    { id: 'plugins', labelKey: 'plugins', subtitleKey: 'settingsSubtitlePlugins', icon: 'extension' },
+    { id: 'workspaces', labelKey: 'workspaces', subtitleKey: 'settingsSubtitleWorkspaces', icon: 'space_dashboard' },
+    { id: 'backup', labelKey: 'settingsBackupUpdates', subtitleKey: 'settingsSubtitleBackup', icon: 'cloud_sync' },
+    { id: 'integrations', labelKey: 'settingsIntegrations', subtitleKey: 'settingsSubtitleIntegrations', icon: 'hub' },
+    { id: 'about', labelKey: 'about', subtitleKey: 'settingsSubtitleAbout', icon: 'info' },
 ];
 
 export const DEFAULT_SETTINGS_PAGE: SettingsPageId = 'general';

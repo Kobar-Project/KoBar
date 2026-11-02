@@ -44,6 +44,32 @@ Every plugin has a `manifest.json` at the root of its package.
 | `versionNote` | no | Short release note. |
 | `author` | no | Shown in the store from the registry entry; the host does not read it from an installed manifest. |
 | `languages` | no | Informational only; the host does not read it. |
+| `bar` | no | Bar presentation block (below). Read by newer hosts, ignored by older ones. |
+
+### The `bar` block
+
+```json
+{
+  "bar": {
+    "tile": { "template": "ring", "sensitive": false, "live": true, "pinnable": true },
+    "defaultSize": "icon"
+  },
+  "minAppVersion": "<first KoBar version with tiles>"
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `bar.tile.template` | `value-caption`, `ring`, `level`, `meter`, `badge` or `custom` (`custom` needs a `render` function, which can only be given in code through `registerSidebarButton({ tile })`). Absent or unknown: the host label template. |
+| `bar.tile.sensitive` | `true` hides values, names and tooltips in privacy mode. Set it for clipboard data, messages, task text, track names. |
+| `bar.tile.live` | The value changes on its own (timer, player); enables the heartbeat check. |
+| `bar.tile.pinnable` | `ring` only: may be pinned around the mini-mode orb. |
+| `bar.defaultSize` | `icon` or `tile`: a suggestion used only for fresh installs. The user's size choice always wins. |
+
+The block is advisory. At install time an invalid block (wrong type, unknown template, non-boolean flag, unknown key) is
+ignored part by part with a warning in the log; it never makes an install or an update fail. The tile declaration in
+`registerSidebarButton({ tile })` wins over `bar.tile`, field by field. Set `minAppVersion` only if your plugin cannot work
+without tiles; otherwise leave it and feature-detect (`SKILL.md` section 8).
 
 ## 2. Building
 

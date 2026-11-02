@@ -34,21 +34,21 @@ describe('BarItem', () => {
         expect(cls).not.toMatch(/text-fg-/);
     });
 
-    it('shows the indicator bar only when active, on the left (vertical) or bottom (horizontal)', () => {
+    it('shows the indicator bar only when active, on the side facing the screen centre', () => {
         const v = render(
             <BarItem label="A" active orientation="vertical" edge="right">
                 x
             </BarItem>
         );
         const bar = v.host.querySelector('[data-bar-indicator]')!;
-        expect(bar.className).toContain('left-0');
+        expect(bar.getAttribute('data-side')).toBe('left');
         expect(v.host.querySelector('button')!.getAttribute('aria-pressed')).toBe('true');
         const h = render(
             <BarItem label="B" active orientation="horizontal" edge="top">
                 x
             </BarItem>
         );
-        expect(h.host.querySelector('[data-bar-indicator]')!.className).toContain('bottom-0');
+        expect(h.host.querySelector('[data-bar-indicator]')!.getAttribute('data-side')).toBe('bottom');
     });
 
     it('forwards click and ref, and maps the tooltip side away from the docked edge', () => {

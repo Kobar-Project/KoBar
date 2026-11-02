@@ -3,23 +3,24 @@
 // main window to open the v1 settings panel of a plugin (those panels render plugin code and exist only in the main window).
 // Everything goes through allow-listed `plugin.*` actions validated by the main window against its live plugin list; nothing is
 // optimistic: what a row shows is what the main window reported. The summary carries no code, repo URL or path.
+// CNL-08 (Canlı): an updates card on top, then a 2-column grid of plugin rows (icon tile, name, origin line, chips, actions, switch).
 import { useId, useState } from 'react';
 import type { PluginSummaryItem } from '../../../store/pluginSummary';
-import { Button, ConfirmDialog, EmptyState, IconButton, ListItem, Surface, Toggle } from '../../../ui';
+import { Button, Card, ConfirmDialog, EmptyState, IconButton, IconTile, Toggle } from '../../../ui';
 import { dispatchPluginAction, useSettingsState, usePluginSummary } from '../../mirror';
 import type { SettingsPageProps } from '../../pages';
 import { getDocumentPlatform } from '../../../platform';
 import { isPluginSupportedOn, platformDisplayName } from '../../../../shared/pluginPlatforms';
+import { PAGE_STACK, StaticChip } from '../shared';
+import { PluginOrigin } from './PluginOrigin';
 import { PluginRepoLink } from './PluginRepoLink';
 
-const HINT = 'text-[0.6875rem] leading-4 text-fg-2';
-const SECTION_LABEL = 'text-[0.8125rem] leading-5 font-semibold text-fg-1';
+const HINT = '[font:var(--kb-type-caption)] text-fg-2';
 
 export function InstalledView({ t }: SettingsPageProps) {
     const ready = useSettingsState((s) => s.status === 'ready' && s.state !== null);
     const summary = usePluginSummary();
     const installedId = useId();
-    const updatesId = useId();
     const [uninstallId, setUninstallId] = useState<string | null>(null);
 
     const items = summary?.items ?? [];
@@ -36,125 +37,115 @@ export function InstalledView({ t }: SettingsPageProps) {
               .replace('{failed}', String(last.failed))
               .replace('{canceled}', String(last.canceled))
         : '';
+    const statusText = resultText || (status?.checked && updatable.length === 0 && !busy ? t('settingsPluginsUpToDate') : '');
 
     const platform = getDocumentPlatform();
     const renderRow = (item: PluginSummaryItem) => (
-        <ListItem
-            key={item.id}
-            as="li"
-            leading="extension"
-            title={item.name}
-            description={
-                <>
+        <li key={item.id} className="flex min-w-0 items-start gap-3 rounded-lg bg-surface p-3.5">
+            <IconTile icon="extension" size="md" muted={!item.enabled} />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="truncate [font:var(--kb-type-body-strong)] text-fg-1">{item.name}</span>
+                <span className={HINT}>
                     {item.version ? `v${item.version}` : ''}
-                    {!item.removable ? ` · ${t('settingsPluginsDevBadge')}` : ''}
                     {item.updateAvailable && item.latestVersion
                         ? ` · ${t('settingsPluginsUpdateAvailable').replace('{version}', item.latestVersion)}`
                         : ''}
-                    {platform !== null && !isPluginSupportedOn(item.id, platform) && (
-                        <span className="mt-0.5 block text-danger">
-                            {t('pluginUnsupportedWarning').replace('{platform}', platformDisplayName(platform))}
-                        </span>
-                    )}
-                    {item.repo && (
-                        <span className="mt-0.5 block min-w-0">
-                            <PluginRepoLink repo={item.repo} label={t('settingsPluginsGithubLink').replace('{name}', item.name)} />
-                        </span>
-                    )}
-                </>
-            }
-            trailing={
-                <>
-                    {item.hasSettingsPanel && (
-                        <IconButton
-                            icon="tune"
-                            label={`${t('settingsPluginsSettings')}: ${item.name}`}
-                            tooltip={t('settingsPluginsSettingsHint')}
-                            size={28}
-                            disabled={!ready}
-                            onClick={() => dispatchPluginAction('plugin.openSettings', { id: item.id })}
-                        />
-                    )}
-                    {item.updateAvailable && (
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            disabled={!ready || busy}
-                            aria-label={`${t('settingsPluginsUpdate')}: ${item.name}`}
-                            onClick={() => dispatchPluginAction('plugin.update', { id: item.id })}
-                        >
-                            {t('settingsPluginsUpdate')}
-                        </Button>
-                    )}
-                    {item.removable && (
-                        <IconButton
-                            icon="delete"
-                            label={`${t('settingsPluginsUninstall')}: ${item.name}`}
-                            tooltip={t('settingsPluginsUninstall')}
-                            size={28}
-                            disabled={!ready}
-                            onClick={() => setUninstallId(item.id)}
-                        />
-                    )}
-                    <Toggle
-                        hideLabel
-                        label={t('settingsPluginsEnableLabel').replace('{name}', item.name)}
-                        checked={item.enabled}
+                </span>
+                <PluginOrigin t={t} repo={item.repo} />
+                {!item.removable && (
+                    <span className="flex flex-wrap gap-1.5">
+                        <StaticChip tone="inset">{t('settingsPluginsDevBadge')}</StaticChip>
+                    </span>
+                )}
+                {platform !== null && !isPluginSupportedOn(item.id, platform) && (
+                    <span className="[font:var(--kb-type-caption)] text-danger">
+                        {t('pluginUnsupportedWarning').replace('{platform}', platformDisplayName(platform))}
+                    </span>
+                )}
+                {item.repo && (
+                    <span className="min-w-0">
+                        <PluginRepoLink repo={item.repo} label={t('settingsPluginsGithubLink').replace('{name}', item.name)} />
+                    </span>
+                )}
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+                {item.hasSettingsPanel && (
+                    <IconButton
+                        icon="tune"
+                        label={`${t('settingsPluginsSettings')}: ${item.name}`}
+                        tooltip={t('settingsPluginsSettingsHint')}
+                        size={32}
                         disabled={!ready}
-                        onChange={(enabled) => dispatchPluginAction('plugin.setEnabled', { id: item.id, enabled })}
+                        onClick={() => dispatchPluginAction('plugin.openSettings', { id: item.id })}
                     />
-                </>
-            }
-        />
+                )}
+                {item.updateAvailable && (
+                    <Button
+                        size="sm"
+                        variant="tonal"
+                        disabled={!ready || busy}
+                        aria-label={`${t('settingsPluginsUpdate')}: ${item.name}`}
+                        onClick={() => dispatchPluginAction('plugin.update', { id: item.id })}
+                    >
+                        {t('settingsPluginsUpdate')}
+                    </Button>
+                )}
+                {item.removable && (
+                    <IconButton
+                        icon="delete"
+                        label={`${t('settingsPluginsUninstall')}: ${item.name}`}
+                        tooltip={t('settingsPluginsUninstall')}
+                        size={32}
+                        disabled={!ready}
+                        onClick={() => setUninstallId(item.id)}
+                    />
+                )}
+                <Toggle
+                    hideLabel
+                    label={t('settingsPluginsEnableLabel').replace('{name}', item.name)}
+                    checked={item.enabled}
+                    disabled={!ready}
+                    onChange={(enabled) => dispatchPluginAction('plugin.setEnabled', { id: item.id, enabled })}
+                />
+            </div>
+        </li>
     );
 
     return (
-        <div className="flex flex-col gap-4">
-            <Surface
+        <div className={PAGE_STACK}>
+            <Card
                 as="section"
-                level="surface"
-                elevation="e1"
-                radius="lg"
-                aria-labelledby={updatesId}
-                className="flex flex-col gap-2 p-4"
-            >
-                <span id={updatesId} className={SECTION_LABEL}>
-                    {t('settingsPluginsUpdates')}
-                </span>
-                <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                        icon="refresh"
-                        loading={!!status?.checking}
-                        disabled={!ready || !summary || busy}
-                        onClick={() => dispatchPluginAction('plugin.checkUpdates', {})}
-                    >
-                        {status?.checking ? t('settingsPluginsChecking') : t('settingsPluginsCheck')}
-                    </Button>
-                    <Button
-                        variant="primary"
-                        icon="system_update_alt"
-                        loading={!!status?.updating}
-                        disabled={!ready || updatable.length === 0 || busy}
-                        onClick={() => dispatchPluginAction('plugin.updateAll', {})}
-                    >
-                        {status?.updating ? t('settingsPluginsUpdating') : t('settingsPluginsUpdateAll')}
-                    </Button>
-                </div>
-                <span role="status" aria-live="polite" className={HINT}>
-                    {resultText || (status?.checked && updatable.length === 0 && !busy ? t('settingsPluginsUpToDate') : '')}
-                </span>
-            </Surface>
-            <Surface
-                as="section"
-                level="surface"
-                elevation="e1"
-                radius="lg"
-                aria-labelledby={installedId}
-                className="flex flex-col gap-2 p-4"
-            >
-                <span id={installedId} className={SECTION_LABEL}>
-                    {t('settingsPluginsInstalled')}
-                </span>
+                icon="refresh"
+                title={t('settingsPluginsUpdates')}
+                description={
+                    <span role="status" aria-live="polite">
+                        {statusText}
+                    </span>
+                }
+                control={
+                    <>
+                        <Button
+                            variant="tonal"
+                            icon="refresh"
+                            loading={!!status?.checking}
+                            disabled={!ready || !summary || busy}
+                            onClick={() => dispatchPluginAction('plugin.checkUpdates', {})}
+                        >
+                            {status?.checking ? t('settingsPluginsChecking') : t('settingsPluginsCheck')}
+                        </Button>
+                        <Button
+                            variant="filled"
+                            icon="system_update_alt"
+                            loading={!!status?.updating}
+                            disabled={!ready || updatable.length === 0 || busy}
+                            onClick={() => dispatchPluginAction('plugin.updateAll', {})}
+                        >
+                            {status?.updating ? t('settingsPluginsUpdating') : t('settingsPluginsUpdateAll')}
+                        </Button>
+                    </>
+                }
+            />
+            <Card as="section" variant="list" title={<span id={installedId}>{t('settingsPluginsInstalled')}</span>}>
                 {!summary ? (
                     <span role="status" className={HINT}>
                         {t('settingsPluginsLoading')}
@@ -162,11 +153,11 @@ export function InstalledView({ t }: SettingsPageProps) {
                 ) : items.length === 0 ? (
                     <EmptyState icon="extension" title={t('settingsPluginsEmpty')} />
                 ) : (
-                    <ul aria-labelledby={installedId} className="flex flex-col gap-0.5">
+                    <ul aria-labelledby={installedId} className="grid grid-cols-2 gap-2.5 max-[900px]:grid-cols-1">
                         {items.map(renderRow)}
                     </ul>
                 )}
-            </Surface>
+            </Card>
             <ConfirmDialog
                 open={!!uninstalling}
                 danger

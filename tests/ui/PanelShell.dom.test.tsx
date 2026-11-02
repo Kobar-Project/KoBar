@@ -65,7 +65,7 @@ describe('PanelShell', () => {
         const heading = document.getElementById(el.getAttribute('aria-labelledby')!)!;
         expect(heading.tagName).toBe('H2');
         expect(heading.textContent).toBe('To-do');
-        expect(el.querySelector('.material-symbols-outlined')!.textContent).toBe('checklist');
+        expect(el.querySelector('.kb-icon')!.textContent).toBe('checklist');
         expect(el.querySelector('[aria-label="Add task"]')).not.toBeNull();
         expect(el.querySelector('[aria-label="Close panel"]')).not.toBeNull();
         expect(el.textContent).toContain('Clear');
@@ -74,7 +74,7 @@ describe('PanelShell', () => {
             'z-[var(--kb-z-panel)]',
             'no-drag-region',
             'pointer-events-auto',
-            'rounded-lg',
+            'rounded-2xl',
             'shadow-e3',
             'bg-[var(--kb-material-bg)]',
         ]) {
@@ -217,8 +217,9 @@ describe('PanelShell', () => {
 
     it.each([
         ['s', 'w-80', 'max-h-110'],
-        ['m', 'w-100', 'max-h-140'],
-        ['l', 'w-120', 'max-h-160'],
+        ['m', 'w-85', 'max-h-140'],
+        ['l', 'w-100', 'max-h-160'],
+        ['xl', 'w-120', 'max-h-170'],
     ] as const)('size %s maps to %s / %s', (size, width, height) => {
         render(<PanelShell title="T" closeLabel="Close" onClose={() => {}} size={size} />);
         expect(panel().dataset.size).toBe(size);

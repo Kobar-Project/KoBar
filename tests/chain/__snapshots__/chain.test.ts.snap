@@ -6,6 +6,8 @@ exports[`profile fixture chain > v21 end state matches the expected snapshot 1`]
     "accent": "custom",
     "activeNoteId": 2,
     "activeWorkspaceId": "ws-focus",
+    "barHiddenItems": [],
+    "barItemSizes": {},
     "currentExtensionsConfig": {
       "fixture.plugin": {
         "enabled": true,
@@ -128,18 +130,21 @@ exports[`profile fixture chain > v21 end state matches the expected snapshot 1`]
         "title": "Synthetic v21 image note",
       },
     ],
+    "notesTabVisible": true,
     "onboarding": {
       "migrated": true,
       "status": "completed",
       "version": 1,
     },
     "orientation": "vertical",
+    "privacyMode": false,
     "scheme": "dark",
     "settingsFeatureViewMode": "grid",
     "showTooltips": true,
     "sidebarWidth": 64,
     "theme": "custom",
     "toggleWidth": 22,
+    "tonalSurfaces": true,
     "tutorialState": {
       "snoozeUntil": 1700000000000,
       "status": "snoozed",
@@ -148,6 +153,8 @@ exports[`profile fixture chain > v21 end state matches the expected snapshot 1`]
     "workspaces": [
       {
         "accent": "custom",
+        "barHiddenItems": [],
+        "barItemSizes": {},
         "customThemeColor": "#aa22cc",
         "density": "comfortable",
         "design": "glass",
@@ -185,14 +192,18 @@ exports[`profile fixture chain > v21 end state matches the expected snapshot 1`]
         "koBoxCleanupMode": "24h",
         "material": "solid",
         "name": "Synthetic Focus",
+        "notesTabVisible": true,
         "orientation": "vertical",
         "showTooltips": true,
         "sidebarWidth": 64,
         "theme": "custom",
         "toggleWidth": 22,
+        "tonalSurfaces": true,
       },
       {
         "accent": "amber",
+        "barHiddenItems": [],
+        "barItemSizes": {},
         "density": "comfortable",
         "iconScale": 1,
         "id": "ws-shared",
@@ -202,10 +213,12 @@ exports[`profile fixture chain > v21 end state matches the expected snapshot 1`]
         "koBoxCleanupMode": "quit",
         "material": "solid",
         "name": "Synthetic Shared",
+        "notesTabVisible": true,
         "sidebarWidth": 64,
+        "tonalSurfaces": true,
       },
     ],
   },
-  "version": 32,
+  "version": 33,
 }
 `;

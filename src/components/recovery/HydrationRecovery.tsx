@@ -12,6 +12,7 @@ import {
 } from '../../store/hydrationError';
 import { restoreFromRecovery, startFreshAfterHydrationFailure } from '../../store/hydrationRecovery';
 import { useAppStore } from '../../store/useAppStore';
+import { Button, Icon } from '../../ui';
 import { BackupWarnings } from '../notes/BackupWarnings';
 
 // Recovery panel after a failed `kobar-storage` hydration (T-152). Replaces the plain T-201 banner once React is up.
@@ -22,25 +23,16 @@ import { BackupWarnings } from '../notes/BackupWarnings';
 
 const POSITION_POLL_MS = 1000;
 
-const BUTTON =
-    'w-full py-2 px-3 rounded-lg border text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait';
-const NEUTRAL = `${BUTTON} border-stroke bg-fill-hover hover:bg-fill-hover text-fg-1`;
-const DANGER = `${BUTTON} border-red-400/60 bg-red-500/20 hover:bg-red-500/30 text-red-50`;
-
+// Only the placement is inline; colours come from the Canlı tokens, whose dark defaults resolve before the store is hydrated.
 const PANEL_STYLE: React.CSSProperties = {
     position: 'fixed',
     zIndex: 2147483647,
     transform: 'translateX(-50%)',
     width: 'min(480px, calc(100vw - 32px))',
     boxSizing: 'border-box',
-    borderRadius: '10px',
-    border: '1px solid #b91c1c',
-    background: '#1f1414',
-    color: '#fde8e8',
-    font: '13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
     pointerEvents: 'auto',
 };
+const PANEL_CLASS = 'rounded-xl border border-[var(--kb-danger)] bg-shell text-fg-1 shadow-e3 [font:var(--kb-type-body)]';
 
 function usePanelPosition(): { left: string; top: string } {
     const [pos, setPos] = useState(() => computeBannerPosition());
@@ -150,13 +142,13 @@ const RecoveryPanel: React.FC = () => {
             <button
                 type="button"
                 data-testid="recovery-reopen"
-                className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 cursor-pointer"
+                className={`${PANEL_CLASS} pointer-events-auto flex cursor-pointer items-center gap-2 px-3 py-1.5`}
                 dir={dir}
                 style={{ ...PANEL_STYLE, ...position, width: 'auto', maxWidth: 'calc(100vw - 32px)' }}
                 onClick={() => setCollapsed(false)}
             >
-                <span className="material-symbols-outlined text-[16px]">warning</span>
-                <span className="text-xs font-medium">{t('recoveryReopen')}</span>
+                <Icon name="warning" size={16} className="text-danger" />
+                <span className="[font:var(--kb-type-label)]">{t('recoveryReopen')}</span>
             </button>
         );
     }
@@ -169,22 +161,22 @@ const RecoveryPanel: React.FC = () => {
             role="dialog"
             aria-modal="false"
             aria-labelledby="kobar-recovery-title"
-            className="pointer-events-auto flex flex-col gap-3 p-3.5"
+            className={`${PANEL_CLASS} pointer-events-auto flex flex-col gap-3 p-4`}
             dir={dir}
             style={{ ...PANEL_STYLE, ...position }}
         >
             <div className="flex flex-col gap-1">
-                <div id="kobar-recovery-title" className="font-semibold">
+                <div id="kobar-recovery-title" className="font-heading [font:var(--kb-type-title)]">
                     {t('hydrationFailedTitle')}
                 </div>
-                <div className="text-xs text-danger/90">{t('recoveryBody')}</div>
+                <div className="[font:var(--kb-type-caption)] text-fg-2">{t('recoveryBody')}</div>
             </div>
 
             {message && (
                 <div
                     role={message.tone === 'error' ? 'alert' : 'status'}
                     data-testid="recovery-message"
-                    className={`rounded-lg border px-2 py-1.5 text-xs ${message.tone === 'error' ? 'border-red-400/50 bg-red-500/15 text-danger' : 'border-stroke bg-fill-hover text-fg-1'}`}
+                    className={`rounded-md px-3 py-2 [font:var(--kb-type-caption)] ${message.tone === 'error' ? 'bg-[color-mix(in_oklab,var(--kb-danger)_14%,transparent)] text-danger' : 'bg-inset text-fg-1'}`}
                 >
                     {message.text}
                 </div>
@@ -201,79 +193,67 @@ const RecoveryPanel: React.FC = () => {
 
             {view === 'main' && (
                 <div className="flex flex-col gap-2">
-                    <button
-                        type="button"
+                    <Button
                         data-testid="recovery-restore"
+                        variant="tonal"
+                        icon="upload_file"
+                        fullWidth
                         disabled={busy}
-                        className={NEUTRAL}
                         onClick={() => fileRef.current?.click()}
                     >
-                        <span className="material-symbols-outlined text-[16px]">upload_file</span>
                         {t('recoveryRestore')}
-                    </button>
-                    <button
-                        type="button"
+                    </Button>
+                    <Button
                         data-testid="recovery-fresh"
+                        variant="outline"
+                        icon="restart_alt"
+                        fullWidth
                         disabled={busy}
-                        className={NEUTRAL}
                         onClick={() => {
                             setMessage(null);
                             setView('confirm-fresh');
                         }}
                     >
-                        <span className="material-symbols-outlined text-[16px]">restart_alt</span>
                         {t('recoveryStartFresh')}
-                    </button>
-                    <button
-                        type="button"
-                        data-testid="recovery-later"
-                        disabled={busy}
-                        className={NEUTRAL}
-                        onClick={() => setCollapsed(true)}
-                    >
+                    </Button>
+                    <Button data-testid="recovery-later" variant="text" fullWidth disabled={busy} onClick={() => setCollapsed(true)}>
                         {t('recoveryLater')}
-                    </button>
-                    <div className="text-[11px] text-danger/70">{t('recoveryBackupsHint')}</div>
+                    </Button>
+                    <div className="[font:var(--kb-type-caption)] text-fg-3">{t('recoveryBackupsHint')}</div>
                 </div>
             )}
 
             {view === 'confirm-fresh' && (
-                <div
-                    data-testid="recovery-fresh-panel"
-                    className="flex flex-col gap-2 rounded-lg border border-primary/40 bg-primary/10 p-2"
-                >
-                    <span className="text-sm text-fg-1 font-medium">{t('recoveryFreshConfirmTitle')}</span>
-                    <span className="text-xs text-fg-1">{t('recoveryFreshConfirmBody')}</span>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
+                <div data-testid="recovery-fresh-panel" className="flex flex-col gap-2 rounded-lg bg-inset p-3">
+                    <span className="[font:var(--kb-type-body-strong)]">{t('recoveryFreshConfirmTitle')}</span>
+                    <span className="[font:var(--kb-type-caption)] text-fg-2">{t('recoveryFreshConfirmBody')}</span>
+                    <div className="flex justify-end gap-2">
+                        <Button
                             data-testid="recovery-fresh-cancel"
+                            variant="text"
+                            size="sm"
                             disabled={busy}
-                            className={NEUTRAL}
                             onClick={() => setView('main')}
                         >
                             {t('backupCancel')}
-                        </button>
-                        <button
-                            type="button"
+                        </Button>
+                        <Button
                             data-testid="recovery-fresh-confirm"
+                            variant="danger"
+                            size="sm"
                             disabled={busy}
-                            className={DANGER}
                             onClick={handleConfirmFresh}
                         >
                             {t('recoveryFreshConfirmButton')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
 
             {view === 'confirm-restore' && preview && (
-                <div
-                    data-testid="recovery-restore-panel"
-                    className="flex flex-col gap-2 rounded-lg border border-primary/40 bg-primary/10 p-2"
-                >
-                    <span className="text-sm text-fg-1 font-medium">{t('backupConfirmTitle')}</span>
-                    <div className="text-xs text-fg-1 flex flex-col gap-0.5">
+                <div data-testid="recovery-restore-panel" className="flex flex-col gap-2 rounded-lg bg-inset p-3">
+                    <span className="[font:var(--kb-type-body-strong)]">{t('backupConfirmTitle')}</span>
+                    <div className="flex flex-col gap-0.5 [font:var(--kb-type-caption)]">
                         {preview.createdAt && (
                             <span>
                                 {t('backupCreatedAt')}: {formatCreatedAt(preview.createdAt, language)}
@@ -289,34 +269,34 @@ const RecoveryPanel: React.FC = () => {
                             {t('backupCountChats')}: {preview.counts.chats}
                         </span>
                     </div>
-                    <ul className="text-xs text-fg-2 list-disc ps-4 flex flex-col gap-0.5">
+                    <ul className="flex list-disc flex-col gap-0.5 ps-4 [font:var(--kb-type-caption)] text-fg-2">
                         <li>{t('backupWarnOwn')}</li>
                         <BackupWarnings preview={preview} t={t} />
                     </ul>
-                    <span className="text-xs text-fg-1">{t('backupConfirmBody')}</span>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
+                    <span className="[font:var(--kb-type-caption)]">{t('backupConfirmBody')}</span>
+                    <div className="flex justify-end gap-2">
+                        <Button
                             data-testid="recovery-restore-cancel"
+                            variant="text"
+                            size="sm"
                             disabled={busy}
-                            className={NEUTRAL}
                             onClick={() => {
                                 setPending(null);
                                 setView('main');
                             }}
                         >
                             {t('backupCancel')}
-                        </button>
-                        <button
-                            type="button"
+                        </Button>
+                        <Button
                             data-testid="recovery-restore-confirm"
+                            variant="danger"
+                            size="sm"
+                            icon="restore"
                             disabled={busy}
-                            className={DANGER}
                             onClick={() => void handleConfirmRestore()}
                         >
-                            <span className="material-symbols-outlined text-[16px]">restore</span>
                             {t('backupConfirmButton')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}

@@ -8,13 +8,16 @@ import { cx } from './cx';
 export const FIELD_INTERACTIVE =
     'no-drag-region pointer-events-auto focus-visible:outline-hidden focus-visible:shadow-[var(--kb-focus-ring)]';
 
-/** Shared box of TextField and Select; height follows the density token --kb-control-h. */
+/** Shared box of TextField and Select: inset fill; size and radius come from FIELD_SHAPE (the search form is a 44 px pill). */
 export const FIELD_CONTROL =
-    'h-[var(--kb-control-h)] w-full min-w-0 rounded-sm border bg-inset text-[0.8125rem] leading-5 text-fg-1 transition-colors duration-[var(--kb-dur-fast)] disabled:cursor-not-allowed disabled:text-fg-3 disabled:opacity-[var(--kb-opacity-disabled)]';
+    'w-full min-w-0 border bg-inset [font:var(--kb-type-body)] text-fg-1 transition-colors duration-[var(--kb-dur-fast)] disabled:cursor-not-allowed disabled:text-fg-3 disabled:opacity-[var(--kb-opacity-disabled)]';
 
-/** Control border: --kb-stroke-control (>=3:1, WCAG 1.4.11) or the danger colour when invalid. */
+/** Form field shape: 46 px high, radius 16. */
+export const FIELD_SHAPE = 'h-[46px] rounded-[16px]';
+
+/** Control border: none at rest (the inset fill carries the shape), the danger colour when invalid. */
 export function fieldBorder(invalid: boolean): string {
-    return invalid ? 'border-[var(--kb-danger)]' : 'border-[var(--kb-stroke-control)]';
+    return invalid ? 'border-[var(--kb-danger)]' : 'border-transparent';
 }
 
 /** True when a node renders something (not undefined/null/boolean/''); 0 counts as content. */

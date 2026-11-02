@@ -42,6 +42,11 @@ export const SETTINGS_KEYS = [
     'isKoBoxEnabled',
     'koBoxCleanupMode',
     'featureOrder',
+    'barItemSizes',
+    'barHiddenItems',
+    'tonalSurfaces',
+    'notesTabVisible',
+    'privacyMode',
     'design',
     'glassOpacity',
     'settingsFeatureViewMode',
@@ -125,6 +130,9 @@ const num = (min: number, max: number) => z.number().finite().min(min).max(max);
 const hexColor = z.string().regex(/^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/);
 const theme = z.enum(['ember', 'ocean', 'sakura', 'emerald', 'midnight', 'amethyst', 'crimson', 'nord', 'coffee', 'lavender', 'custom']);
 const featureOrder = z.array(shortString).max(IMPORT_LIMITS.maxListItems);
+// v33 (Canlı): bar presentation.
+const barItemSizes = z.record(shortString, z.enum(['icon', 'tile'])).refine((v) => Object.keys(v).length <= IMPORT_LIMITS.maxListItems);
+const barHiddenItems = z.array(shortString).max(IMPORT_LIMITS.maxListItems);
 const edgePosition = z.enum(['left', 'right', 'top', 'bottom']);
 const orientation = z.enum(['vertical', 'horizontal']);
 const design = z.enum(['style1', 'style2']);
@@ -157,6 +165,11 @@ export const settingsSchema = z.object({
     isKoBoxEnabled: bool,
     koBoxCleanupMode,
     featureOrder,
+    barItemSizes,
+    barHiddenItems,
+    tonalSurfaces: bool,
+    notesTabVisible: bool,
+    privacyMode: bool,
     design,
     glassOpacity: num(0, 100),
     settingsFeatureViewMode: viewMode,
@@ -200,6 +213,10 @@ export const workspaceSchema = z.object({
     material,
     density,
     featureOrder,
+    barItemSizes,
+    barHiddenItems,
+    tonalSurfaces: bool,
+    notesTabVisible: bool,
     edgePosition,
     isPopupSmartPositioning: bool,
     enableEyeAnimation: bool,
@@ -355,6 +372,9 @@ export function mergeLegacyBackup(imported: AnyRecord, local: AnyRecord): AnyRec
     return merged;
 }
 
+/** Per-workspace fields added by the v33 migration. */
+const WORKSPACE_V33_KEYS = ['barItemSizes', 'barHiddenItems', 'tonalSurfaces', 'notesTabVisible'] as const;
+
 const WORKSPACE_DEFAULT_KEYS = Object.keys(workspaceSchema.shape).filter(
     (k) => k !== 'name' && k !== 'isIsolated' && k !== 'enabledExtensions'
 );
@@ -397,6 +417,15 @@ export function buildSettingsImport(text: string, local: AppState, approvedPlugi
     const clean = isPlainObject(migrated) ? sanitizeSettings(migrated) : {};
     for (const key of Object.keys(clean)) if (!own(sanitized, key)) delete clean[key];
     if (Object.keys(clean).length === 0) throw new ImportError('no settings found');
+    // v33 (Canlı): the same for the bar fields the migration puts into every workspace record of an older file; they must not
+    // overwrite the local workspace's bar presentation (or fill a new one) with migration defaults.
+    if (Array.isArray(clean.workspaces) && Array.isArray(sanitized.workspaces)) {
+        const fileById = new Map((sanitized.workspaces as AnyRecord[]).map((w) => [w.id, w]));
+        for (const ws of clean.workspaces as AnyRecord[]) {
+            const fileWs = fileById.get(ws.id);
+            for (const key of WORKSPACE_V33_KEYS) if (!fileWs || !own(fileWs, key)) delete ws[key];
+        }
+    }
 
     const patch: AnyRecord = {};
     for (const key of SETTINGS_KEYS) if (own(clean, key)) patch[key] = clean[key];

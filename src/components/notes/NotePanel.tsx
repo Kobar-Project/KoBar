@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useT } from '../../i18n/useT';
 import { useAppStore } from '../../store/useAppStore';
 import NoteEditor from './NoteEditor';
@@ -10,7 +10,16 @@ import PluginSettingsHost from '../plugins/PluginSettingsHost';
 import ResizerHandle from './ResizerHandle';
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
+import { resolveScheme } from '../../theme';
 import { finishTextImport, importTextFilesFromDialog, readDroppedTextFiles } from '../../notes/importTextFiles';
+
+/** Strips tags from a note's HTML for searching (search only; the content itself is never rewritten). */
+const htmlToPlainText = (html: string | undefined): string =>
+    (html ?? '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
 const NotePanel: React.FC = () => {
     const isNotePanelOpen = useAppStore((state) => state.isNotePanelOpen);
@@ -27,19 +36,20 @@ const NotePanel: React.FC = () => {
     const isHighlightingPluginsBtn = useAppStore((state) => state.isHighlightingPluginsBtn);
     const openSettingsTab = useAppStore((state) => state.openSettingsTab);
     const openPluginsTab = useAppStore((state) => state.openPluginsTab);
-    const design = useAppStore((state) => state.design);
-    const glassOpacity = useAppStore((state) => state.glassOpacity);
-    const isMac = useAppStore((state) => state.isMac);
+    const scheme = useAppStore((state) => state.scheme);
     const noteListWidth = useAppStore((state) => state.noteListWidth);
     const setNoteListWidth = useAppStore((state) => state.setNoteListWidth);
 
     const activeNote = notes.find((n) => n.id === activeNoteId);
+    // Plain text of each note for the search; recomputed only when the notes change.
+    const textById = useMemo(() => new Map(notes.map((n) => [n.id, htmlToPlainText(n.content)])), [notes]);
     const listEntries: NoteListEntry[] = notes.map((n) => ({
         id: n.id,
         title: n.isSettings ? t('settings') : n.title,
         icon: n.icon,
         emoji: n.emoji,
         pseudo: Boolean(n.isSettings || n.isPlugins),
+        text: textById.get(n.id),
     }));
 
     // T-615d: an activeNoteId that points to no note (a removed pseudo-note, a stale id) falls back to the first note.
@@ -152,16 +162,11 @@ const NotePanel: React.FC = () => {
             ref={panelRef}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            className={`relative flex flex-col border z-30 shadow-2xl shrink-0 pointer-events-auto ${isNotePanelOpen ? 'opacity-100' : 'pointer-events-none opacity-0 border-none'}
-                ${design === 'style2' ? 'rounded-[2.5rem]' : ''}
+            className={`relative z-30 flex shrink-0 flex-col rounded-2xl border border-stroke bg-[var(--kb-material-bg)] p-3 text-fg-1 shadow-e3 [backdrop-filter:var(--kb-material-blur)] pointer-events-auto ${isNotePanelOpen ? 'opacity-100' : 'pointer-events-none border-none opacity-0'}
                 ${isResizing ? '' : 'transition-all duration-500'}`}
             style={{
                 width: `${notePanelWidth}px`,
                 height: `${notePanelHeight}px`,
-                backgroundColor:
-                    design === 'style2' ? `color-mix(in srgb, var(--theme-bg-base) ${glassOpacity}%, transparent)` : 'var(--theme-bg-base)',
-                borderColor: design === 'style2' ? 'rgba(255, 255, 255, 0.1)' : 'var(--theme-border)',
-                backdropFilter: design === 'style2' ? (isMac ? 'blur(8px)' : 'blur(32px)') : 'none',
                 willChange: 'width, height',
             }}
         >
@@ -172,12 +177,17 @@ const NotePanel: React.FC = () => {
             {/* Corner Resizer */}
             <ResizerHandle direction="corner" onResizeTemp={handleResizeTemp} onResizeEnd={() => setIsResizing(false)} />
 
-            <div className="flex min-h-0 flex-1">
+            <div className="flex min-h-0 flex-1 gap-3">
                 <NoteList
                     entries={listEntries}
                     activeNoteId={activeNote ? activeNote.id : null}
                     labels={{
                         list: t('notesList'),
+                        title: t('notesList'),
+                        search: t('notesSearch'),
+                        noMatch: t('notesNoMatch'),
+                        filterAll: t('notesFilterAll'),
+                        filterRecent: t('notesFilterRecent'),
                         add: t('addNewNote'),
                         import: t('noteImport'),
                         changeIcon: t('changeIcon'),
@@ -212,13 +222,13 @@ const NotePanel: React.FC = () => {
                         </>
                     }
                 />
-                <div className="flex min-w-0 flex-1 flex-col">
+                <div className={`flex min-w-0 flex-1 flex-col ${notes.length === 0 ? '' : 'overflow-hidden rounded-xl bg-surface'}`}>
                     {/* Editor or plugin host area */}
                     {notes.length === 0 ? (
                         <NotesEmptyState
                             title={t('notesEmptyTitle')}
                             description={t('notesEmptyBody')}
-                            addLabel={t('addNewNote')}
+                            addLabel={t('notesNew')}
                             onAdd={addNote}
                         />
                     ) : activeNote?.isPlugins ? (
@@ -243,17 +253,12 @@ const NotePanel: React.FC = () => {
             {emojiPickerTabId !== null && (
                 <div
                     ref={emojiPickerRef}
-                    className="absolute z-[100] no-drag-region shadow-2xl rounded-xl overflow-hidden pointer-events-auto"
-                    style={{
-                        top: '80px',
-                        left: `${emojiPickerX}px`,
-                        backgroundColor: 'var(--theme-bg-dark)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                    }}
+                    className="no-drag-region pointer-events-auto absolute z-[100] overflow-hidden rounded-xl border border-stroke bg-surface shadow-e3"
+                    style={{ top: '80px', left: `${emojiPickerX}px` }}
                 >
                     <EmojiPicker
                         onEmojiClick={handleEmojiSelect}
-                        theme={Theme.DARK}
+                        theme={resolveScheme(scheme) === 'light' ? Theme.LIGHT : Theme.DARK}
                         width={300}
                         height={350}
                         searchPlaceholder="Search emoji..."

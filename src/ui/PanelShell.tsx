@@ -2,12 +2,12 @@ import { useId, useLayoutEffect, useRef, useState, type HTMLAttributes, type Key
 import { cx } from './cx';
 import { hasContent } from './fieldProps';
 import { focusElement, getFocusable, trapTabKey } from './focus';
-import { Icon } from './Icon';
 import { IconButton } from './IconButton';
+import { IconTile } from './IconTile';
 import { registerLayer, type Layer } from './layers';
 import { Surface } from './Surface';
 
-export type PanelShellSize = 's' | 'm' | 'l';
+export type PanelShellSize = 's' | 'm' | 'l' | 'xl';
 /** Screen edge the bar is docked to; the panel slides in from that side. */
 export type PanelShellPosition = 'left' | 'right' | 'top' | 'bottom';
 export type PanelShellCloseReason = 'escape' | 'close-button';
@@ -15,8 +15,10 @@ export type PanelShellCloseReason = 'escape' | 'close-button';
 export interface PanelShellProps extends Omit<HTMLAttributes<HTMLElement>, 'title' | 'role' | 'children'> {
     /** Visible heading, linked with aria-labelledby. */
     title: ReactNode;
-    /** Material Symbols ligature name shown before the title (decorative). */
+    /** Material Symbols ligature name shown in a 44 px icon tile before the title (decorative). */
     icon?: string;
+    /** Optional caption under the title. */
+    subtitle?: ReactNode;
     /** Header actions (IconButtons), placed before the close button. */
     actions?: ReactNode;
     /** Requested close (Esc or the close button). The host unmounts the panel. */
@@ -27,7 +29,7 @@ export interface PanelShellProps extends Omit<HTMLAttributes<HTMLElement>, 'titl
     children?: ReactNode;
     /** Optional action row under the body, end-aligned. */
     footer?: ReactNode;
-    /** Size preset: s 320x440, m 400x560 (default), l 480x640 (max height; the content decides below that). */
+    /** Size preset: s 320, m 340 (default), l 400, xl 480 wide, with max heights 440/560/640/680 (max height; the content decides below that). */
     size?: PanelShellSize;
     position?: PanelShellPosition;
     closeOnEscape?: boolean;
@@ -41,8 +43,9 @@ export interface PanelShellProps extends Omit<HTMLAttributes<HTMLElement>, 'titl
 
 const SIZE_CLASS: Record<PanelShellSize, string> = {
     s: 'w-80 max-h-110',
-    m: 'w-100 max-h-140',
-    l: 'w-120 max-h-160',
+    m: 'w-85 max-h-140',
+    l: 'w-100 max-h-160',
+    xl: 'w-120 max-h-170',
 };
 
 // kb-slide reads its start offset from these properties (src/index.css): the panel comes in from the bar's side.
@@ -66,6 +69,7 @@ const CLOSE_ATTR = 'data-kb-panel-close';
 export function PanelShell({
     title,
     icon,
+    subtitle,
     actions,
     onClose,
     closeLabel,
@@ -139,7 +143,7 @@ export function PanelShell({
             level="shell"
             material
             elevation="e3"
-            radius="lg"
+            radius="2xl"
             data-size={size}
             data-position={position}
             onKeyDown={handleKeyDown}
@@ -150,25 +154,30 @@ export function PanelShell({
                 className
             )}
         >
-            <div className="flex h-11 shrink-0 items-center gap-2 ps-4 pe-2">
-                {icon && <Icon name={icon} size={20} className="text-fg-2" />}
-                <h2 id={titleId} className="min-w-0 flex-1 truncate text-[0.9375rem] leading-[1.375rem] font-semibold text-fg-1">
-                    {title}
-                </h2>
+            <div className="flex min-h-11 shrink-0 items-center gap-3 px-5 pt-5 pb-3">
+                {icon && <IconTile icon={icon} size="md" />}
+                <div className="flex min-w-0 flex-1 flex-col">
+                    <h2 id={titleId} className="truncate font-heading [font:var(--kb-type-title)] text-fg-1">
+                        {title}
+                    </h2>
+                    {hasContent(subtitle) && <p className="truncate [font:var(--kb-type-caption)] text-fg-2">{subtitle}</p>}
+                </div>
                 {hasContent(actions) && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
                 <IconButton
                     icon="close"
+                    variant="tonal"
+                    size={36}
                     label={closeLabel}
                     tooltip={false}
                     data-kb-panel-close=""
                     onClick={() => onClose('close-button')}
                 />
             </div>
-            <div ref={bodyRef} className={cx('min-h-0 flex-1 overflow-y-auto', padded && 'px-4 pb-4')}>
+            <div ref={bodyRef} className={cx('min-h-0 flex-1 overflow-y-auto', padded && 'px-5 pb-5')}>
                 {children}
             </div>
             {hasContent(footer) && (
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-stroke px-4 py-3">{footer}</div>
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-stroke px-5 py-3">{footer}</div>
             )}
         </Surface>
     );
